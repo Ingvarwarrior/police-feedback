@@ -1,0 +1,275 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  username      String    @unique
+  email         String?   @unique
+  passwordHash  String
+  firstName     String?
+  lastName      String?
+  badgeNumber   String?
+  role          String    @default("VIEWER") // ADMIN, VIEWER
+  active        Boolean   @default(true)
+  
+  // Permissions
+  permViewReports   Boolean @default(true)
+  permManageUsers   Boolean @default(false)
+  permEditNotes     Boolean @default(true)
+  permChangeStatus  Boolean @default(true)
+  permExportData    Boolean @default(false)
+  permDeleteReports Boolean @default(false)
+  permCreateOfficers Boolean @default(false)
+  permEditOfficers   Boolean @default(false)
+  permDeleteOfficers Boolean @default(false)
+  permEditCitizens   Boolean @default(false)
+  permDeleteCitizens Boolean @default(false)
+  permViewAudit     Boolean @default(false)
+  
+  createdAt     DateTime  @default(now())
+  
+  assignedResponses Response[] @relation("AssignedTo")
+  evaluations       OfficerEvaluation[] @relation("Evaluations")
+  auditLogs         AuditLog[]
+  notifications     AdminNotification[]
+  notificationReads NotificationRead[]
+}
+
+model Survey {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  status      String     @default("ACTIVE") // ACTIVE, ARCHIVED, DRAFT
+  opensAt     DateTime?
+  closesAt    DateTime?
+  createdById String?
+  createdAt   DateTime   @default(now())
+  
+  responses   Response[]
+}
+
+model Response {
+  id                  String       @id @default(uuid())
+  surveyId            String?
+  survey              Survey?      @relation(fields: [surveyId], references: [id])
+  createdAt           DateTime     @default(now())
+  submittedAt         DateTime?
+  
+  // Anti-spam / Meta
+  clientGeneratedId   String       @unique
+  ipHash              String?      
+  userAgent           String?
+  suspicious          Boolean      @default(false)
+
+  // Consent & Contact
+  consent             Boolean
+  wantContact         Boolean
+  contact             Contact?
+
+  // Context
+  districtOrCity      String?
+  interactionDate     DateTime?
+  interactionTime     String?      // Time interval e.g. "09:00-12:00"
+  incidentType        String? 
+  responseTimeBucket  String? 
+
+  // Patrol Info
+  patrolRef           String?
+  officerName         String?
+  badgeNumber         String?
+
+  // Geo & Media
+  geoPoint            GeoPoint?
+  attachments         Attachment[]
+
+  // Ratings
+  ratePoliteness      Int?
+  rateProfessionalism Int?
+  rateEffectiveness   Int?
+  rateOverall         Int?
+  comment             String?
+  
+  // Administrative Workflow
+  status              String       @default("NEW") // NEW, ASSIGNED, RESOLVED, ARCHIVED
+  internalNotes       String?
+  
+  assignedToId        String?
+  assignedTo          User?        @relation("AssignedTo", fields: [assignedToId], references: [id])
+  resolutionNotes     String?
+  resolutionDate      DateTime?
+  incidentCategory    String?      // e.g., TRAFFIC, DOC_CHECK, ASSISTANCE
+  
+  // Officer Link (for evaluation system)
+  officerId           String?
+  officer             Officer?     @relation("OfficerFeedback", fields: [officerId], references: [id])
+
+  // Citizen Link
+  citizenId           String?
+  citizen             Citizen?     @relation("CitizenResponses", fields: [citizenId], references: [id])
+}
+
+model Contact {
+  id          String    @id @default(uuid())
+  responseId  String    @unique
+  response    Response  @relation(fields: [responseId], references: [id])
+  name        String?
+  phone       String
+}
+
+model GeoPoint {
+  id          String    @id @default(uuid())
+  responseId  String    @unique
+  response    Response  @relation(fields: [responseId], references: [id])
+  lat         Float
+  lon         Float
+  accuracyMeters Float?
+  source      String    
+  precisionMode String  @default("approx") 
+  createdAt   DateTime  @default(now())
+}
+
+model Attachment {
+  id          String    @id @default(uuid())
+  responseId  String? 
+  response    Response? @relation(fields: [responseId], references: [id])
+  storage     String    @default("local") 
+  mediaType   String    @default("photo") 
+  pathOrKey   String    
+  mime        String
+  sizeBytes   Int
+  hash        String
+  exifStripped Boolean  @default(true)
+  createdAt   DateTime  @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?
+  actorUser   User?    @relation(fields: [actorUserId], references: [id])
+  action      String
+  entityType  String?
+  entityId    String?
+  metadata    String?  // Changed Json to String for SQLite simplicity
+  createdAt   DateTime @default(now())
+}
+
+// ========================================
+// Officer Evaluation System
+// ========================================
+
+model Officer {
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Basic Info
+  badgeNumber     String   @unique
+  firstName       String
+  middleName      String?
+  lastName        String
+  rank            String?  // Патрульний, Сержант, Лейтенант, etc.
+  department      String?  // Відділення
+  
+  imageUrl        String?
+  phone           String?
+  
+  // Employment
+  hireDate        DateTime?
+  birthDate       DateTime?
+  email           String?
+  driversLicense  String?
+  status          String   @default("ACTIVE") // ACTIVE, ON_LEAVE, SUSPENDED, RETIRED
+  
+  // Relations
+  evaluations     OfficerEvaluation[]
+  responses       Response[] @relation("OfficerFeedback")
+}
+
+model OfficerEvaluation {
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  
+  officerId       String
+  officer         Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
+  
+  evaluatorId     String?
+  evaluator       User?    @relation("Evaluations", fields: [evaluatorId], references: [id])
+  
+  // Evaluation Type
+  type            String   // CITIZEN_FEEDBACK, INTERNAL_REVIEW, TRAINING, INCIDENT
+  sourceId        String?  // Response ID or other source reference
+  
+  // Scores (1-5 scale)
+  scoreKnowledge       Int?  // Знання законодавства
+  scoreTactics         Int?  // Тактика та процедури
+  scoreCommunication   Int?  // Комунікація
+  scoreProfessionalism Int?  // Професіоналізм
+  scorePhysical        Int?  // Фізична підготовка
+  
+  // Notes
+  strengths       String?
+  weaknesses      String?
+  recommendations String?
+  notes           String?
+}
+
+model AdminNotification {
+  id          String   @id @default(uuid())
+  type        String   // CRITICAL_RATING, STALE_REPORT, SYSTEM
+  priority    String   @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  title       String
+  message     String
+  link        String?  // Link to the report or entity
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  // Optional: target specific user or role
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+
+  readBy      NotificationRead[]
+}
+
+model NotificationRead {
+  id             String            @id @default(uuid())
+  notificationId String
+  notification   AdminNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt         DateTime          @default(now())
+
+  @@unique([notificationId, userId])
+}
+
+model Citizen {
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  phone         String?  @unique // Keep primary phone for quick lookup
+  phones        CitizenPhone[]
+  ipHash        String?  
+  
+  fullName      String?
+  internalNotes String?
+  isVip         Boolean  @default(false)
+  isSuspicious  Boolean  @default(false)
+  
+  responses     Response[] @relation("CitizenResponses")
+
+  @@index([ipHash])
+}
+
+model CitizenPhone {
+  id          String   @id @default(uuid())
+  citizenId   String
+  citizen     Citizen  @relation(fields: [citizenId], references: [id], onDelete: Cascade)
+  phone       String   @unique
+  createdAt   DateTime @default(now())
+}

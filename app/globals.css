@@ -1,0 +1,121 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  --color-background: oklch(0.98 0.01 220);
+  --color-foreground: oklch(0.12 0.02 220);
+
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.12 0.02 220);
+
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.12 0.02 220);
+
+  --color-primary: oklch(0.2 0.08 255);
+  /* Official Police Navy */
+  --color-primary-foreground: oklch(0.98 0.01 220);
+
+  --color-secondary: oklch(0.7 0.15 80);
+  /* Police Gold/Yellow */
+  --color-secondary-foreground: oklch(0.12 0.02 220);
+
+  --color-muted: oklch(0.95 0.01 220);
+  --color-muted-foreground: oklch(0.4 0.05 220);
+
+  --color-accent: oklch(0.7 0.15 80);
+  /* Accent is Gold */
+  --color-accent-foreground: oklch(0.12 0.02 220);
+
+  --color-destructive: oklch(0.55 0.2 25);
+  --color-destructive-foreground: oklch(0.98 0.01 220);
+
+  --color-border: oklch(0.9 0.02 220);
+  --color-input: oklch(0.9 0.02 220);
+  --color-ring: oklch(0.2 0.08 255);
+
+  --radius-lg: 1rem;
+  --radius-md: 0.75rem;
+  --radius-sm: 0.5rem;
+}
+
+:root {
+  --background: oklch(0.98 0.01 220);
+  --foreground: oklch(0.12 0.02 220);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.12 0.02 220);
+  --primary: oklch(0.2 0.08 255);
+  --primary-foreground: oklch(0.98 0.01 220);
+  --secondary: oklch(0.7 0.15 80);
+  --secondary-foreground: oklch(0.12 0.02 220);
+  --muted: oklch(0.95 0.01 220);
+  --muted-foreground: oklch(0.4 0.05 220);
+  --accent: oklch(0.7 0.15 80);
+  --accent-foreground: oklch(0.12 0.02 220);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.98 0.01 220);
+  --border: oklch(0.9 0.02 220);
+  --input: oklch(0.9 0.02 220);
+  --ring: oklch(0.2 0.08 255);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-xl;
+  }
+}
+
+:focus-visible {
+  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-white transition-all;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  main {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .print-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 100vh;
+  }
+}
+
+.print-only {
+  display: none;
+}
