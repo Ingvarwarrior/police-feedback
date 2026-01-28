@@ -154,14 +154,14 @@ export default async function ReportDetailPage({
                                         <div key={file.id} className="aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 group relative shadow-inner">
                                             {file.mediaType === 'video' ? (
                                                 <video
-                                                    src={`/uploads/${file.pathOrKey}`}
+                                                    src={`/api/uploads/${file.pathOrKey}`}
                                                     controls
                                                     className="w-full h-full object-cover"
                                                 />
                                             ) : (
                                                 <a href={`/uploads/${file.pathOrKey}`} target="_blank" rel="noopener noreferrer">
                                                     <img
-                                                        src={`/uploads/${file.pathOrKey}`}
+                                                        src={`/api/uploads/${file.pathOrKey}`}
                                                         alt="Attachment"
                                                         className="w-full h-full object-cover transition-transform group-hover:scale-110 cursor-zoom-in"
                                                     />

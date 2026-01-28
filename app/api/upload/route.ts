@@ -4,7 +4,7 @@ import path from 'path'
 import sharp from 'sharp'
 import { prisma } from '@/lib/prisma'
 
-const UPLOAD_DIR = './public/uploads'
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads')
 const MAX_SIZE = 100 * 1024 * 1024 // 100MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo']

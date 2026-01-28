@@ -86,23 +86,15 @@ export default function Step0Start() {
 
             <div className="w-full space-y-6">
                 <div
-                    className={`flex items-start space-x-4 p-4 md:p-6 rounded-3xl border-2 transition-all cursor-pointer ${formData.hasConsent ? 'bg-primary/5 border-primary shadow-lg ring-4 ring-primary/5' : 'bg-white border-slate-100 hover:border-slate-300'}`}
+                    className={`flex items-start space-x-4 p-4 md:p-6 rounded-3xl border-2 transition-all cursor-pointer select-none group ${formData.hasConsent ? 'bg-primary/5 border-primary shadow-lg ring-4 ring-primary/5' : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
                     onClick={() => updateData({ hasConsent: !formData.hasConsent })}
                 >
                     <Checkbox
-                        id="terms"
                         checked={formData.hasConsent}
-                        onCheckedChange={(checked) => updateData({ hasConsent: checked === true })}
-                        className="mt-1 translate-y-0.5 border-slate-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        className="mt-1 translate-y-0.5 border-slate-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary pointer-events-none transition-colors group-hover:border-primary"
                     />
                     <Label
-                        htmlFor="terms"
-                        className="text-xs font-bold text-slate-600 leading-relaxed cursor-pointer select-none flex-1 py-1"
-                        onClick={(e) => {
-                            // Prevent double toggle if jumping to container
-                            e.stopPropagation();
-                            updateData({ hasConsent: !formData.hasConsent });
-                        }}
+                        className="text-xs font-bold text-slate-600 leading-relaxed cursor-pointer pointer-events-none flex-1 py-1 group-hover:text-slate-900 transition-colors"
                     >
                         Я підтверджую, що ознайомлений з інформацією вище та погоджуюсь на обробку моїх персональних даних з метою покращення роботи поліції.
                     </Label>
