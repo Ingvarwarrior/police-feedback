@@ -61,6 +61,23 @@
 - `/lib` - Утиліти та конфігурації (Prisma, Utils)
 - `/prisma` - Схема бази даних та міграції
 
+---
+
+## Налаштування сповіщень (SMTP)
+
+Для того, щоб інспектори отримували сповіщення про нові відгуки, додайте наступні змінні у файл `.env` на сервері:
+
+```env
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER="ваша-пошта@gmail.com"
+SMTP_PASS="пароль-додатка-гугл"
+SMTP_FROM="\"Police Feedback\" <ваша-пошта@gmail.com>"
+ADMIN_NOTIFICATION_EMAIL="куди-надсилати@gmail.com" # (для застарілих функцій)
+NEXT_PUBLIC_APP_URL="https://ваш-домен.com"
+```
+
 ## Ліцензія
 
 Proprietary / Internal Use Only

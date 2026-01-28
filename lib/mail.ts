@@ -1,25 +1,70 @@
-export async function sendNewReportEmail(report: any) {
-    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@example.com';
+import nodemailer from 'nodemailer';
+import { prisma } from './prisma';
 
-    console.log(`[MAIL] Sending notification to ${adminEmail} for report ${report.id}`);
+export async function sendNewReportEmail(report: any) {
+    // 1.Знайти всіх інспекторів (користувачів, які мають право переглядати звіти)
+    const inspectors = await prisma.user.findMany({
+        where: {
+            active: true,
+            email: { not: null },
+            permViewReports: true
+        },
+        select: {
+            email: true,
+            firstName: true,
+            lastName: true
+        }
+    });
+
+    if (inspectors.length === 0) {
+        console.log('[MAIL] No inspectors with email found to notify.');
+        return false;
+    }
+
+    const recipientEmails = inspectors.map(i => i.email).filter(Boolean) as string[];
+
+    // 2. Налаштування транспорту SMTP
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '465'),
+        secure: process.env.SMTP_SECURE === 'true', // true для 465, false для інших
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        },
+    });
 
     const subject = `Новий відгук: ${report.rateOverall}/5 - ${report.districtOrCity || 'Локація не вказана'}`;
     const text = `
-        Отримано новий відгук у системі моніторингу.
-        
-        ID: ${report.id}
-        Оцінка: ${report.rateOverall}/5
-        Район: ${report.districtOrCity || 'Не вказано'}
-        Коментар: ${report.comment || 'Без коментаря'}
-        
-        Переглянути в адмінці: ${process.env.NEXT_PUBLIC_APP_URL}/admin/reports/${report.id}
-    `.trim();
+Шановні інспектори!
 
-    // In a real environment, you'd use nodemailer here:
-    // const transporter = nodemailer.createTransport(...)
-    // await transporter.sendMail({ from, to: adminEmail, subject, text })
+Отримано новий відгук у системі моніторингу.
 
-    console.log(`[MAIL CONTENT]:\n${text}`);
+Деталі:
+- ID: ${report.id}
+- Оцінка: ${report.rateOverall}/5
+- Район/Місто: ${report.districtOrCity || 'Не вказано'}
+- Коментар: ${report.comment || 'Без коментаря'}
 
-    return true;
+Переглянути детальний звіт в адмін-панелі:
+${process.env.NEXT_PUBLIC_APP_URL}/admin/reports/${report.id}
+
+---
+Система оперативного моніторингу
+`.trim();
+
+    try {
+        await transporter.sendMail({
+            from: process.env.SMTP_FROM || `"Police Feedback" <${process.env.SMTP_USER}>`,
+            to: recipientEmails.join(', '), // Відправляємо всім одразу через кому
+            subject,
+            text,
+        });
+
+        console.log(`[MAIL] Successfully sent notification to ${recipientEmails.length} inspectors.`);
+        return true;
+    } catch (error) {
+        console.error('[MAIL] Error sending email:', error);
+        return false;
+    }
 }
