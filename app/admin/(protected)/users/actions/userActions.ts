@@ -105,6 +105,11 @@ export async function updateUser(id: string, data: {
     // Remove undefined fields
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key])
 
+    // Hash password if provided
+    if (updateData.passwordHash) {
+        updateData.passwordHash = await bcrypt.hash(updateData.passwordHash, 10)
+    }
+
     await prisma.user.update({
         where: { id },
         data: updateData
@@ -181,9 +186,11 @@ export async function deleteUser(id: string) {
 export async function resetUserPassword(id: string, newPasswordHash: string) {
     await checkPermission('permManageUsers')
 
+    const hashedPassword = await bcrypt.hash(newPasswordHash, 10)
+
     await prisma.user.update({
         where: { id },
-        data: { passwordHash: newPasswordHash }
+        data: { passwordHash: hashedPassword }
     })
 
     const session = await auth()

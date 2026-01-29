@@ -16,11 +16,14 @@ async function main() {
         return
     }
 
+    const bcrypt = require('bcryptjs')
+    const hashedPassword = await bcrypt.hash(adminPassword, 10)
+
     await prisma.user.create({
         data: {
             username: adminUsername,
             email: adminEmail,
-            passwordHash: adminPassword, // In prod, use bcrypt!
+            passwordHash: hashedPassword,
             role: 'ADMIN',
             active: true,
             firstName: 'Admin',

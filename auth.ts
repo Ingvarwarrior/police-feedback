@@ -1,6 +1,7 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
+import bcrypt from 'bcryptjs'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     trustHost: true,
@@ -17,7 +18,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     where: { username: credentials.username as string },
                 })
                 if (!user || !user.active) return null
-                if (user.passwordHash === credentials.password) {
+
+                const isPasswordValid = await bcrypt.compare(credentials.password as string, user.passwordHash)
+                if (isPasswordValid) {
                     // Log the login action
                     await prisma.auditLog.create({
                         data: {
