@@ -76,8 +76,14 @@ export async function GET(req: Request) {
                 }, 0) / evals.length
                 : 0
 
+            // Normalize image URL to use /api/uploads/ if it uses the old /uploads/ path
+            const imageUrl = officer.imageUrl?.startsWith('/uploads/')
+                ? officer.imageUrl.replace('/uploads/', '/api/uploads/')
+                : officer.imageUrl
+
             return {
                 ...officer,
+                imageUrl,
                 avgScore: Number(avgScore.toFixed(2)),
                 totalEvaluations: officer._count.evaluations,
                 totalResponses: officer._count.responses

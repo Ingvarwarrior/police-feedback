@@ -37,7 +37,8 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
             if (!res.ok) throw new Error('Upload failed')
 
             const data = await res.json()
-            onChange(`/uploads/${data.id}.webp`) // Assuming standard path based on ID
+            // Using /api/uploads/ instead of /uploads/ for consistent access through the API route
+            onChange(`/api/uploads/${data.id}.webp`)
             toast.success("Фото завантажено")
         } catch (error) {
             console.error(error)
@@ -62,12 +63,22 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
 
     const startCamera = async () => {
         try {
-            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true })
+            // Request the rear camera specifically
+            const mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+            })
             setStream(mediaStream)
             setShowCamera(true)
         } catch (error) {
             console.error("Camera error:", error)
-            toast.error("Не вдалося отримати доступ до камери")
+            // Fallback to any camera if environment camera fails
+            try {
+                const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true })
+                setStream(fallbackStream)
+                setShowCamera(true)
+            } catch (innerError) {
+                toast.error("Не вдалося отримати доступ до камери")
+            }
         }
     }
 

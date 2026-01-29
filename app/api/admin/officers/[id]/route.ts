@@ -115,6 +115,11 @@ export async function GET(
         // 3. QR Code URL
         const surveyUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/survey?officerId=${officer.id}&badge=${officer.badgeNumber}&name=${encodeURIComponent(officer.lastName + ' ' + officer.firstName)}`
 
+        // Normalize image URL
+        if (officer.imageUrl?.startsWith('/uploads/')) {
+            officer.imageUrl = officer.imageUrl.replace('/uploads/', '/api/uploads/')
+        }
+
         return NextResponse.json({
             officer,
             stats: {
