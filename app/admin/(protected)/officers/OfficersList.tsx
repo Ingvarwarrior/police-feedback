@@ -198,8 +198,8 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                 </div>
             </div>
 
-            {/* Filters & Actions */}
-            <div className="flex flex-col md:flex-row gap-4 items-center bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200">
+            {/* Filters & Actions - Sticky */}
+            <div className="sticky top-[-1px] z-20 flex flex-col md:flex-row gap-4 items-center bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 -mx-1">
                 <div className="relative flex-1 w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
