@@ -15,10 +15,7 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
     const [uploading, setUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
-
+    const uploadFile = async (file: File) => {
         if (file.size > 5 * 1024 * 1024) {
             toast.error("Файл занадто великий (макс 5MB)")
             return
@@ -37,17 +34,25 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
             if (!res.ok) throw new Error('Upload failed')
 
             const data = await res.json()
-            // Using /api/uploads/ instead of /uploads/ for consistent access through the API route
+            // Important: Use /api/uploads/ to go through our server-side serving logic
             onChange(`/api/uploads/${data.id}.webp`)
             toast.success("Фото завантажено")
         } catch (error) {
-            console.error(error)
-            toast.error("Помилка завантаження")
+            console.error("Upload error:", error)
+            toast.error("Помилка завантаження фото")
         } finally {
             setUploading(false)
-            if (fileInputRef.current) {
-                fileInputRef.current.value = ''
-            }
+        }
+    }
+
+    const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        await uploadFile(file)
+
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''
         }
     }
 
@@ -100,17 +105,13 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
         if (!ctx) return
 
         ctx.drawImage(videoRef.current, 0, 0)
-        canvas.toBlob((blob) => {
+        canvas.toBlob(async (blob) => {
             if (blob) {
-                const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" })
-                // Create a synthetic event
-                const event = {
-                    target: { files: [file] }
-                } as any
-                handleUpload(event)
+                const file = new File([blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" })
+                await uploadFile(file)
                 stopCamera()
             }
-        }, 'image/jpeg')
+        }, 'image/jpeg', 0.9)
     }
 
     return (
@@ -179,7 +180,7 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
                 ref={fileInputRef}
                 className="hidden"
                 accept="image/*"
-                onChange={handleUpload}
+                onChange={handleFileInput}
             />
         </div>
     )

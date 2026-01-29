@@ -41,7 +41,7 @@ export function OfficerForm({ initialData, onSubmit, loading, submitLabel = "Ð—Ð
             <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
                 <ImageUpload
                     value={formData.imageUrl}
-                    onChange={url => setFormData({ ...formData, imageUrl: url || "" })}
+                    onChange={url => setFormData(prev => ({ ...prev, imageUrl: url || "" }))}
                 />
 
                 <div className="flex-1 w-full space-y-4">
