@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { FileText, Lock, MapPin, Star, ArrowRight, CheckCircle2, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useSurveyStore } from '@/lib/store'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 
@@ -26,15 +27,17 @@ export default function LandingPage() {
                                 Допоможіть нам стати кращими. Оцініть якість роботи патрулів Хмільницького району за 2 хвилини. Анонімно, безпечно та важливо.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                                <Link href="/survey" className="w-full sm:w-auto">
-                                    <Button
-                                        size="lg"
-                                        className="w-full sm:w-auto bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-slate-900 font-black px-10 h-14 text-lg rounded-xl shadow-2xl shadow-yellow-500/50 group uppercase tracking-wide border-2 border-yellow-300 hover:scale-105 transition-all"
-                                    >
-                                        Почати опитування
-                                        <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                    </Button>
-                                </Link>
+                                <Button
+                                    size="lg"
+                                    onClick={() => {
+                                        useSurveyStore.getState().resetSurvey();
+                                        window.location.href = '/survey';
+                                    }}
+                                    className="w-full sm:w-auto bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-slate-900 font-black px-10 h-14 text-lg rounded-xl shadow-2xl shadow-yellow-500/50 group uppercase tracking-wide border-2 border-yellow-300 hover:scale-105 transition-all"
+                                >
+                                    Почати опитування
+                                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                </Button>
                             </div>
 
                             {/* Legal Notice Backdrop */}
