@@ -50,6 +50,7 @@ model User {
   // Permissions - System Settings
   permManageSettings Boolean @default(false)
   permManageMailAlerts Boolean @default(false)
+  permManageDrive     Boolean @default(false)
   
   createdAt     DateTime  @default(now())
   
@@ -58,6 +59,7 @@ model User {
   auditLogs         AuditLog[]
   notifications     AdminNotification[]
   notificationReads NotificationRead[]
+  sharedFiles       SharedFile[]
 }
 
 model Settings {
@@ -88,6 +90,21 @@ model Survey {
   createdAt   DateTime   @default(now())
   
   responses   Response[]
+}
+
+model SharedFile {
+  id            String   @id @default(uuid())
+  name          String
+  type          String   // image, pdf, doc, etc.
+  size          Int      // in bytes
+  url           String   // storage path
+  category      String   @default("Інше") // Інструкції, Накази, Медіа, Інше
+  
+  uploadedById  String
+  uploadedBy    User     @relation(fields: [uploadedById], references: [id])
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Response {
