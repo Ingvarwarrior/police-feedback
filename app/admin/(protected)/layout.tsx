@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { ShieldCheck, LayoutDashboard, FileText, Settings, Users, Map as MapIcon, Activity, HardDrive } from "lucide-react"
+import { ShieldCheck, LayoutDashboard, FileText, Settings, Users, Map as MapIcon, Activity } from "lucide-react"
 import Image from "next/image"
 import { Toaster } from "sonner"
 import SignOutButton from "@/components/admin/SignOutButton"
@@ -36,7 +36,6 @@ export default async function AdminLayout({
             permViewAudit: true,
             permManageSettings: true,
             permManageMailAlerts: true,
-            permManageDrive: true,
         }
     })
 
@@ -77,10 +76,6 @@ export default async function AdminLayout({
                     <Link href="/admin/officers" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
                         <ShieldCheck className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
                         Особовий склад
-                    </Link>
-                    <Link href="/admin/drive" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
-                        <HardDrive className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
-                        Police Drive
                     </Link>
                     {user?.permManageUsers || user?.permViewAudit || user?.role === 'ADMIN' ? (
                         <>
