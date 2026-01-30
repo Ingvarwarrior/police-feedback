@@ -32,9 +32,11 @@ export async function POST(req: NextRequest) {
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
 
-        const fileId = uuidv4()
-        const extension = file.name.split('.').pop()
-        const fileName = `${fileId}.${extension}`
+        // Sanitize filename: remove special characters, keep extension
+        const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+        const timestamp = Date.now()
+        const fileName = `${timestamp}_${sanitizedName}`
+
         const storageDir = join(process.cwd(), "public/uploads/drive")
         const storagePath = join(storageDir, fileName)
         const publicUrl = `/uploads/drive/${fileName}`

@@ -47,6 +47,22 @@ export async function renameFile(id: string, newName: string) {
     }
 }
 
+export async function moveFile(id: string, targetFolderId: string | null) {
+    await checkPermission("permManageDrive", true)
+
+    try {
+        const file = await prisma.sharedFile.update({
+            where: { id },
+            data: { folderId: targetFolderId }
+        })
+        revalidatePath('/admin/drive')
+        return file
+    } catch (error) {
+        console.error("Error moving file:", error)
+        throw new Error("Не вдалося перемістити файл")
+    }
+}
+
 export async function deleteFile(id: string) {
     await checkPermission("permManageDrive", true)
 
