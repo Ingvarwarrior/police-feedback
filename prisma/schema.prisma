@@ -18,19 +18,38 @@ model User {
   role          String    @default("VIEWER") // ADMIN, VIEWER
   active        Boolean   @default(true)
   
-  // Permissions
+  // Permissions - Reports
   permViewReports   Boolean @default(true)
+  permAssignReports Boolean @default(false)
+  permViewSensitiveData Boolean @default(false)
+  permBulkActionReports Boolean @default(false)
+  
+  // Permissions - User Management
   permManageUsers   Boolean @default(false)
+  
+  // Permissions - Officers
+  permCreateOfficers Boolean @default(false)
+  permEditOfficers   Boolean @default(false)
+  permDeleteOfficers Boolean @default(false)
+  permViewOfficerStats Boolean @default(false)
+  permCreateEvaluations Boolean @default(false)
+  permManageOfficerStatus Boolean @default(false)
+  
+  // Permissions - Citizens
+  permEditCitizens   Boolean @default(false)
+  permDeleteCitizens Boolean @default(false)
+  permMarkSuspicious Boolean @default(false)
+  
+  // Permissions - Administrative
   permEditNotes     Boolean @default(true)
   permChangeStatus  Boolean @default(true)
   permExportData    Boolean @default(false)
   permDeleteReports Boolean @default(false)
-  permCreateOfficers Boolean @default(false)
-  permEditOfficers   Boolean @default(false)
-  permDeleteOfficers Boolean @default(false)
-  permEditCitizens   Boolean @default(false)
-  permDeleteCitizens Boolean @default(false)
   permViewAudit     Boolean @default(false)
+  
+  // Permissions - System Settings
+  permManageSettings Boolean @default(false)
+  permManageMailAlerts Boolean @default(false)
   
   createdAt     DateTime  @default(now())
   
