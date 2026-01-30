@@ -50,7 +50,6 @@ model User {
   // Permissions - System Settings
   permManageSettings Boolean @default(false)
   permManageMailAlerts Boolean @default(false)
-  permManageDrive     Boolean @default(false)
   
   createdAt     DateTime  @default(now())
   
@@ -59,8 +58,6 @@ model User {
   auditLogs         AuditLog[]
   notifications     AdminNotification[]
   notificationReads NotificationRead[]
-  sharedFiles       SharedFile[]
-  folders           Folder[]
 }
 
 model Settings {
@@ -91,41 +88,6 @@ model Survey {
   createdAt   DateTime   @default(now())
   
   responses   Response[]
-}
-
-model SharedFile {
-  id            String   @id @default(uuid())
-  name          String
-  type          String   // image, pdf, doc, etc.
-  size          Int      // in bytes
-  url           String   // storage path
-  category      String   @default("Інше") // Інструкції, Накази, Медіа, Інше
-  
-  folderId      String?
-  folder        Folder?  @relation(fields: [folderId], references: [id])
-  
-  uploadedById  String
-  uploadedBy    User     @relation(fields: [uploadedById], references: [id])
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-model Folder {
-  id            String   @id @default(uuid())
-  name          String
-  
-  parentId      String?
-  parent        Folder?  @relation("SubFolders", fields: [parentId], references: [id])
-  subFolders    Folder[] @relation("SubFolders")
-  
-  files         SharedFile[]
-  
-  createdById   String
-  createdBy     User     @relation(fields: [createdById], references: [id])
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
 }
 
 model Response {
