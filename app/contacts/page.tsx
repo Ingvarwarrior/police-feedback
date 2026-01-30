@@ -27,8 +27,8 @@ export default function ContactsPage() {
                     </div>
                     <h3 className="text-xl font-black uppercase text-slate-900 mb-4 italic tracking-tight">Телефон</h3>
                     <div className="space-y-1">
-                        <a href="tel:0434227100" className="text-2xl font-black text-primary hover:underline tracking-tighter">
-                            (04342) 2-71-00
+                        <a href="tel:+380434227103" className="text-2xl font-black text-primary hover:underline tracking-tighter">
+                            (04342) 2-71-03
                         </a>
                         <p className="text-slate-500 font-medium">Чергова частина (цілодобово)</p>
                     </div>
