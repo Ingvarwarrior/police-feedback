@@ -6,10 +6,13 @@ import { revalidatePath } from "next/cache"
 import { unlink } from "fs/promises"
 import { join } from "path"
 
-export async function getFiles(category?: string) {
+export async function getFiles(folderId?: string, category?: string) {
     try {
         const files = await prisma.sharedFile.findMany({
-            where: category && category !== "Всі" ? { category } : {},
+            where: {
+                folderId: folderId || null,
+                category: category && category !== "Всі" ? category : undefined
+            },
             include: {
                 uploadedBy: {
                     select: {
@@ -25,6 +28,22 @@ export async function getFiles(category?: string) {
     } catch (error) {
         console.error("Error fetching files:", error)
         throw new Error("Не вдалося завантажити список файлів")
+    }
+}
+
+export async function renameFile(id: string, newName: string) {
+    await checkPermission("permManageDrive", true)
+
+    try {
+        const file = await prisma.sharedFile.update({
+            where: { id },
+            data: { name: newName }
+        })
+        revalidatePath('/admin/drive')
+        return file
+    } catch (error) {
+        console.error("Error renaming file:", error)
+        throw new Error("Не вдалося перейменувати файл")
     }
 }
 

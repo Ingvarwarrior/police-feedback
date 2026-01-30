@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
         const formData = await req.formData()
         const file = formData.get("file") as File
         const category = formData.get("category") as string || "Інше"
+        const folderId = formData.get("folderId") as string || null
 
         if (!file) {
             return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
@@ -49,7 +50,17 @@ export async function POST(req: NextRequest) {
                 size: file.size,
                 url: publicUrl,
                 category,
+                folderId,
                 uploadedById: user.id
+            },
+            include: {
+                uploadedBy: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                        username: true
+                    }
+                }
             }
         })
 
