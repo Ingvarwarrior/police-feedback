@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
+import { checkPermission } from "@/lib/auth-utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText } from "lucide-react"
 import ReportsList from "./ReportsList"
 
 export default async function ReportsPage() {
+    await checkPermission("permViewReports", true)
     const session = await auth()
-    if (!session?.user?.email) return null
 
     const [responses, users, currentUser] = await Promise.all([
         prisma.response.findMany({
@@ -40,6 +41,8 @@ export default async function ReportsPage() {
                 permEditCitizens: true,
                 permDeleteCitizens: true,
                 permViewAudit: true,
+                permViewSensitiveData: true,
+                permViewOfficerStats: true,
             }
         })
     ])

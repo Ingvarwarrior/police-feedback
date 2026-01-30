@@ -149,7 +149,9 @@ export async function PATCH(
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
 
     const user = session.user as any
-    // Allow all authenticated users (PATCH)
+    if (user.role !== 'ADMIN' && !user.permEditOfficers) {
+        return new NextResponse("Forbidden - Permission permEditOfficers required", { status: 403 })
+    }
 
 
     try {
@@ -204,8 +206,8 @@ export async function DELETE(
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
 
     const user = session.user as any
-    if (user.role !== 'ADMIN') {
-        return new NextResponse("Forbidden - Admin only", { status: 403 })
+    if (user.role !== 'ADMIN' && !user.permDeleteOfficers) {
+        return new NextResponse("Forbidden - Permission permDeleteOfficers required", { status: 403 })
     }
 
     try {

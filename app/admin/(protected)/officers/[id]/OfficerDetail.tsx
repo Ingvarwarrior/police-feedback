@@ -36,6 +36,7 @@ import {
 interface OfficerDetailProps {
     officerId: string
     userRole: string
+    canViewStats: boolean
 }
 
 interface OfficerDetailData {
@@ -59,7 +60,7 @@ interface OfficerDetailData {
     }
 }
 
-export default function OfficerDetail({ officerId, userRole }: OfficerDetailProps) {
+export default function OfficerDetail({ officerId, userRole, canViewStats }: OfficerDetailProps) {
     const router = useRouter()
     const [data, setData] = useState<OfficerDetailData | null>(null)
     const [loading, setLoading] = useState(true)
@@ -281,126 +282,134 @@ export default function OfficerDetail({ officerId, userRole }: OfficerDetailProp
             </div>
 
             {/* Analytics Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 no-print">
-                {/* Radar Chart */}
-                <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden h-[400px]">
-                    <CardHeader className="bg-slate-50/50 border-b px-8 py-6">
-                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                            <Activity className="w-4 h-4 text-indigo-500" />
-                            Профіль компетенцій
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 h-[320px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={stats.radarData}>
-                                <PolarGrid stroke="#e2e8f0" />
-                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }} />
-                                <Radar
-                                    name="Rating"
-                                    dataKey="A"
-                                    stroke="#6366f1"
-                                    fill="#6366f1"
-                                    fillOpacity={0.6}
-                                />
-                                <ReTooltip />
-                            </RadarChart>
-                        </ResponsiveContainer>
-                    </CardContent>
-                </Card>
-
-                {/* Trend Chart */}
-                <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden h-[400px]">
-                    <CardHeader className="bg-slate-50/50 border-b px-8 py-6">
-                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-emerald-500" />
-                            Динаміка рейтингу
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 h-[320px]">
-                        {stats.trendData.length > 1 ? (
+            {canViewStats ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 no-print">
+                    {/* Radar Chart */}
+                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden h-[400px]">
+                        <CardHeader className="bg-slate-50/50 border-b px-8 py-6">
+                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-indigo-500" />
+                                Профіль компетенцій
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 h-[320px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={stats.trendData}>
-                                    <XAxis dataKey="month" fontSize={10} tick={{ fill: '#94a3b8' }} />
-                                    <YAxis domain={[0, 5]} fontSize={10} tick={{ fill: '#94a3b8' }} />
+                                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={stats.radarData}>
+                                    <PolarGrid stroke="#e2e8f0" />
+                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }} />
+                                    <Radar
+                                        name="Rating"
+                                        dataKey="A"
+                                        stroke="#6366f1"
+                                        fill="#6366f1"
+                                        fillOpacity={0.6}
+                                    />
                                     <ReTooltip />
-                                    <Area type="monotone" dataKey="rating" stroke="#10b981" fill="#10b98110" strokeWidth={3} />
-                                </AreaChart>
+                                </RadarChart>
                             </ResponsiveContainer>
-                        ) : (
-                            <div className="h-full flex items-center justify-center text-slate-400 text-xs italic">
-                                Недостатньо даних для побудови тренду
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
 
-                {/* AI Smart Analysis - Full Width */}
-                <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden bg-indigo-50/30 lg:col-span-2 no-print">
-                    <CardHeader className="bg-white/50 border-b px-8 py-6">
-                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-indigo-700">
-                            <Activity className="w-4 h-4" />
-                            Smart Analysis (AI Feedback Analysis)
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-8">
-                        {analysis ? (
-                            <div className="space-y-8">
-                                <div className="space-y-3">
-                                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
-                                        <span>Настрій відгуків громадян</span>
-                                        <span className="text-emerald-600">Критичний поріг: 3.0</span>
+                    {/* Trend Chart */}
+                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden h-[400px]">
+                        <CardHeader className="bg-slate-50/50 border-b px-8 py-6">
+                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                                Динаміка рейтингу
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 h-[320px]">
+                            {stats.trendData.length > 1 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={stats.trendData}>
+                                        <XAxis dataKey="month" fontSize={10} tick={{ fill: '#94a3b8' }} />
+                                        <YAxis domain={[0, 5]} fontSize={10} tick={{ fill: '#94a3b8' }} />
+                                        <ReTooltip />
+                                        <Area type="monotone" dataKey="rating" stroke="#10b981" fill="#10b98110" strokeWidth={3} />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-slate-400 text-xs italic">
+                                    Недостатньо даних для побудови тренду
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* AI Smart Analysis - Full Width */}
+                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden bg-indigo-50/30 lg:col-span-2 no-print">
+                        <CardHeader className="bg-white/50 border-b px-8 py-6">
+                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-indigo-700">
+                                <Activity className="w-4 h-4" />
+                                Smart Analysis (AI Feedback Analysis)
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-8">
+                            {analysis ? (
+                                <div className="space-y-8">
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                            <span>Настрій відгуків громадян</span>
+                                            <span className="text-emerald-600">Критичний поріг: 3.0</span>
+                                        </div>
+                                        <div className="flex h-4 rounded-full overflow-hidden shadow-inner bg-slate-200 border-2 border-white">
+                                            <div style={{ width: `${(analysis.sentiment.positive / (analysis.sentiment.positive + analysis.sentiment.neutral + analysis.sentiment.negative || 1)) * 100}%` }} className="bg-emerald-500" />
+                                            <div style={{ width: `${(analysis.sentiment.neutral / (analysis.sentiment.positive + analysis.sentiment.neutral + analysis.sentiment.negative || 1)) * 100}%` }} className="bg-amber-400" />
+                                            <div style={{ width: `${(analysis.sentiment.negative / (analysis.sentiment.positive + analysis.sentiment.neutral + analysis.sentiment.negative || 1)) * 100}%` }} className="bg-rose-500" />
+                                        </div>
                                     </div>
-                                    <div className="flex h-4 rounded-full overflow-hidden shadow-inner bg-slate-200 border-2 border-white">
-                                        <div style={{ width: `${(analysis.sentiment.positive / (analysis.sentiment.positive + analysis.sentiment.neutral + analysis.sentiment.negative || 1)) * 100}%` }} className="bg-emerald-500" />
-                                        <div style={{ width: `${(analysis.sentiment.neutral / (analysis.sentiment.positive + analysis.sentiment.neutral + analysis.sentiment.negative || 1)) * 100}%` }} className="bg-amber-400" />
-                                        <div style={{ width: `${(analysis.sentiment.negative / (analysis.sentiment.positive + analysis.sentiment.neutral + analysis.sentiment.negative || 1)) * 100}%` }} className="bg-rose-500" />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {analysis.strengths.map((s: string, i: number) => (
+                                            <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-700 bg-white/60 p-4 rounded-2xl border border-indigo-100/50">
+                                                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                                                {s}
+                                            </div>
+                                        ))}
+                                        {analysis.weaknesses.map((w: string, i: number) => (
+                                            <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-700 bg-rose-50/50 p-4 rounded-2xl border border-rose-100/50">
+                                                <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
+                                                {w}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {analysis.strengths.map((s: string, i: number) => (
-                                        <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-700 bg-white/60 p-4 rounded-2xl border border-indigo-100/50">
-                                            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                                            {s}
-                                        </div>
-                                    ))}
-                                    {analysis.weaknesses.map((w: string, i: number) => (
-                                        <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-700 bg-rose-50/50 p-4 rounded-2xl border border-rose-100/50">
-                                            <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
-                                            {w}
-                                        </div>
-                                    ))}
+                            ) : (
+                                <div className="text-center text-slate-400 text-xs italic py-10">
+                                    Очікуємо на більшу кількість відгуків для запуску AI аналітики
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="text-center text-slate-400 text-xs italic py-10">
-                                Очікуємо на більшу кількість відгуків для запуску AI аналітики
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            ) : (
+                <div className="bg-slate-50 border border-dashed border-slate-200 rounded-[2.5rem] p-10 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px] no-print">
+                    Доступ до детальної аналітики обмежено адміністратором
+                </div>
+            )}
 
             {/* Summary Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 no-print">
-                <Card className="bg-slate-900 text-white border-none shadow-xl rounded-[2rem] overflow-hidden relative">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2" />
-                    <CardContent className="pt-8 pb-8 relative z-10">
-                        <div className="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-4">Середній рейтинг</div>
-                        <div className="text-5xl font-black flex items-baseline gap-2 italic">
-                            {scores.overall || '0'} <span className="text-lg text-slate-600 not-italic">/ 5.0</span>
-                        </div>
-                        <div className="mt-6 flex gap-1.5">
-                            {[1, 2, 3, 4, 5].map(star => (
-                                <Star key={star} className={`w-5 h-5 ${star <= scores.overall ? 'fill-yellow-400 text-yellow-400' : 'text-slate-700'}`} />
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
+            {canViewStats && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 no-print">
+                    <Card className="bg-slate-900 text-white border-none shadow-xl rounded-[2rem] overflow-hidden relative">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2" />
+                        <CardContent className="pt-8 pb-8 relative z-10">
+                            <div className="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-4">Середній рейтинг</div>
+                            <div className="text-5xl font-black flex items-baseline gap-2 italic">
+                                {scores.overall || '0'} <span className="text-lg text-slate-600 not-italic">/ 5.0</span>
+                            </div>
+                            <div className="mt-6 flex gap-1.5">
+                                {[1, 2, 3, 4, 5].map(star => (
+                                    <Star key={star} className={`w-5 h-5 ${star <= scores.overall ? 'fill-yellow-400 text-yellow-400' : 'text-slate-700'}`} />
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                <StatsCard title="Комунікація" value={scores.communication} icon="💬" />
-                <StatsCard title="Тактика" value={scores.tactics} icon="⚡" />
-                <StatsCard title="Знання НПА" value={scores.knowledge} icon="📚" />
-            </div>
+                    <StatsCard title="Комунікація" value={scores.communication} icon="💬" />
+                    <StatsCard title="Тактика" value={scores.tactics} icon="⚡" />
+                    <StatsCard title="Знання НПА" value={scores.knowledge} icon="📚" />
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 no-print">
                 {/* Evaluations History */}

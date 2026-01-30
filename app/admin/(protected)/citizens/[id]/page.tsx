@@ -8,6 +8,7 @@ import { formatPhoneNumberForCall } from "@/lib/utils"
 import CitizenEditForm from "./CitizenEditForm"
 import DossierMapWrapper from "./DossierMapWrapper"
 import { auth } from "@/auth"
+import { checkPermission } from "@/lib/auth-utils"
 import DeleteCitizenButton from "../DeleteCitizenButton"
 
 export default async function CitizenDossierPage({
@@ -15,6 +16,7 @@ export default async function CitizenDossierPage({
 }: {
     params: Promise<{ id: string }>
 }) {
+    await checkPermission("permViewReports", true)
     const { id } = await params
     const session = await auth()
     const userPermissions = (session?.user as any) || {}

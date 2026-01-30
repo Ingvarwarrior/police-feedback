@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
+import { checkPermission } from "@/lib/auth-utils"
 import CitizensList from "./CitizensList"
 
 export default async function CitizensPage() {
+    await checkPermission("permViewReports", true)
     try {
         const session = await auth()
         if (!session?.user?.email) return null
@@ -20,7 +22,9 @@ export default async function CitizensPage() {
                 where: { username: session.user.email as string },
                 select: {
                     role: true,
-                    permDeleteCitizens: true
+                    permDeleteCitizens: true,
+                    permEditCitizens: true,
+                    permMarkSuspicious: true
                 }
             })
         ])

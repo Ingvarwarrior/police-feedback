@@ -47,11 +47,16 @@ interface ReportsListProps {
     currentUser: any
 }
 
+// Helper: Mask sensitive data
+const maskSensitive = (value: string | null | undefined, hasPerm: boolean) => {
+    if (!value) return '-';
+    if (hasPerm) return value;
+    if (value.length <= 4) return '****';
+    return value.slice(0, 3) + '***' + value.slice(-2);
+}
+
 // Helper: Calculate priority based on rating and attachments
 const getPriority = (response: any): 'urgent' | 'important' | 'standard' => {
-    if (response.rateOverall <= 2 || (response._count?.attachments > 0 && response.rateOverall <= 3)) {
-        return 'urgent'
-    }
     if (response.rateOverall === 3 || response.wantContact) {
         return 'important'
     }
@@ -62,6 +67,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
     const isAdmin = currentUser?.role === 'ADMIN'
     const canDelete = isAdmin || currentUser?.permDeleteReports
     const canExport = isAdmin || currentUser?.permExportData
+    const canViewSensitive = isAdmin || currentUser?.permViewSensitiveData
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -179,10 +185,9 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
             "Професіоналізм": r.rateProfessionalism || '-',
             "Ефективність": r.rateEffectiveness || '-',
             "Є Контакт": r.wantContact ? 'Так' : 'Ні',
-            "Ім'я контакту": r.contact?.name || '-',
-            "Телефон": r.contact?.phone || '-',
+            "Ім'я контакту": maskSensitive(r.contact?.name, canViewSensitive),
+            "Телефон": maskSensitive(r.contact?.phone, canViewSensitive),
             "Коментар": r.comment || "",
-            "Виконавець": r.assignedTo ? r.assignedTo.email : '-'
         }))
 
         const csvString = Papa.unparse(csvData)
@@ -578,7 +583,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                         <div className="flex flex-col group/name">
                                             <span className="text-[10px] font-black uppercase tracking-tight text-slate-400 mb-0.5">Від</span>
                                             <div className="flex items-center gap-2">
-                                                <span className="font-bold text-slate-800 text-sm">{resp.contact?.name || 'Анонімно'}</span>
+                                                <span className="font-bold text-slate-800 text-sm">{maskSensitive(resp.contact?.name || 'Анонімно', canViewSensitive)}</span>
                                                 <Link
                                                     href={resp.citizenId ? `/admin/citizens/${resp.citizenId}` : (resp.contact ? `/admin/citizens?q=${encodeURIComponent(resp.contact.phone)}` : `/admin/citizens?q=${encodeURIComponent(resp.ipHash)}`)}
                                                     className="opacity-0 group-hover/name:opacity-100 transition-opacity p-1 bg-slate-100 rounded hover:bg-primary hover:text-white"

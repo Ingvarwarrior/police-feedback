@@ -10,7 +10,7 @@ export default async function OfficerDetailPage({
     const resolvedParams = await params
     const session = await auth()
     const user = session?.user as any
-    const role = user?.role || 'USER'
+    const canViewStats = user?.role === 'ADMIN' || !!user?.permViewOfficerStats
 
-    return <OfficerDetail officerId={resolvedParams.id} userRole={role} />
+    return <OfficerDetail officerId={resolvedParams.id} userRole={user?.role || 'USER'} canViewStats={canViewStats} />
 }

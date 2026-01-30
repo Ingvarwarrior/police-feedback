@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import { auth } from "@/auth"
+import { checkPermission, getCurrentUser } from "@/lib/auth-utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, MapPin, Calendar, Clock, User, Phone, Shield, MessageSquare, Image as ImageIcon, CheckCircle2, Eye } from "lucide-react"
@@ -22,6 +23,10 @@ export default async function ReportDetailPage({
     params: Promise<{ id: string }>,
     searchParams: Promise<{ from?: string }>
 }) {
+    await checkPermission("permViewReports", true)
+    const userFromUtils = await getCurrentUser()
+    const isAdmin = userFromUtils?.role === 'ADMIN'
+    const canViewSensitive = isAdmin || userFromUtils?.permViewSensitiveData
     const { id } = await params
     const { from } = await searchParams
     const isFromMap = from === 'map'
@@ -38,12 +43,11 @@ export default async function ReportDetailPage({
         }
     }) as any
 
-    const session = await auth()
-    const user = session?.user as any
-
     if (!response) {
         notFound()
     }
+
+    const user = userFromUtils // Use the user from utils for the rest of the file
 
     return (
         <div className="space-y-8">
@@ -288,17 +292,26 @@ export default async function ReportDetailPage({
                             <CardContent className="space-y-4">
                                 <div>
                                     <p className="text-[10px] text-slate-400 mb-1 font-black uppercase tracking-widest">Ім'я</p>
-                                    <p className="text-slate-900 font-bold">{response.contact.name || 'Не вказано'}</p>
+                                    <p className="text-slate-900 font-bold">
+                                        {canViewSensitive ? (response.contact.name || 'Не вказано') : '*** ***'}
+                                    </p>
                                 </div>
                                 <div>
                                     <p className="text-[10px] text-slate-400 mb-2 font-black uppercase tracking-widest">Телефон</p>
-                                    <a
-                                        href={`tel:${formatPhoneNumberForCall(response.contact.phone)}`}
-                                        className="w-full inline-flex justify-center items-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 text-lg"
-                                    >
-                                        <Phone className="w-5 h-5" />
-                                        {response.contact.phone}
-                                    </a>
+                                    {canViewSensitive ? (
+                                        <a
+                                            href={`tel:${formatPhoneNumberForCall(response.contact.phone)}`}
+                                            className="w-full inline-flex justify-center items-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl shadow-lg shadow-emerald-500/30 transition-all hover:scale-105 text-lg"
+                                        >
+                                            <Phone className="w-5 h-5" />
+                                            {response.contact.phone}
+                                        </a>
+                                    ) : (
+                                        <div className="w-full inline-flex justify-center items-center gap-3 px-6 py-4 bg-slate-100 text-slate-400 font-black rounded-2xl border-2 border-dashed border-slate-200 cursor-not-allowed">
+                                            <Phone className="w-5 h-5 opacity-50" />
+                                            +380 ** *** ** **
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
