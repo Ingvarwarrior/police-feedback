@@ -17,9 +17,9 @@ export async function getSettings() {
         }
 
         return settings
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error fetching settings:", error)
-        throw new Error("Не вдалося завантажити налаштування")
+        throw new Error(`Помилка БД: ${error.message || 'Невідома помилка'}`)
     }
 }
 
