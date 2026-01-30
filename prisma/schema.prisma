@@ -60,6 +60,23 @@ model User {
   notificationReads NotificationRead[]
 }
 
+model Settings {
+  id                String   @id @default("global")
+  unitName          String   @default("Патрульна поліція Хмільницького району")
+  unitAddress       String   @default("")
+  emergencyPhone    String   @default("102")
+  
+  // Operational Triggers
+  criticalRatingThreshold Float @default(2.5)
+  piiRetentionDays       Int     @default(30)
+  
+  // Survey Config
+  welcomeMessage    String   @default("Вітаємо в системі відгуків про роботу патрульної поліції.")
+  warningKeywords   String   @default("корупція, хабар, насилля, катування")
+  
+  updatedAt         DateTime @updatedAt
+}
+
 model Survey {
   id          String     @id @default(uuid())
   title       String
