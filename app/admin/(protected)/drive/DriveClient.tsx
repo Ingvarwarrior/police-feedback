@@ -72,13 +72,17 @@ export default function DriveClient({ initialFiles, canManage }: DriveClientProp
                 body: formData
             })
 
-            if (!res.ok) throw new Error('Помилка завантаження')
+            if (!res.ok) {
+                const errorData = await res.json()
+                throw new Error(errorData.error || 'Помилка завантаження')
+            }
 
             const newFile = await res.json()
             setFiles(prev => [newFile, ...prev])
             toast.success('Файл завантажено успішно')
-        } catch (error) {
-            toast.error('Не вдалося завантажити файл')
+        } catch (error: any) {
+            toast.error(error.message || 'Не вдалося завантажити файл')
+            console.error('Upload catch:', error)
         } finally {
             setIsUploading(false)
         }

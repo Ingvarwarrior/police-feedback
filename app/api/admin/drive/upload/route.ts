@@ -34,10 +34,13 @@ export async function POST(req: NextRequest) {
         const fileId = uuidv4()
         const extension = file.name.split('.').pop()
         const fileName = `${fileId}.${extension}`
-        const storagePath = join("public/uploads/drive", fileName)
+        const storageDir = join(process.cwd(), "public/uploads/drive")
+        const storagePath = join(storageDir, fileName)
         const publicUrl = `/uploads/drive/${fileName}`
 
+        console.log("Saving file to:", storagePath)
         await writeFile(storagePath, buffer)
+        console.log("File saved successfully")
 
         const sharedFile = await prisma.sharedFile.create({
             data: {
