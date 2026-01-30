@@ -34,6 +34,7 @@ const PERMISSIONS = [
     { id: 'permViewAudit', label: 'Перегляд аудиту', desc: 'Дозволяє переглядати історію дій всіх користувачів.' },
     { id: 'permManageSettings', label: 'Налаштування системи', desc: 'Дозволяє змінювати глобальні налаштування.' },
     { id: 'permManageMailAlerts', label: 'Поштові сповіщення', desc: 'Керування списком отримувачів сповіщень.' },
+    { id: 'permManageDrive', label: 'Police Drive', desc: 'Керування спільним сховищем файлів.' },
 ]
 
 export default function NewUserForm() {
