@@ -103,7 +103,9 @@ export async function POST(req: Request) {
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
 
     const user = session.user as any
-    // Allow all authenticated users (POST)
+    if (!user.permCreateOfficers) {
+        return new NextResponse("Forbidden: Insufficient permissions", { status: 403 })
+    }
 
 
     try {

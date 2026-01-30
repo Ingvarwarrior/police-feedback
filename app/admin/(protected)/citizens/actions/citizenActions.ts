@@ -2,13 +2,13 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { checkPermission } from "@/lib/permissions"
 import { auth } from "@/auth"
 
 export async function deleteCitizen(id: string) {
+    await checkPermission('permDeleteCitizens' as any)
+
     const session = await auth()
-    if (!session || (session.user as any).role !== 'ADMIN') {
-        throw new Error("Unauthorized")
-    }
 
     // Manual cascade delete
     await prisma.$transaction([
@@ -42,10 +42,9 @@ export async function deleteCitizen(id: string) {
 }
 
 export async function bulkDeleteCitizens(ids: string[]) {
+    await checkPermission('permDeleteCitizens' as any)
+
     const session = await auth()
-    if (!session || (session.user as any).role !== 'ADMIN') {
-        throw new Error('Unauthorized')
-    }
 
     // Delete each citizen with cascade cleanup
     for (const id of ids) {

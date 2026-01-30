@@ -53,7 +53,7 @@ export async function updateInternalNotes(id: string, notes: string) {
 }
 
 export async function deleteReport(id: string) {
-    await checkPermission('permChangeStatus')
+    await checkPermission('permDeleteReports' as any)
 
     const session = await auth()
 
@@ -81,7 +81,9 @@ export async function deleteReport(id: string) {
 }
 
 export async function bulkUpdateReports(ids: string[], data: { status?: string, assignedToId?: string | null }) {
-    await checkPermission('permChangeStatus')
+    await checkPermission('permBulkActionReports' as any)
+    if (data.status) await checkPermission('permChangeStatus' as any)
+    if (data.assignedToId) await checkPermission('permAssignReports' as any)
 
     const session = await auth()
 
@@ -107,12 +109,10 @@ export async function bulkUpdateReports(ids: string[], data: { status?: string, 
 }
 
 export async function bulkDeleteReports(ids: string[]) {
-    await checkPermission('permChangeStatus')
+    await checkPermission('permBulkActionReports' as any)
+    await checkPermission('permDeleteReports' as any)
 
     const session = await auth()
-    if (!session || (session.user as any).role !== 'ADMIN') {
-        throw new Error('Unauthorized')
-    }
 
     // Delete each report with cascade cleanup
     for (const id of ids) {

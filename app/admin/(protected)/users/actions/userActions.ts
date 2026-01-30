@@ -15,6 +15,9 @@ type CreateUserInput = {
     badgeNumber?: string;
     role: string;
     permViewReports: boolean;
+    permAssignReports: boolean;
+    permViewSensitiveData: boolean;
+    permBulkActionReports: boolean;
     permManageUsers: boolean;
     permEditNotes: boolean;
     permChangeStatus: boolean;
@@ -23,9 +26,15 @@ type CreateUserInput = {
     permCreateOfficers: boolean;
     permEditOfficers: boolean;
     permDeleteOfficers: boolean;
+    permViewOfficerStats: boolean;
+    permCreateEvaluations: boolean;
+    permManageOfficerStatus: boolean;
     permEditCitizens: boolean;
     permDeleteCitizens: boolean;
+    permMarkSuspicious: boolean;
     permViewAudit: boolean;
+    permManageSettings: boolean;
+    permManageMailAlerts: boolean;
 }
 
 export async function createUser(data: CreateUserInput) {
@@ -87,6 +96,9 @@ export async function updateUser(id: string, data: {
     badgeNumber?: string;
     role?: string;
     permViewReports?: boolean;
+    permAssignReports?: boolean;
+    permViewSensitiveData?: boolean;
+    permBulkActionReports?: boolean;
     permManageUsers?: boolean;
     permEditNotes?: boolean;
     permChangeStatus?: boolean;
@@ -95,9 +107,15 @@ export async function updateUser(id: string, data: {
     permCreateOfficers?: boolean;
     permEditOfficers?: boolean;
     permDeleteOfficers?: boolean;
+    permViewOfficerStats?: boolean;
+    permCreateEvaluations?: boolean;
+    permManageOfficerStatus?: boolean;
     permEditCitizens?: boolean;
     permDeleteCitizens?: boolean;
+    permMarkSuspicious?: boolean;
     permViewAudit?: boolean;
+    permManageSettings?: boolean;
+    permManageMailAlerts?: boolean;
 }) {
     await checkPermission('permManageUsers')
 
