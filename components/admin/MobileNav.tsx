@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Menu, X, LayoutDashboard, FileText, Users, Settings, LogOut, ShieldCheck, Map as MapIcon } from "lucide-react"
+import { Menu, X, LayoutDashboard, FileText, Users, Settings, LogOut, ShieldCheck, Map as MapIcon, Activity } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
@@ -14,6 +14,7 @@ interface MobileNavProps {
         lastName: string | null
         role: string
         permManageUsers: boolean
+        permViewAudit: boolean
     }
 }
 
@@ -30,8 +31,19 @@ export default function MobileNav({ user }: MobileNavProps) {
         { href: "/admin/reports", label: "Звіти", icon: FileText },
         { href: "/admin/map", label: "Мапа", icon: MapIcon },
         { href: "/admin/citizens", label: "Громадяни", icon: Users },
-        { href: "/admin/officers", label: "Офіцери", icon: ShieldCheck },
-        { href: "/admin/users", label: "Користувачі", icon: Users, permission: user.role === 'ADMIN' || user.permManageUsers },
+        { href: "/admin/officers", label: "Особовий склад", icon: ShieldCheck },
+        {
+            href: "/admin/users",
+            label: "Користувачі",
+            icon: Users,
+            permission: user.role === 'ADMIN' || user.permManageUsers
+        },
+        {
+            href: "/admin/audit",
+            label: "Аудит",
+            icon: Activity,
+            permission: user.role === 'ADMIN' || user.permViewAudit
+        },
         { href: "/admin/profile", label: "Мій профіль", icon: Settings },
     ]
 

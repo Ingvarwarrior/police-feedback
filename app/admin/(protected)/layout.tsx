@@ -135,7 +135,7 @@ export default async function AdminLayout({
                     </div>
                     <div className="flex items-center gap-3">
                         <NotificationCenter />
-                        <MobileNav user={user} />
+                        <MobileNav user={user as any} />
                     </div>
                 </header>
 
