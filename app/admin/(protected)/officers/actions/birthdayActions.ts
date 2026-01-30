@@ -5,12 +5,18 @@ import { auth } from "@/auth"
 
 export async function getOfficersWithBirthdays() {
     const session = await auth()
-    if (!session) return []
+    if (!session) return { today: [], tomorrow: [] }
 
     // Get current date
     const today = new Date()
     const currentMonth = today.getMonth() + 1 // 0-11 -> 1-12
     const currentDay = today.getDate()
+
+    // Get tomorrow's date
+    const tomorrow = new Date(today)
+    tomorrow.setDate(today.getDate() + 1)
+    const tomorrowMonth = tomorrow.getMonth() + 1
+    const tomorrowDay = tomorrow.getDate()
 
     // Fetch active officers
     // Note: SQLite doesn't have great date functions in Prisma raw query easily across environments,
@@ -34,12 +40,23 @@ export async function getOfficersWithBirthdays() {
         }
     })
 
-    // Filter for today's birthday
-    const birthdayOfficers = officers.filter(officer => {
-        if (!officer.birthDate) return false
+    const result = {
+        today: [] as typeof officers,
+        tomorrow: [] as typeof officers
+    }
+
+    officers.forEach(officer => {
+        if (!officer.birthDate) return
         const d = new Date(officer.birthDate)
-        return d.getMonth() + 1 === currentMonth && d.getDate() === currentDay
+        const m = d.getMonth() + 1
+        const day = d.getDate()
+
+        if (m === currentMonth && day === currentDay) {
+            result.today.push(officer)
+        } else if (m === tomorrowMonth && day === tomorrowDay) {
+            result.tomorrow.push(officer)
+        }
     })
 
-    return birthdayOfficers
+    return result
 }
