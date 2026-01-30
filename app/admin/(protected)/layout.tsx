@@ -8,6 +8,7 @@ import { Toaster } from "sonner"
 import SignOutButton from "@/components/admin/SignOutButton"
 import MobileNav from "@/components/admin/MobileNav"
 import NotificationCenter from "@/components/admin/NotificationCenter"
+import BirthdayNotifications from "@/components/admin/BirthdayNotifications"
 
 export default async function AdminLayout({
     children,
@@ -110,6 +111,7 @@ export default async function AdminLayout({
                         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 italic">Система оперативного моніторингу</h2>
                     </div>
                     <div className="flex items-center gap-6">
+                        <BirthdayNotifications />
                         <NotificationCenter />
                         <div className="h-8 w-px bg-slate-100" />
                         <div className="flex items-center gap-3 group cursor-pointer">
@@ -134,6 +136,7 @@ export default async function AdminLayout({
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
+                        <BirthdayNotifications />
                         <NotificationCenter />
                         <MobileNav user={user as any} />
                     </div>
