@@ -15,6 +15,8 @@ interface MobileNavProps {
         role: string
         permManageUsers: boolean
         permViewAudit: boolean
+        permManageSettings: boolean
+        permManageMailAlerts: boolean
     }
 }
 
@@ -43,6 +45,18 @@ export default function MobileNav({ user }: MobileNavProps) {
             label: "Аудит",
             icon: Activity,
             permission: user.role === 'ADMIN' || user.permViewAudit
+        },
+        {
+            href: "/admin/settings",
+            label: "Налаштування",
+            icon: Settings,
+            permission: user.role === 'ADMIN' || user.permManageSettings
+        },
+        {
+            href: "/admin/mail-alerts",
+            label: "Сповіщення",
+            icon: ShieldCheck,
+            permission: user.role === 'ADMIN' || user.permManageMailAlerts
         },
         { href: "/admin/profile", label: "Мій профіль", icon: Settings },
     ]

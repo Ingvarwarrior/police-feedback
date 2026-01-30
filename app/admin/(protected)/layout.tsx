@@ -33,7 +33,9 @@ export default async function AdminLayout({
             badgeNumber: true,
             role: true,
             permManageUsers: true,
-            permViewAudit: true
+            permViewAudit: true,
+            permManageSettings: true,
+            permManageMailAlerts: true,
         }
     })
 
@@ -86,6 +88,20 @@ export default async function AdminLayout({
                                 Аудит
                             </Link>
                         </>
+                    ) : null}
+
+                    {user?.permManageSettings || user?.role === 'ADMIN' ? (
+                        <Link href="/admin/settings" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
+                            <Settings className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                            Налаштування
+                        </Link>
+                    ) : null}
+
+                    {user?.permManageMailAlerts || user?.role === 'ADMIN' ? (
+                        <Link href="/admin/mail-alerts" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
+                            <ShieldCheck className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                            Сповіщення
+                        </Link>
                     ) : null}
                     <Link href="/admin/profile" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
                         <Settings className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
