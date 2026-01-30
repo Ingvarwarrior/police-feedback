@@ -8,6 +8,8 @@ import ReportsList from "./ReportsList"
 export default async function ReportsPage() {
     await checkPermission("permViewReports", true)
     const session = await auth()
+    const email = session?.user?.email
+    if (!email) return null
 
     const [responses, users, currentUser] = await Promise.all([
         prisma.response.findMany({
@@ -26,7 +28,7 @@ export default async function ReportsPage() {
             select: { id: true, email: true, firstName: true, lastName: true }
         }),
         prisma.user.findUnique({
-            where: { username: session.user.email as string },
+            where: { username: email },
             select: {
                 role: true,
                 username: true,

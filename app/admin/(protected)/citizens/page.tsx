@@ -7,7 +7,8 @@ export default async function CitizensPage() {
     await checkPermission("permViewReports", true)
     try {
         const session = await auth()
-        if (!session?.user?.email) return null
+        const email = session?.user?.email
+        if (!email) return null
 
         const [citizens, currentUser] = await Promise.all([
             prisma.citizen.findMany({
@@ -19,7 +20,7 @@ export default async function CitizensPage() {
                 orderBy: { updatedAt: 'desc' }
             }),
             prisma.user.findUnique({
-                where: { username: session.user.email as string },
+                where: { username: email },
                 select: {
                     role: true,
                     permDeleteCitizens: true,
