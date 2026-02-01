@@ -159,7 +159,7 @@ export default async function AdminLayout({
                 </header>
 
                 {/* Content Area */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 print:overflow-visible print:p-0">
+                <div id="admin-content-area" className="flex-1 overflow-y-auto p-4 md:p-8 print:overflow-visible print:p-0">
                     {children}
                 </div>
             </main>

@@ -74,31 +74,47 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
         lastFetched
     } = useAdminStore()
 
-    const [loading, setLoading] = useState(!lastFetched)
+    const [isHydrated, setIsHydrated] = useState(false)
+    const [loading, setLoading] = useState(true)
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; dir: SortDir }>({ key: 'name', dir: 'asc' })
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [evalOfficerId, setEvalOfficerId] = useState<string | null>(null)
+    const [previewOfficer, setPreviewOfficer] = useState<Officer | null>(null)
+    const [deleteOfficer, setDeleteOfficer] = useState<Officer | null>(null)
 
     const canCreate = currentUser?.role === 'ADMIN' || currentUser?.permCreateOfficers
     const canDelete = currentUser?.role === 'ADMIN' || currentUser?.permDeleteOfficers
     const router = useRouter()
 
     useEffect(() => {
-        if (!lastFetched) {
-            fetchOfficers()
-        } else {
-            // Restore scroll position after a short delay to ensure rendering
+        setIsHydrated(true)
+        if (lastFetched) {
+            setLoading(false)
+            // Restore scroll position after rendering
             setTimeout(() => {
-                window.scrollTo({ top: scrollPosition, behavior: 'instant' as any })
+                const container = document.getElementById('admin-content-area')
+                if (container) {
+                    container.scrollTo({ top: scrollPosition, behavior: 'instant' as any })
+                }
             }, 100)
+        } else {
+            fetchOfficers()
         }
 
-        const handleScroll = () => {
-            setScrollPosition(window.scrollY)
+        const handleScroll = (e: any) => {
+            setScrollPosition(e.target.scrollTop)
         }
 
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
+        const container = document.getElementById('admin-content-area')
+        if (container) {
+            container.addEventListener('scroll', handleScroll)
+        }
+
+        return () => {
+            if (container) {
+                container.removeEventListener('scroll', handleScroll)
+            }
+        }
     }, [])
 
     const fetchOfficers = async (recalibrate = false) => {
@@ -352,7 +368,10 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                 <tr
                                     key={officer.id}
                                     onClick={() => {
-                                        setScrollPosition(window.scrollY)
+                                        const container = document.getElementById('admin-content-area')
+                                        if (container) {
+                                            setScrollPosition(container.scrollTop)
+                                        }
                                         router.push(`/admin/officers/${officer.id}`)
                                     }}
                                     className={`transition-colors cursor-pointer ${selectedIds.includes(officer.id) ? 'bg-blue-50/50 hover:bg-blue-50' : 'hover:bg-slate-100/80'}`}
@@ -367,39 +386,26 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                     )}
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <Dialog>
-                                                <DialogTrigger asChild>
-                                                    <div className="cursor-pointer group relative">
-                                                        <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200 transition-transform duration-300 md:group-hover:scale-[2.5] md:group-hover:z-50 md:group-hover:shadow-xl relative z-10">
-                                                            {officer.imageUrl ? (
-                                                                <img
-                                                                    src={officer.imageUrl}
-                                                                    alt={`${officer.firstName} ${officer.lastName}`}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            ) : (
-                                                                <Shield className="w-5 h-5" />
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </DialogTrigger>
-                                                <DialogContent className="p-0 overflow-hidden bg-transparent border-0 shadow-none max-w-sm md:max-w-md w-auto" onClick={(e) => e.stopPropagation()}>
+                                            <div
+                                                className="cursor-pointer group relative"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setPreviewOfficer(officer);
+                                                }}
+                                            >
+                                                <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200 transition-transform duration-300 md:group-hover:scale-[1.1] relative z-10">
                                                     {officer.imageUrl ? (
                                                         <img
                                                             src={officer.imageUrl}
-                                                            alt="Officer Full Photo"
-                                                            className="w-full h-auto rounded-lg shadow-2xl ring-4 ring-white"
+                                                            alt={`${officer.firstName} ${officer.lastName}`}
+                                                            className="w-full h-full object-cover"
+                                                            loading="lazy"
                                                         />
                                                     ) : (
-                                                        <div className="bg-white p-8 rounded-lg flex flex-col items-center gap-4 text-center">
-                                                            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center text-slate-300">
-                                                                <Shield className="w-12 h-12" />
-                                                            </div>
-                                                            <p className="text-slate-500 font-medium">Фото відсутнє</p>
-                                                        </div>
+                                                        <Shield className="w-5 h-5" />
                                                     )}
-                                                </DialogContent>
-                                            </Dialog>
+                                                </div>
+                                            </div>
                                             <div>
                                                 <div className="font-bold text-slate-900">{officer.lastName} {officer.firstName}</div>
                                                 <div className="text-xs text-slate-500 font-mono">#{officer.badgeNumber}</div>
@@ -434,38 +440,35 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                                     </Button>
                                                 </a>
                                             )}
-                                            <AddEvaluationDialog
-                                                officerId={officer.id}
-                                                onSuccess={fetchOfficers}
-                                                open={evalOfficerId === officer.id}
-                                                setOpen={(open) => setEvalOfficerId(open ? officer.id : null)}
-                                                variant="list"
-                                            />
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8 rounded-lg border-blue-100 text-blue-600 hover:bg-blue-50"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEvalOfficerId(officer.id);
+                                                }}
+                                            >
+                                                <Star className="w-4 h-4" />
+                                            </Button>
+
                                             <Link href={`/admin/officers/${officer.id}`}>
                                                 <Button variant="ghost" size="sm" className="rounded-lg text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-slate-900">
                                                     ДЕТАЛІ
                                                 </Button>
                                             </Link>
                                             {canDelete && (
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-300 hover:text-red-500 hover:bg-red-50">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent className="rounded-[2.5rem] border-0">
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle className="font-black uppercase italic">Видалити офіцера?</AlertDialogTitle>
-                                                            <AlertDialogDescription className="text-slate-500 font-medium">
-                                                                Ви збираєтесь видалити офіцера <strong>{officer.lastName} {officer.firstName}</strong>. Ця дія незворотна.
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel className="rounded-xl font-bold">Скасувати</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDelete(officer.id)} className="rounded-xl bg-red-600 hover:bg-red-700 font-bold px-8">ВИДАЛИТИ</AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-red-300 hover:text-red-500 hover:bg-red-50"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeleteOfficer(officer);
+                                                    }}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
                                             )}
                                         </div>
                                     </td>
@@ -485,7 +488,10 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                 ) : (
                     filteredOfficers.map(officer => (
                         <div key={officer.id} onClick={() => {
-                            setScrollPosition(window.scrollY)
+                            const container = document.getElementById('admin-content-area')
+                            if (container) {
+                                setScrollPosition(container.scrollTop)
+                            }
                             router.push(`/admin/officers/${officer.id}`)
                         }} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm active:scale-[0.98] transition-all">
                             <div className="flex items-start gap-4">
@@ -521,15 +527,17 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                             </Button>
                                         </a>
                                     )}
-                                    <div onClick={(e) => e.stopPropagation()}>
-                                        <AddEvaluationDialog
-                                            officerId={officer.id}
-                                            onSuccess={fetchOfficers}
-                                            open={evalOfficerId === officer.id}
-                                            setOpen={(open) => setEvalOfficerId(open ? officer.id : null)}
-                                            variant="list"
-                                        />
-                                    </div>
+                                    <Button
+                                        size="icon"
+                                        variant="outline"
+                                        className="h-10 w-10 rounded-2xl border-blue-100 text-blue-600"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEvalOfficerId(officer.id);
+                                        }}
+                                    >
+                                        <Star className="w-4 h-4" />
+                                    </Button>
                                 </div>
                                 <Button size="sm" variant="ghost" className="text-primary font-black uppercase tracking-widest text-[10px] h-10 px-4 rounded-xl hover:bg-primary/5">
                                     Деталі →
@@ -539,6 +547,59 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                     ))
                 )}
             </div>
+
+            {/* Singleton Dialogs */}
+            <Dialog open={!!previewOfficer} onOpenChange={(open) => !open && setPreviewOfficer(null)}>
+                <DialogContent className="p-0 overflow-hidden bg-transparent border-0 shadow-none max-w-sm md:max-w-md w-auto">
+                    {previewOfficer?.imageUrl ? (
+                        <img
+                            src={previewOfficer.imageUrl}
+                            alt="Officer Full Photo"
+                            className="w-full h-auto rounded-lg shadow-2xl ring-4 ring-white"
+                        />
+                    ) : (
+                        <div className="bg-white p-8 rounded-lg flex flex-col items-center gap-4 text-center">
+                            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center text-slate-300">
+                                <Shield className="w-12 h-12" />
+                            </div>
+                            <p className="text-slate-500 font-medium">Фото відсутнє</p>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            <AddEvaluationDialog
+                officerId={evalOfficerId || ""}
+                onSuccess={fetchOfficers}
+                open={!!evalOfficerId}
+                setOpen={(open) => !open && setEvalOfficerId(null)}
+                variant="list"
+            />
+
+            <AlertDialog open={!!deleteOfficer} onOpenChange={(open) => !open && setDeleteOfficer(null)}>
+                <AlertDialogContent className="rounded-[2.5rem] border-0">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="font-black uppercase italic">Видалити офіцера?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-slate-500 font-medium">
+                            Ви збираєтесь видалити офіцера <strong>{deleteOfficer?.lastName} {deleteOfficer?.firstName}</strong>. Ця дія незворотна.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-xl font-bold">Скасувати</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                if (deleteOfficer) {
+                                    handleDelete(deleteOfficer.id);
+                                    setDeleteOfficer(null);
+                                }
+                            }}
+                            className="rounded-xl bg-red-600 hover:bg-red-700 font-bold px-8"
+                        >
+                            ВИДАЛИТИ
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
