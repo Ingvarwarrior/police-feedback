@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { sendAssignmentEmail } from "@/lib/mail"
 
 export async function POST(req: Request) {
     const session = await auth()
@@ -40,6 +41,33 @@ export async function POST(req: Request) {
                     metadata: JSON.stringify({ assignedToId })
                 }
             })
+
+            // In-app Notification for assignee
+            if (assignedToId) {
+                await prisma.adminNotification.create({
+                    data: {
+                        userId: assignedToId,
+                        type: "REPORT_ASSIGNED",
+                        priority: "HIGH",
+                        title: "Вам призначено звіт",
+                        message: `Відгук #${responseId.slice(-8).toUpperCase()} чекає на ваше опрацювання.`,
+                        link: `/admin/reports/${responseId}`
+                    }
+                })
+
+                // Email Notification
+                const assignee = await prisma.user.findUnique({
+                    where: { id: assignedToId },
+                    select: { email: true, firstName: true, lastName: true }
+                })
+
+                if (assignee?.email) {
+                    // Non-blocking email sending
+                    sendAssignmentEmail(assignee, response).catch(err =>
+                        console.error("Async email error:", err)
+                    )
+                }
+            }
         }
 
         return NextResponse.json(response)

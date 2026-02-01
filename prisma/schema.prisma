@@ -142,6 +142,9 @@ model Response {
   resolutionDate      DateTime?
   incidentCategory    String?      // e.g., TRAFFIC, DOC_CHECK, ASSISTANCE
   
+  // Tagged Officers (Many-to-Many)
+  taggedOfficers      Officer[]    @relation("TaggedOfficers")
+  
   // Officer Link (for evaluation system)
   officerId           String?
   officer             Officer?     @relation("OfficerFeedback", fields: [officerId], references: [id])
@@ -231,6 +234,7 @@ model Officer {
   // Relations
   evaluations     OfficerEvaluation[]
   responses       Response[] @relation("OfficerFeedback")
+  taggedInResponses Response[] @relation("TaggedOfficers")
 
   @@index([lastName, firstName])
   @@index([badgeNumber])

@@ -58,6 +58,7 @@ interface OfficerDetailData {
         qrUrl: string
         recentEvaluations: any[]
         recentFeedback: any[]
+        taggedFeedback: any[]
     }
 }
 
@@ -496,6 +497,29 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
                             </div>
                         ))}
                     </div>
+
+                    {stats.taggedFeedback.length > 0 && (
+                        <div className="pt-8 space-y-6">
+                            <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 italic">
+                                <div className="w-1.5 h-6 bg-amber-500" />
+                                Згадки у звітах (Таг)
+                            </h2>
+                            <div className="space-y-4">
+                                {stats.taggedFeedback.map((fb: any) => (
+                                    <div key={fb.id} className="bg-amber-50/30 p-6 rounded-[2rem] border border-amber-100 shadow-sm group hover:shadow-md transition-shadow">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{new Date(fb.createdAt).toLocaleDateString()}</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Статус: {fb.status}</span>
+                                        </div>
+                                        <p className="text-slate-600 text-sm line-clamp-3 italic leading-relaxed">"{fb.comment || 'Без коментаря'}"</p>
+                                        <Link href={`/admin/reports/${fb.id}`} className="text-[10px] font-black uppercase text-amber-600 hover:underline mt-4 inline-flex items-center gap-2 tracking-[0.2em]">
+                                            Детальніше <ArrowLeft className="w-3 h-3 rotate-180" />
+                                        </Link>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

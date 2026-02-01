@@ -16,7 +16,7 @@ export async function GET(
 
 
     try {
-        const officer = await prisma.officer.findUnique({
+        const officer = await (prisma.officer as any).findUnique({
             where: { id: params.id },
             include: {
                 evaluations: {
@@ -38,8 +38,20 @@ export async function GET(
                 _count: {
                     select: {
                         evaluations: true,
-                        responses: true
+                        responses: true,
+                        taggedInResponses: true
                     }
+                },
+                taggedInResponses: {
+                    select: {
+                        id: true,
+                        createdAt: true,
+                        rateOverall: true,
+                        comment: true,
+                        status: true
+                    },
+                    orderBy: { createdAt: 'desc' },
+                    take: 10
                 }
             }
         })
@@ -61,7 +73,7 @@ export async function GET(
 
         if (evaluations.length > 0) {
             const counts = { knowledge: 0, tactics: 0, communication: 0, professionalism: 0, physical: 0 }
-            evaluations.forEach(e => {
+            evaluations.forEach((e: any) => {
                 if (e.scoreKnowledge) { avgScores.knowledge += e.scoreKnowledge; counts.knowledge++ }
                 if (e.scoreTactics) { avgScores.tactics += e.scoreTactics; counts.tactics++ }
                 if (e.scoreCommunication) { avgScores.communication += e.scoreCommunication; counts.communication++ }
@@ -130,6 +142,7 @@ export async function GET(
                 trendData,
                 recentEvaluations: officer.evaluations.slice(0, 5),
                 recentFeedback: officer.responses,
+                taggedFeedback: (officer as any).taggedInResponses || [],
                 qrUrl: surveyUrl
             }
         })

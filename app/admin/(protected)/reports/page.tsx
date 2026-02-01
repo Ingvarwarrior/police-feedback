@@ -11,8 +11,14 @@ export default async function ReportsPage() {
     const email = session?.user?.email
     if (!email) return null
 
+    const where: any = {}
+    if ((session?.user as any)?.role !== 'ADMIN') {
+        where.assignedToId = (session?.user as any)?.id
+    }
+
     const [responses, users, currentUser] = await Promise.all([
         prisma.response.findMany({
+            where,
             orderBy: { createdAt: 'desc' },
             include: {
                 assignedTo: {

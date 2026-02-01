@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
 
     try {
-        const { responseId, resolutionNotes, incidentCategory } = await req.json()
+        const { responseId, resolutionNotes, incidentCategory, taggedOfficerIds } = await req.json()
 
         if (!responseId) {
             return new NextResponse("Response ID required", { status: 400 })
@@ -34,7 +34,10 @@ export async function POST(req: Request) {
                 resolutionNotes,
                 incidentCategory,
                 resolutionDate: new Date(),
-                status: "RESOLVED"
+                status: "RESOLVED",
+                taggedOfficers: taggedOfficerIds ? {
+                    set: taggedOfficerIds.map((id: string) => ({ id }))
+                } : undefined
             }
         })
 

@@ -33,13 +33,14 @@ export default async function ReportDetailPage({
     const backLink = isFromMap ? "/admin/map" : "/admin/reports"
     const backLabel = isFromMap ? "Мапа" : "Звіти"
 
-    const response = await prisma.response.findUnique({
+    const response = await (prisma.response as any).findUnique({
         where: { id },
         include: {
             assignedTo: true,
             contact: true,
             geoPoint: true,
             attachments: true,
+            taggedOfficers: true,
         }
     }) as any
 
@@ -343,6 +344,7 @@ export default async function ReportDetailPage({
                                 responseId={response.id}
                                 initialNotes={response.resolutionNotes}
                                 initialCategory={response.incidentCategory}
+                                initialTaggedOfficers={response.taggedOfficers || []}
                                 canEdit={
                                     response.status !== 'RESOLVED' &&
                                     (user?.role === 'ADMIN' || response.assignedToId === user?.id)

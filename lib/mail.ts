@@ -68,3 +68,51 @@ ${process.env.NEXT_PUBLIC_APP_URL}/admin/reports/${report.id}
         return false;
     }
 }
+
+export async function sendAssignmentEmail(assignee: any, report: any) {
+    if (!assignee.email) return false;
+
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '465'),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        },
+    });
+
+    const subject = `Призначено звіт: #${report.id.slice(-8).toUpperCase()}`;
+    const text = `
+Шановний(-а) ${assignee.firstName || ''} ${assignee.lastName || ''}!
+
+Вам призначено для опрацювання новий звіт у системі моніторингу.
+
+Деталі звіту:
+- ID: ${report.id}
+- Локація: ${report.districtOrCity || 'Не вказано'}
+- Рейтинг: ${report.rateOverall}/5
+- Коментар: ${report.comment || 'Без коментаря'}
+
+Будь ласка, опрацюйте цей звіт в найкоротші терміни:
+${process.env.NEXT_PUBLIC_APP_URL}/admin/reports/${report.id}
+
+---
+Система оперативного моніторингу
+`.trim();
+
+    try {
+        await transporter.sendMail({
+            from: process.env.SMTP_FROM || `"Police Feedback" <${process.env.SMTP_USER}>`,
+            to: assignee.email,
+            subject,
+            text,
+        });
+
+        console.log(`[MAIL] Assignment notification sent to ${assignee.email}`);
+        return true;
+    } catch (error) {
+        console.error('[MAIL] Error sending assignment email:', error);
+        return false;
+    }
+}
