@@ -17,6 +17,7 @@ model User {
   badgeNumber   String?
   role          String    @default("VIEWER") // ADMIN, VIEWER
   active        Boolean   @default(true)
+  phone         String?   
   
   // Permissions - Reports
   permViewReports   Boolean @default(true)

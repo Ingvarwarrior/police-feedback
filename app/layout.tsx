@@ -8,6 +8,15 @@ const inter = Inter({ subsets: ['cyrillic', 'latin'], variable: '--font-sans' })
 export const metadata: Metadata = {
   title: 'Опитування громадян | Поліція',
   description: 'Опитування про якість роботи БПП',
+  manifest: '/manifest.json', // manifest.ts handles this as /manifest.json in Next.js
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Police Admin',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 }
 
 export default function RootLayout({
