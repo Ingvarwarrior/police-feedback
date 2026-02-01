@@ -313,8 +313,8 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                 </div>
 
                 {/* Quick Filters */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-slate-100">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2 shrink-0">Швидкі фільтри:</p>
+                <div className="flex flex-wrap items-center gap-2 py-3 border-b border-slate-100">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 w-full mb-1 lg:w-auto lg:mb-0 lg:mr-2 shrink-0">Швидкі фільтри:</p>
 
                     <Popover>
                         <PopoverTrigger asChild>

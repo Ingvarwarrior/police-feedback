@@ -28,8 +28,10 @@ export default function AddressResolver({ lat, lon }: AddressResolverProps) {
                     const shortAddress = [
                         addr.road || addr.street,
                         addr.house_number,
-                        addr.suburb,
-                        addr.city || addr.town || addr.village
+                        addr.suburb || addr.neighbourhood,
+                        addr.city || addr.town || addr.village,
+                        addr.county, // District / Район
+                        addr.state  // Region / Область
                     ].filter(Boolean).join(', ');
 
                     setAddress(shortAddress || data.display_name)
