@@ -314,7 +314,7 @@ export default async function DashboardPage() {
                                         <div className="flex items-center gap-3">
                                             <span className={`w-2 h-2 rounded-full ${res.status === 'NEW' ? 'bg-blue-500 animate-pulse' : 'bg-slate-200'}`} />
                                             <p className="font-black text-slate-900 text-sm tracking-tight">#{res.id.slice(-8).toUpperCase()}</p>
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">• {new Date(res.createdAt).toLocaleDateString()}</span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">• {new Date(res.createdAt).toLocaleDateString('uk-UA')} {new Date(res.createdAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
                                         <p className="text-sm text-slate-600 font-medium leading-relaxed line-clamp-2 italic">
                                             "{res.comment || 'Без коментаря'}"

@@ -85,7 +85,14 @@ export default async function ReportDetailPage({
                                 </div>
                             )}
                         </div>
-                        <p className="text-slate-500 font-medium mt-1">ID: {response.id}</p>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-500 font-medium mt-1">
+                            <p>ID: {response.id}</p>
+                            <span className="hidden sm:inline text-slate-300">•</span>
+                            <div className="flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Подано: {new Date(response.createdAt).toLocaleString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <PrintButton />
@@ -202,6 +209,18 @@ export default async function ReportDetailPage({
                                         <div>
                                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Приблизний час</p>
                                             <p className="font-bold text-slate-900 text-lg">{response.interactionTime || 'Не вказано'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
+                                            <CheckCircle2 className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Час подання відгуку</p>
+                                            <p className="font-bold text-slate-900 text-lg">
+                                                {new Date(response.createdAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}
+                                                <span className="text-sm text-slate-500 ml-2">({new Date(response.createdAt).toLocaleDateString()})</span>
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-4">
