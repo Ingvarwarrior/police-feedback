@@ -1,21 +1,26 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { refreshAllOfficersStats } from "@/lib/officer-stats"
 
 // GET /api/admin/officers - List all officers
 export async function GET(req: Request) {
     const session = await auth()
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
 
-    const user = session.user as any
-    // Allow all authenticated users (GET)
-
-
     try {
         const { searchParams } = new URL(req.url)
         const search = searchParams.get('search') || ''
         const status = searchParams.get('status') || ''
         const rank = searchParams.get('rank') || ''
+
+        // Optional: Manual recalibration trigger for admins
+        if (searchParams.get('recalibrate') === 'true') {
+            const user = session.user as any
+            if (user.role === 'ADMIN') {
+                await refreshAllOfficersStats()
+            }
+        }
 
         const where: any = {}
 
@@ -35,62 +40,25 @@ export async function GET(req: Request) {
             where.rank = rank
         }
 
+        // Use denormalized fields for performance
         const officers = await prisma.officer.findMany({
             where,
-            include: {
-                _count: {
-                    select: {
-                        evaluations: true,
-                        responses: true
-                    }
-                },
-                evaluations: {
-                    select: {
-                        scoreKnowledge: true,
-                        scoreTactics: true,
-                        scoreCommunication: true,
-                        scoreProfessionalism: true,
-                        scorePhysical: true
-                    }
-                }
-            },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { lastName: 'asc' }
         })
 
-        // Calculate avg scores for each officer
-        const officersWithStats = officers.map(officer => {
-            const evals = officer.evaluations
-            const avgScore = evals.length > 0
-                ? evals.reduce((sum, e) => {
-                    const scores = [
-                        e.scoreKnowledge,
-                        e.scoreTactics,
-                        e.scoreCommunication,
-                        e.scoreProfessionalism,
-                        e.scorePhysical
-                    ].filter((s): s is number => typeof s === 'number')
-
-                    const total = scores.reduce((a, b) => a + b, 0)
-                    const count = scores.length
-                    return sum + (count > 0 ? total / count : 0)
-                }, 0) / evals.length
-                : 0
-
-            // Normalize image URL to use /api/uploads/ if it uses the old /uploads/ path
+        // Normalize image URL to use /api/uploads/
+        const officersWithImages = officers.map(officer => {
             const imageUrl = officer.imageUrl?.startsWith('/uploads/')
                 ? officer.imageUrl.replace('/uploads/', '/api/uploads/')
                 : officer.imageUrl
 
             return {
                 ...officer,
-                imageUrl,
-                avgScore: Number(avgScore.toFixed(2)),
-                totalEvaluations: officer._count.evaluations,
-                totalResponses: officer._count.responses
+                imageUrl
             }
         })
 
-        return NextResponse.json(officersWithStats)
+        return NextResponse.json(officersWithImages)
     } catch (error) {
         console.error("Error fetching officers:", error)
         return new NextResponse("Internal Server Error", { status: 500 })
@@ -117,7 +85,7 @@ export async function POST(req: Request) {
             return new NextResponse("Missing required fields", { status: 400 })
         }
 
-        const officer = await prisma.officer.create({
+        const officer = await (prisma.officer as any).create({
             data: {
                 badgeNumber,
                 firstName,
@@ -131,7 +99,11 @@ export async function POST(req: Request) {
                 imageUrl: imageUrl || null,
                 hireDate: hireDate ? new Date(hireDate) : null,
                 birthDate: birthDate ? new Date(birthDate) : null,
-                status: "ACTIVE"
+                status: "ACTIVE",
+                // Initial stats
+                avgScore: 0,
+                totalEvaluations: 0,
+                totalResponses: 0
             }
         })
 

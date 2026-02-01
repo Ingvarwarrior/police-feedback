@@ -21,6 +21,7 @@ import { AddEvaluationDialog } from "../components/AddEvaluationDialog"
 import { toast } from "sonner"
 import { analyzeOfficerFeedback } from "./actions/analysisActions"
 import { formatPhoneNumberForCall } from "@/lib/utils"
+import { useAdminStore } from "@/lib/admin-store"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -68,6 +69,7 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
     const [printMode, setPrintMode] = useState<'DOSSIER' | null>(null)
     const [analysis, setAnalysis] = useState<any>(null)
     const isAdmin = userRole === 'ADMIN'
+    const { removeOfficer, updateOfficer } = useAdminStore()
 
     useEffect(() => {
         if (officerId) {
@@ -96,6 +98,7 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
             const res = await fetch(`/api/admin/officers/${officerId}`, { method: 'DELETE' })
             if (res.ok) {
                 toast.success("Офіцера повністю видалено")
+                removeOfficer(officerId)
                 router.push('/admin/officers')
             } else {
                 toast.error("Помилка видалення")

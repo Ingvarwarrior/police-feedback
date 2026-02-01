@@ -6,9 +6,10 @@ import { formatPhoneNumberForCall } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, UserPlus, Star, Shield, Trash2, AlertTriangle, Phone } from "lucide-react"
+import { Search, UserPlus, Star, Shield, Trash2, AlertTriangle, Phone, RefreshCw } from "lucide-react"
 import { AddEvaluationDialog } from "./components/AddEvaluationDialog"
 import { ImportOfficersDialog } from "./ImportOfficersDialog"
+import { useAdminStore } from "@/lib/admin-store"
 import { toast } from "sonner"
 import {
     AlertDialog,
@@ -63,9 +64,17 @@ type SortKey = 'name' | 'rank' | 'rating' | 'reviews'
 type SortDir = 'asc' | 'desc'
 
 export default function OfficersList({ currentUser }: OfficersListProps) {
-    const [officers, setOfficers] = useState<Officer[]>([])
-    const [loading, setLoading] = useState(true)
-    const [searchTerm, setSearchTerm] = useState("")
+    const {
+        officers,
+        setOfficers,
+        scrollPosition,
+        setScrollPosition,
+        searchTerm,
+        setSearchTerm,
+        lastFetched
+    } = useAdminStore()
+
+    const [loading, setLoading] = useState(!lastFetched)
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; dir: SortDir }>({ key: 'name', dir: 'asc' })
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [evalOfficerId, setEvalOfficerId] = useState<string | null>(null)
@@ -75,21 +84,43 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
     const router = useRouter()
 
     useEffect(() => {
-        fetchOfficers()
+        if (!lastFetched) {
+            fetchOfficers()
+        } else {
+            // Restore scroll position after a short delay to ensure rendering
+            setTimeout(() => {
+                window.scrollTo({ top: scrollPosition, behavior: 'instant' as any })
+            }, 100)
+        }
+
+        const handleScroll = () => {
+            setScrollPosition(window.scrollY)
+        }
+
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
-    const fetchOfficers = async () => {
+    const fetchOfficers = async (recalibrate = false) => {
         try {
-            const res = await fetch('/api/admin/officers')
+            setLoading(true)
+            const url = recalibrate ? '/api/admin/officers?recalibrate=true' : '/api/admin/officers'
+            const res = await fetch(url)
             if (res.ok) {
                 const data = await res.json()
                 setOfficers(data)
+                if (recalibrate) toast.success("Статистику оновлено")
             }
         } catch (error) {
             console.error(error)
+            toast.error("Помилка завантаження")
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleRecalibrate = () => {
+        fetchOfficers(true)
     }
 
     const handleDelete = async (id: string) => {
@@ -206,10 +237,25 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                         placeholder="Пошук офіцера..."
                         className="pl-10 h-10 rounded-lg border-0 bg-slate-100 focus-visible:ring-0 placeholder:text-slate-400"
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value)
+                            setScrollPosition(0)
+                        }}
                     />
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-auto">
+                    {currentUser?.role === 'ADMIN' && (
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={handleRecalibrate}
+                            disabled={loading}
+                            className="h-10 w-10 rounded-lg border-slate-200 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50"
+                            title="Перерахувати статистику"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        </Button>
+                    )}
                     <Select value={`${sortConfig.key}-${sortConfig.dir}`} onValueChange={(val) => {
                         const [key, dir] = val.split('-') as [SortKey, SortDir]
                         setSortConfig({ key, dir })
@@ -305,7 +351,10 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                             filteredOfficers.map(officer => (
                                 <tr
                                     key={officer.id}
-                                    onClick={() => router.push(`/admin/officers/${officer.id}`)}
+                                    onClick={() => {
+                                        setScrollPosition(window.scrollY)
+                                        router.push(`/admin/officers/${officer.id}`)
+                                    }}
                                     className={`transition-colors cursor-pointer ${selectedIds.includes(officer.id) ? 'bg-blue-50/50 hover:bg-blue-50' : 'hover:bg-slate-100/80'}`}
                                 >
                                     {canDelete && (
@@ -435,7 +484,10 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                     <div className="text-center py-12 text-slate-400">Офіцерів не знайдено</div>
                 ) : (
                     filteredOfficers.map(officer => (
-                        <div key={officer.id} onClick={() => router.push(`/admin/officers/${officer.id}`)} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm active:scale-[0.98] transition-all">
+                        <div key={officer.id} onClick={() => {
+                            setScrollPosition(window.scrollY)
+                            router.push(`/admin/officers/${officer.id}`)
+                        }} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm active:scale-[0.98] transition-all">
                             <div className="flex items-start gap-4">
                                 <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 shadow-inner">
                                     {officer.imageUrl ? (

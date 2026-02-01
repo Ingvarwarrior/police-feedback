@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { refreshOfficerStats } from "@/lib/officer-stats"
 
 // GET /api/admin/officers/[id]/evaluations - List evaluations for an officer
 export async function GET(
@@ -10,9 +11,6 @@ export async function GET(
     const params = await props.params;
     const session = await auth()
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
-
-    const user = session.user as any
-    // Allow all authenticated users
 
     try {
         const evaluations = await prisma.officerEvaluation.findMany({
@@ -46,7 +44,6 @@ export async function POST(
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
 
     const user = session.user as any
-    // Allow all authenticated users
 
     try {
         const body = await req.json()
@@ -83,6 +80,9 @@ export async function POST(
                 notes: notes || null
             }
         })
+
+        // Recalculate stats for the officer
+        await refreshOfficerStats(params.id)
 
         // Audit log
         await prisma.auditLog.create({

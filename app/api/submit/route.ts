@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 import crypto from 'crypto'
 import { z } from 'zod'
 import { sendNewReportEmail } from '@/lib/mail'
+import { refreshOfficerStats } from '@/lib/officer-stats'
 
 const submitSchema = z.object({
     clientGeneratedId: z.string().min(1).optional(),
@@ -194,6 +195,11 @@ export async function POST(req: NextRequest) {
                     where: { id: { in: data.attachmentIds } },
                     data: { responseId: response.id }
                 })
+            }
+
+            if (officerId) {
+                // Refresh officer stats in background or after tx
+                setTimeout(() => refreshOfficerStats(officerId), 100)
             }
 
             return response

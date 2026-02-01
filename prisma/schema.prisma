@@ -223,9 +223,18 @@ model Officer {
   driversLicense  String?
   status          String   @default("ACTIVE") // ACTIVE, ON_LEAVE, SUSPENDED, RETIRED
   
+  // Denormalized Stats (for performance)
+  avgScore         Float   @default(0)
+  totalEvaluations Int     @default(0)
+  totalResponses   Int     @default(0)
+  
   // Relations
   evaluations     OfficerEvaluation[]
   responses       Response[] @relation("OfficerFeedback")
+
+  @@index([lastName, firstName])
+  @@index([badgeNumber])
+  @@index([avgScore])
 }
 
 model OfficerEvaluation {
