@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import {
-    ArrowLeft, Shield, Star, Award, TrendingUp, Phone, Activity, AlertTriangle, FileText, Trash2, CheckCircle2, XCircle
+    ArrowLeft, Shield, Star, Award, TrendingUp, Phone, Activity, AlertTriangle, FileText, Trash2, CheckCircle2, XCircle, Users
 } from "lucide-react"
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis,
@@ -475,41 +475,31 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
                     </div>
                 </div>
 
-                {/* Citizen Feedback */}
-                <div className="space-y-6">
-                    <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 italic">
-                        <div className="w-1.5 h-6 bg-emerald-500" />
-                        Відгуки громадян
-                    </h2>
-                    <div className="space-y-4">
-                        {stats.recentFeedback.map((fb: any) => (
-                            <div key={fb.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm group hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-center mb-3">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(fb.createdAt).toLocaleDateString()}</span>
-                                    <span className="flex items-center gap-1.5 font-black text-amber-500 bg-amber-50 px-3 py-1 rounded-full text-xs italic">
-                                        {fb.rateOverall} <Star className="w-3 h-3 fill-current" />
-                                    </span>
-                                </div>
-                                <p className="text-slate-600 text-sm line-clamp-3 italic leading-relaxed">"{fb.comment || 'Коментар не залишено'}"</p>
-                                <Link href={`/admin/reports/${fb.id}`} className="text-[10px] font-black uppercase text-primary hover:underline mt-4 inline-flex items-center gap-2 tracking-[0.2em]">
-                                    Переглянути звіт <ArrowLeft className="w-3 h-3 rotate-180" />
-                                </Link>
-                            </div>
-                        ))}
-                    </div>
-
+                {/* Citizen Feedback & Tagged Reports */}
+                <div className="lg:col-span-1 space-y-12">
+                    {/* Tagged Reports First (As requested) */}
                     {stats.taggedFeedback.length > 0 && (
-                        <div className="pt-8 space-y-6">
+                        <div className="space-y-6">
                             <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 italic">
                                 <div className="w-1.5 h-6 bg-amber-500" />
-                                Згадки у звітах (Таг)
+                                <Users className="w-5 h-5 text-amber-500" />
+                                Згадки у звітах (Наряд)
                             </h2>
                             <div className="space-y-4">
                                 {stats.taggedFeedback.map((fb: any) => (
-                                    <div key={fb.id} className="bg-amber-50/30 p-6 rounded-[2rem] border border-amber-100 shadow-sm group hover:shadow-md transition-shadow">
-                                        <div className="flex justify-between items-center mb-3">
-                                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{new Date(fb.createdAt).toLocaleDateString()}</span>
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Статус: {fb.status}</span>
+                                    <div key={fb.id} className={`p-6 rounded-[2rem] border shadow-sm group hover:shadow-md transition-all ${fb.isConfirmed === false ? 'bg-slate-50 border-slate-200 grayscale opacity-70' : 'bg-amber-50/30 border-amber-100'}`}>
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest block mb-1">{new Date(fb.createdAt).toLocaleDateString()}</span>
+                                                {fb.isConfirmed === false && (
+                                                    <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase bg-slate-200 text-slate-500 px-2 py-0.5 rounded-md">
+                                                        <XCircle className="w-2.5 h-2.5" /> Не підтверджено
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <span className="flex items-center gap-1.5 font-black text-amber-500 bg-white px-3 py-1 rounded-full text-xs italic border border-amber-100">
+                                                {fb.rateOverall} <Star className="w-3 h-3 fill-current" />
+                                            </span>
                                         </div>
                                         <p className="text-slate-600 text-sm line-clamp-3 italic leading-relaxed">"{fb.comment || 'Без коментаря'}"</p>
                                         <Link href={`/admin/reports/${fb.id}`} className="text-[10px] font-black uppercase text-amber-600 hover:underline mt-4 inline-flex items-center gap-2 tracking-[0.2em]">
@@ -520,6 +510,41 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
                             </div>
                         </div>
                     )}
+
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 italic">
+                            <div className="w-1.5 h-6 bg-emerald-500" />
+                            Безпосередні відгуки
+                        </h2>
+                        <div className="space-y-4">
+                            {stats.recentFeedback.map((fb: any) => (
+                                <div key={fb.id} className={`p-6 rounded-[2rem] border shadow-sm group hover:shadow-md transition-all ${fb.isConfirmed === false ? 'bg-slate-50 border-slate-200 grayscale opacity-70' : 'bg-white border-slate-100'}`}>
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{new Date(fb.createdAt).toLocaleDateString()}</span>
+                                            {fb.isConfirmed === false && (
+                                                <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase bg-slate-200 text-slate-500 px-2 py-0.5 rounded-md">
+                                                    <XCircle className="w-2.5 h-2.5" /> Не підтверджено
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="flex items-center gap-1.5 font-black text-amber-500 bg-amber-50 px-3 py-1 rounded-full text-xs italic">
+                                            {fb.rateOverall} <Star className="w-3 h-3 fill-current" />
+                                        </span>
+                                    </div>
+                                    <p className="text-slate-600 text-sm line-clamp-3 italic leading-relaxed">"{fb.comment || 'Коментар не залишено'}"</p>
+                                    <Link href={`/admin/reports/${fb.id}`} className="text-[10px] font-black uppercase text-primary hover:underline mt-4 inline-flex items-center gap-2 tracking-[0.2em]">
+                                        Переглянути звіт <ArrowLeft className="w-3 h-3 rotate-180" />
+                                    </Link>
+                                </div>
+                            ))}
+                            {stats.recentFeedback.length === 0 && (
+                                <div className="text-center py-10 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+                                    Прямих відгуків немає
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

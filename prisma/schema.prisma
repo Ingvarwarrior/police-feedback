@@ -141,6 +141,7 @@ model Response {
   resolutionNotes     String?
   resolutionDate      DateTime?
   incidentCategory    String?      // e.g., TRAFFIC, DOC_CHECK, ASSISTANCE
+  isConfirmed         Boolean      @default(true)
   
   // Tagged Officers (Many-to-Many)
   taggedOfficers      Officer[]    @relation("TaggedOfficers")

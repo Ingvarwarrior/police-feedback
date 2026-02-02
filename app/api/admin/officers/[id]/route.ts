@@ -30,8 +30,9 @@ export async function GET(
                         id: true,
                         createdAt: true,
                         rateOverall: true,
-                        comment: true
-                    },
+                        comment: true,
+                        isConfirmed: true
+                    } as any,
                     orderBy: { createdAt: 'desc' },
                     take: 10
                 },
@@ -48,8 +49,9 @@ export async function GET(
                         createdAt: true,
                         rateOverall: true,
                         comment: true,
-                        status: true
-                    },
+                        status: true,
+                        isConfirmed: true
+                    } as any,
                     orderBy: { createdAt: 'desc' },
                     take: 10
                 }
@@ -105,7 +107,15 @@ export async function GET(
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
         const feedbackHistory = await (prisma.response as any).findMany({
-            where: { officerId: params.id, createdAt: { gte: sixMonthsAgo } },
+            where: {
+                OR: [
+                    { officerId: params.id },
+                    { taggedOfficers: { some: { id: params.id } } }
+                ],
+                createdAt: { gte: sixMonthsAgo },
+                isConfirmed: true,
+                rateOverall: { not: null }
+            },
             select: { createdAt: true, rateOverall: true },
             orderBy: { createdAt: 'asc' }
         })

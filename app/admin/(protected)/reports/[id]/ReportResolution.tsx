@@ -4,12 +4,16 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle2, PhoneCall, FileEdit, Loader2, Users, Search, X, ShieldCheck } from "lucide-react"
+import {
+    CheckCircle2, PhoneCall, FileEdit, Loader2, Users, Search, X,
+    ShieldCheck, Sparkles, Info, AlertCircle, XCircle
+} from "lucide-react"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { RESOLUTION_TEMPLATES } from "@/lib/resolution-templates"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Sparkles } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 
 interface Officer {
     id: string
@@ -24,12 +28,21 @@ interface ReportResolutionProps {
     initialNotes: string | null
     initialCategory: string | null
     initialTaggedOfficers?: Officer[]
+    initialIsConfirmed?: boolean
     canEdit: boolean
 }
 
-export default function ReportResolution({ responseId, initialNotes, initialCategory, initialTaggedOfficers = [], canEdit }: ReportResolutionProps) {
+export default function ReportResolution({
+    responseId,
+    initialNotes,
+    initialCategory,
+    initialTaggedOfficers = [],
+    initialIsConfirmed = true,
+    canEdit
+}: ReportResolutionProps) {
     const [notes, setNotes] = useState(initialNotes || "")
     const [category, setCategory] = useState(initialCategory || "ASSISTANCE")
+    const [isConfirmed, setIsConfirmed] = useState(initialIsConfirmed)
     const [taggedOfficers, setTaggedOfficers] = useState<Officer[]>(initialTaggedOfficers)
     const [saving, setSaving] = useState(false)
 
@@ -78,6 +91,7 @@ export default function ReportResolution({ responseId, initialNotes, initialCate
                     responseId,
                     resolutionNotes: notes,
                     incidentCategory: category,
+                    isConfirmed,
                     taggedOfficerIds: taggedOfficers.map(o => o.id)
                 })
             })
@@ -133,7 +147,7 @@ export default function ReportResolution({ responseId, initialNotes, initialCate
                                 Причетні офіцери
                             </p>
                             <div className="space-y-2">
-                                {initialTaggedOfficers.map(o => (
+                                {initialTaggedOfficers.map((o: Officer) => (
                                     <div key={o.id} className="flex items-center gap-2 text-sm bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
                                         <div className="p-1.5 bg-slate-100 rounded-lg text-slate-500">
                                             <ShieldCheck className="w-3.5 h-3.5" />
@@ -148,6 +162,15 @@ export default function ReportResolution({ responseId, initialNotes, initialCate
                         </div>
                     )}
                 </div>
+
+                {initialNotes && (
+                    <div className={`mt-4 p-4 rounded-2xl flex items-center gap-3 ${initialIsConfirmed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                        {initialIsConfirmed ? <ShieldCheck className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                        <p className="text-xs font-bold uppercase tracking-wider">
+                            {initialIsConfirmed ? 'Факт підтверджено - впливає на рейтинг' : 'Факт НЕ підтверджено - не впливає на рейтинг'}
+                        </p>
+                    </div>
+                )}
             </div>
         )
     }
@@ -240,6 +263,16 @@ export default function ReportResolution({ responseId, initialNotes, initialCate
                                 </div>
                             )}
                         </div>
+
+                        {/* Patrol Integrity Warning */}
+                        {taggedOfficers.length > 0 && taggedOfficers.length < 2 && (
+                            <div className="flex items-center gap-2 text-amber-500 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
+                                <AlertCircle className="w-4 h-4 shrink-0" />
+                                <p className="text-[10px] font-bold uppercase tracking-tight">
+                                    Наряд зазвичай складається мінімум з 2-х осіб. Додайте напарника, якщо це можливо.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="space-y-2">
@@ -262,6 +295,11 @@ export default function ReportResolution({ responseId, initialNotes, initialCate
                                             onClick={() => {
                                                 setNotes(t.text)
                                                 setCategory(t.category)
+                                                if (t.id === 'not-confirmed') {
+                                                    setIsConfirmed(false)
+                                                } else {
+                                                    setIsConfirmed(true)
+                                                }
                                             }}
                                             className="rounded-lg text-xs font-bold hover:bg-slate-700 cursor-pointer p-3 flex flex-col items-start gap-1"
                                         >
@@ -277,6 +315,29 @@ export default function ReportResolution({ responseId, initialNotes, initialCate
                             onChange={(e) => setNotes(e.target.value)}
                             placeholder="Наприклад: Проведено бесіду з громадянином. Вказані офіцери діяли згідно за статтею 35..."
                             className="min-h-[140px] bg-slate-800 border-slate-700 text-white rounded-2xl resize-none focus:ring-emerald-500 shadow-inner leading-relaxed"
+                        />
+                    </div>
+
+                    {/* Impact on Rating Toggle */}
+                    <div className="bg-slate-800/50 p-6 rounded-[2rem] border border-slate-800 flex items-center justify-between group hover:border-slate-700 transition-colors">
+                        <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-2xl transition-colors ${isConfirmed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                                {isConfirmed ? <ShieldCheck className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
+                            </div>
+                            <div>
+                                <h4 className="text-white font-bold text-sm">Вплив на рейтинг</h4>
+                                <p className="text-slate-500 text-[10px] font-medium leading-tight max-w-[200px]">
+                                    {isConfirmed
+                                        ? "Факт підтверджено. Оцінка громадянина вплине на статистику офіцерів."
+                                        : "Факт НЕ підтверджено. Цей відгук буде ігноруватися при розрахунку рейтингу."}
+                                </p>
+                            </div>
+                        </div>
+                        <Checkbox
+                            id="isConfirmed"
+                            checked={isConfirmed}
+                            onCheckedChange={(checked) => setIsConfirmed(checked as boolean)}
+                            className="w-8 h-8 rounded-xl border-slate-600 data-[state=checked]:bg-emerald-500"
                         />
                     </div>
 

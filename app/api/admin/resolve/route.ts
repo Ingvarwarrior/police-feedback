@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
 
     try {
-        const { responseId, resolutionNotes, incidentCategory, taggedOfficerIds } = await req.json()
+        const { responseId, resolutionNotes, incidentCategory, taggedOfficerIds, isConfirmed } = await req.json()
 
         if (!responseId) {
             return new NextResponse("Response ID required", { status: 400 })
@@ -15,7 +15,8 @@ export async function POST(req: Request) {
 
         // Fetch response to check assignment
         const currentResponse = await prisma.response.findUnique({
-            where: { id: responseId }
+            where: { id: responseId },
+            include: { taggedOfficers: true }
         }) as any
 
         if (!currentResponse) {
@@ -28,18 +29,33 @@ export async function POST(req: Request) {
             return new NextResponse("Forbidden", { status: 403 })
         }
 
-        const response = await prisma.response.update({
+        const response = await (prisma.response as any).update({
             where: { id: responseId },
             data: {
                 resolutionNotes,
                 incidentCategory,
+                isConfirmed: isConfirmed !== undefined ? isConfirmed : true,
                 resolutionDate: new Date(),
                 status: "RESOLVED",
                 taggedOfficers: taggedOfficerIds ? {
                     set: taggedOfficerIds.map((id: string) => ({ id }))
                 } : undefined
-            }
+            } as any,
+            include: { taggedOfficers: true }
         })
+
+        // Recalculate stats for all tagged officers
+        const officerIdsToUpdate = new Set<string>()
+        if (response.officerId) officerIdsToUpdate.add(response.officerId)
+        response.taggedOfficers.forEach((o: any) => officerIdsToUpdate.add(o.id))
+
+        // Also update previous officers if they were removed
+        currentResponse.taggedOfficers.forEach((o: any) => officerIdsToUpdate.add(o.id))
+
+        const { refreshOfficerStats } = await import("@/lib/officer-stats")
+        for (const id of officerIdsToUpdate) {
+            await refreshOfficerStats(id)
+        }
 
         // Audit Log
         if (session.user?.id) {

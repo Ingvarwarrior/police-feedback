@@ -345,6 +345,7 @@ export default async function ReportDetailPage({
                                 initialNotes={response.resolutionNotes}
                                 initialCategory={response.incidentCategory}
                                 initialTaggedOfficers={response.taggedOfficers || []}
+                                initialIsConfirmed={response.isConfirmed}
                                 canEdit={
                                     response.status !== 'RESOLVED' &&
                                     (user?.role === 'ADMIN' || response.assignedToId === user?.id)
