@@ -47,6 +47,8 @@ export async function GET(req: Request) {
                 o.firstName.toLowerCase().includes(searchLower) ||
                 o.lastName.toLowerCase().includes(searchLower)
             )
+            // Limit results to 50 to prevent UI lag on huge datasets
+            officers = officers.slice(0, 50)
         }
 
         // Normalize image URL to use /api/uploads/
