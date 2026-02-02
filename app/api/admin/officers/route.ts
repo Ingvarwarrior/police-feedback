@@ -24,14 +24,6 @@ export async function GET(req: Request) {
 
         const where: any = {}
 
-        if (search) {
-            where.OR = [
-                { badgeNumber: { contains: search, mode: 'insensitive' } },
-                { firstName: { contains: search, mode: 'insensitive' } },
-                { lastName: { contains: search, mode: 'insensitive' } }
-            ]
-        }
-
         if (status) {
             where.status = status
         }
@@ -41,10 +33,21 @@ export async function GET(req: Request) {
         }
 
         // Use denormalized fields for performance
-        const officers = await prisma.officer.findMany({
+        let officers = await prisma.officer.findMany({
             where,
             orderBy: { lastName: 'asc' }
         })
+
+        // SQLite 'mode: insensitive' only works for ASCII
+        // We must filter in JS to support Cyrillic case-insensitive search
+        if (search) {
+            const searchLower = search.toLowerCase()
+            officers = officers.filter(o =>
+                o.badgeNumber.toLowerCase().includes(searchLower) ||
+                o.firstName.toLowerCase().includes(searchLower) ||
+                o.lastName.toLowerCase().includes(searchLower)
+            )
+        }
 
         // Normalize image URL to use /api/uploads/
         const officersWithImages = officers.map(officer => {
