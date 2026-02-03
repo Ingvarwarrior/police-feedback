@@ -31,7 +31,7 @@ export default async function ReportDetailPage({
     const { from } = await searchParams
     const isFromMap = from === 'map'
     const backLink = isFromMap ? "/admin/map" : "/admin/reports"
-    const backLabel = isFromMap ? "Мапа" : "Звіти"
+    const backLabel = isFromMap ? "Мапа" : "Відгуки громадян"
 
     const response = await (prisma.response as any).findUnique({
         where: { id },
