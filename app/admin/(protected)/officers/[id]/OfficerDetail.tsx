@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import {
-    ArrowLeft, Shield, Star, Award, TrendingUp, Phone, Activity, AlertTriangle, FileText, Trash2, CheckCircle2, XCircle, Users
+    ArrowLeft, Shield, Star, Award, TrendingUp, Phone, Activity, AlertTriangle, FileText, Trash2, CheckCircle2, XCircle, Users, Image as ImageIcon
 } from "lucide-react"
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis,
