@@ -76,11 +76,11 @@ export async function GET(
         if (evaluations.length > 0) {
             const counts = { knowledge: 0, tactics: 0, communication: 0, professionalism: 0, physical: 0 }
             evaluations.forEach((e: any) => {
-                if (e.scoreKnowledge) { avgScores.knowledge += e.scoreKnowledge; counts.knowledge++ }
-                if (e.scoreTactics) { avgScores.tactics += e.scoreTactics; counts.tactics++ }
-                if (e.scoreCommunication) { avgScores.communication += e.scoreCommunication; counts.communication++ }
-                if (e.scoreProfessionalism) { avgScores.professionalism += e.scoreProfessionalism; counts.professionalism++ }
-                if (e.scorePhysical) { avgScores.physical += e.scorePhysical; counts.physical++ }
+                if (e.scoreKnowledge && e.scoreKnowledge > 0) { avgScores.knowledge += e.scoreKnowledge; counts.knowledge++ }
+                if (e.scoreTactics && e.scoreTactics > 0) { avgScores.tactics += e.scoreTactics; counts.tactics++ }
+                if (e.scoreCommunication && e.scoreCommunication > 0) { avgScores.communication += e.scoreCommunication; counts.communication++ }
+                if (e.scoreProfessionalism && e.scoreProfessionalism > 0) { avgScores.professionalism += e.scoreProfessionalism; counts.professionalism++ }
+                if (e.scorePhysical && e.scorePhysical > 0) { avgScores.physical += e.scorePhysical; counts.physical++ }
             })
 
             avgScores.knowledge = counts.knowledge > 0 ? Number((avgScores.knowledge / counts.knowledge).toFixed(2)) : 0
@@ -114,7 +114,7 @@ export async function GET(
                 ],
                 createdAt: { gte: sixMonthsAgo },
                 isConfirmed: true,
-                rateOverall: { not: null }
+                rateOverall: { gt: 0 }
             },
             select: { createdAt: true, rateOverall: true },
             orderBy: { createdAt: 'asc' }

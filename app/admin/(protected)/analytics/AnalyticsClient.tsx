@@ -74,8 +74,9 @@ export default function AnalyticsClient({
     const avgRating = ratingsData.reduce((acc, curr, idx) => acc + (curr.value * (idx + 1)), 0) / (totalReports || 1)
 
     // Personnel Metrics
-    const topOfficers = officers.slice(0, 5)
-    const bottomOfficers = officers.filter(o => o.totalResponses > 0).slice(-5).reverse()
+    const ratedOfficers = officers.filter(o => o.avgScore > 0 && o.totalResponses > 0)
+    const topOfficers = ratedOfficers.slice(0, 5)
+    const bottomOfficers = ratedOfficers.slice(-5).reverse()
 
     const tabs = [
         { id: 'feedback', label: 'Відгуки', icon: MessageSquare },

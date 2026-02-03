@@ -134,16 +134,29 @@ export default async function AnalyticsPage() {
 
     // 6. Personnel Correlation (Internal vs Citizen)
     const correlationData = officers.map(o => {
-        const internalAvg = o.evaluations.length > 0
-            ? o.evaluations.reduce((acc: any, curr: any) => acc + curr.scoreCommunication, 0) / o.evaluations.length
+        const evals = o.evaluations || []
+        const internalScores: number[] = []
+
+        evals.forEach((e: any) => {
+            // Check all 5 score dimensions
+            if (e.scoreKnowledge && e.scoreKnowledge > 0) internalScores.push(e.scoreKnowledge)
+            if (e.scoreTactics && e.scoreTactics > 0) internalScores.push(e.scoreTactics)
+            if (e.scoreCommunication && e.scoreCommunication > 0) internalScores.push(e.scoreCommunication)
+            if (e.scoreProfessionalism && e.scoreProfessionalism > 0) internalScores.push(e.scoreProfessionalism)
+            if (e.scorePhysical && e.scorePhysical > 0) internalScores.push(e.scorePhysical)
+        })
+
+        const internalAvg = internalScores.length > 0
+            ? internalScores.reduce((a, b) => a + b, 0) / internalScores.length
             : 0
+
         return {
             name: `${o.firstName[0]}. ${o.lastName}`,
             citizen: o.avgScore,
             internal: internalAvg,
             badge: o.badgeNumber
         }
-    }).filter(d => d.internal > 0).slice(0, 10) // Top 10 for visibility
+    }).filter(d => d.internal > 0 && d.citizen > 0).slice(0, 10) // Top 10 for visibility
 
     // 7. Security (Suspicious IPs)
     const ipClusters: Record<string, number> = {}
@@ -195,7 +208,7 @@ export default async function AnalyticsPage() {
                 officers={officers}
                 citizensCount={citizens.length}
                 categoryStats={categoryStats}
-                totalReports={responses.length}
+                totalReports={ratedResponses.length}
                 efficiency={{
                     avgResolutionTime,
                     resolutionRate: responses.length > 0 ? (resolutionStats.length / responses.length) * 100 : 0

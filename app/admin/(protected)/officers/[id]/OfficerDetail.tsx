@@ -436,7 +436,10 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className="bg-slate-900 text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest">
-                                                СЕРЕДНЯ: {((ev.scoreKnowledge + ev.scoreTactics + ev.scoreCommunication + ev.scoreProfessionalism + ev.scorePhysical) / 5).toFixed(1)}
+                                                СЕРЕДНЯ: {(() => {
+                                                    const s = [ev.scoreKnowledge, ev.scoreTactics, ev.scoreCommunication, ev.scoreProfessionalism, ev.scorePhysical].filter(v => v > 0);
+                                                    return s.length > 0 ? (s.reduce((a, b) => a + b, 0) / s.length).toFixed(1) : '—';
+                                                })()}
                                             </div>
                                             {isAdmin && (
                                                 <AlertDialog>

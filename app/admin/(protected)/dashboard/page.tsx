@@ -73,11 +73,11 @@ export default async function DashboardPage() {
 
         const allScores: number[] = []
         evals.forEach((e: any) => {
-            if (e.scoreKnowledge) allScores.push(e.scoreKnowledge)
-            if (e.scoreTactics) allScores.push(e.scoreTactics)
-            if (e.scoreCommunication) allScores.push(e.scoreCommunication)
-            if (e.scoreProfessionalism) allScores.push(e.scoreProfessionalism)
-            if (e.scorePhysical) allScores.push(e.scorePhysical)
+            if (e.scoreKnowledge && e.scoreKnowledge > 0) allScores.push(e.scoreKnowledge)
+            if (e.scoreTactics && e.scoreTactics > 0) allScores.push(e.scoreTactics)
+            if (e.scoreCommunication && e.scoreCommunication > 0) allScores.push(e.scoreCommunication)
+            if (e.scoreProfessionalism && e.scoreProfessionalism > 0) allScores.push(e.scoreProfessionalism)
+            if (e.scorePhysical && e.scorePhysical > 0) allScores.push(e.scorePhysical)
         })
 
         const avgRating = allScores.length > 0
