@@ -85,13 +85,13 @@ export default function AnalyticsClient({
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Top Navigation & Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 no-print">
-                <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-2xl w-fit">
+                <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-2xl w-full sm:w-fit overflow-x-auto no-scrollbar">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
                             className={cn(
-                                "flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                                "flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shrink-0",
                                 activeTab === tab.id
                                     ? "bg-white text-slate-900 shadow-sm"
                                     : "text-slate-400 hover:text-slate-600"
@@ -120,13 +120,13 @@ export default function AnalyticsClient({
                         {/* KPI Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardContent className="p-8">
+                                <CardContent className="p-5 sm:p-8">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Звітів (30д)</p>
                                     <h3 className="text-3xl font-black text-slate-900">{totalReports}</h3>
                                 </CardContent>
                             </Card>
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardContent className="p-8">
+                                <CardContent className="p-5 sm:p-8">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Середній бал</p>
                                     <div className="flex items-center gap-2">
                                         <h3 className="text-3xl font-black text-slate-900">{avgRating.toFixed(2)}</h3>
@@ -136,14 +136,14 @@ export default function AnalyticsClient({
                             </Card>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:p-8">
                             <Card className="lg:col-span-2 border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardHeader className="p-8 pb-0">
+                                <CardHeader className="p-5 sm:p-8 pb-0">
                                     <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                         <TrendingUp className="w-4 h-4 text-blue-500" /> Динаміка задоволеності
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-8 h-[350px]">
+                                <CardContent className="p-5 sm:p-8 h-[350px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart data={trendData}>
                                             <defs>
@@ -162,12 +162,12 @@ export default function AnalyticsClient({
                                 </CardContent>
                             </Card>
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardHeader className="p-8 pb-0">
+                                <CardHeader className="p-5 sm:p-8 pb-0">
                                     <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                         <Star className="w-4 h-4 text-amber-500" /> Розподіл оцінок
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-8 h-[350px]">
+                                <CardContent className="p-5 sm:p-8 h-[350px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart data={ratingsData} layout="vertical">
                                             <XAxis type="number" hide />
@@ -184,12 +184,12 @@ export default function AnalyticsClient({
                             </Card>
                         </div>
                         <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                            <CardHeader className="p-8 pb-0">
+                            <CardHeader className="p-5 sm:p-8 pb-0">
                                 <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                     <AlertTriangle className="w-4 h-4 text-rose-500" /> Проблемні категорії (найнижчий бал)
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="p-8 h-[350px]">
+                            <CardContent className="p-5 sm:p-8 h-[350px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart
                                         data={categoryStats.map(s => ({
@@ -215,9 +215,9 @@ export default function AnalyticsClient({
 
                 {activeTab === 'personnel' && (
                     <div className="space-y-8">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:p-8">
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2.5rem] overflow-hidden">
-                                <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
+                                <CardHeader className="p-5 sm:p-8 border-b border-slate-50 bg-slate-50/30">
                                     <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-emerald-600">
                                         <Award className="w-5 h-5" /> Найкращі за рейтингом
                                     </CardTitle>
@@ -243,7 +243,7 @@ export default function AnalyticsClient({
                                 </CardContent>
                             </Card>
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2.5rem] overflow-hidden">
-                                <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
+                                <CardHeader className="p-5 sm:p-8 border-b border-slate-50 bg-slate-50/30">
                                     <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-rose-600">
                                         <AlertTriangle className="w-5 h-5" /> Потребують уваги (Конфліктність)
                                     </CardTitle>
@@ -268,12 +268,12 @@ export default function AnalyticsClient({
                         </div>
 
                         <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                            <CardHeader className="p-8 pb-0">
+                            <CardHeader className="p-5 sm:p-8 pb-0">
                                 <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                     <BarChart3 className="w-4 h-4 text-blue-500" /> Кореляція: Оцінка громадян vs Внутрішня
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="p-8 h-[400px]">
+                            <CardContent className="p-5 sm:p-8 h-[400px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={correlationData}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -292,14 +292,14 @@ export default function AnalyticsClient({
 
                 {activeTab === 'citizens' && (
                     <div className="space-y-8">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:p-8">
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardHeader className="p-8">
+                                <CardHeader className="p-5 sm:p-8">
                                     <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                         <Lock className="w-4 h-4" /> Індекс довіри (Анонімність)
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-8 h-[350px]">
+                                <CardContent className="p-5 sm:p-8 h-[350px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
                                             <Pie data={trust.anonymityData} innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
@@ -314,12 +314,12 @@ export default function AnalyticsClient({
                                 </CardContent>
                             </Card>
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardHeader className="p-8">
+                                <CardHeader className="p-5 sm:p-8">
                                     <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                         <UserCheck className="w-4 h-4" /> Рівень залученості
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-8 h-[350px]">
+                                <CardContent className="p-5 sm:p-8 h-[350px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
                                             <Pie data={trust.engagementData} innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
@@ -337,12 +337,12 @@ export default function AnalyticsClient({
 
                         {trust.suspiciousIps && trust.suspiciousIps.length > 0 && (
                             <Card className="border-0 shadow-lg shadow-rose-200/50 rounded-[2rem] border-l-8 border-rose-500 bg-rose-50/30">
-                                <CardHeader className="p-8">
+                                <CardHeader className="p-5 sm:p-8">
                                     <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-rose-600">
                                         <AlertTriangle className="w-5 h-5" /> Аналіз безпеки (Підозріла активність IP)
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-8 pt-0">
+                                <CardContent className="p-5 sm:p-8 pt-0">
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {trust.suspiciousIps.map((ip: any) => (
                                             <div key={ip.hash} className="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center">
@@ -362,7 +362,7 @@ export default function AnalyticsClient({
                 )}
 
                 {activeTab === 'efficiency' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:p-8">
                         <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-slate-900 text-white">
                             <CardContent className="p-12 text-center space-y-4">
                                 <Clock className="w-12 h-12 mx-auto text-blue-400 mb-4" />
@@ -390,25 +390,25 @@ export default function AnalyticsClient({
 
                         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardContent className="p-8 text-center">
+                                <CardContent className="p-5 sm:p-8 text-center">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-2">Позитивно</p>
                                     <h3 className="text-4xl font-black text-emerald-600">{aiInsights.sentimentDist.positive}</h3>
                                 </CardContent>
                             </Card>
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardContent className="p-8 text-center">
+                                <CardContent className="p-5 sm:p-8 text-center">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Нейтрально</p>
                                     <h3 className="text-4xl font-black text-slate-600">{aiInsights.sentimentDist.neutral}</h3>
                                 </CardContent>
                             </Card>
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardContent className="p-8 text-center">
+                                <CardContent className="p-5 sm:p-8 text-center">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-2">Негативно</p>
                                     <h3 className="text-4xl font-black text-rose-600">{aiInsights.sentimentDist.negative}</h3>
                                 </CardContent>
                             </Card>
                             <Card className="border-0 shadow-lg shadow-rose-200/50 rounded-[2rem] bg-rose-50">
-                                <CardContent className="p-8 text-center">
+                                <CardContent className="p-5 sm:p-8 text-center">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-rose-700 mb-2">Токсично</p>
                                     <h3 className="text-4xl font-black text-rose-700">{aiInsights.sentimentDist.toxic}</h3>
                                 </CardContent>
@@ -419,14 +419,14 @@ export default function AnalyticsClient({
 
                 {activeTab === 'time' && (
                     <div className="space-y-8">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:p-8">
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardHeader className="p-8 pb-0">
+                                <CardHeader className="p-5 sm:p-8 pb-0">
                                     <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                         <Clock3 className="w-4 h-4 text-blue-500" /> Години пік (Негатив по годинах)
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-8 h-[400px]">
+                                <CardContent className="p-5 sm:p-8 h-[400px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart data={timePatterns.hourlyData}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -440,12 +440,12 @@ export default function AnalyticsClient({
                             </Card>
 
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardHeader className="p-8 pb-0">
+                                <CardHeader className="p-5 sm:p-8 pb-0">
                                     <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                         <Clock3 className="w-4 h-4 text-emerald-500" /> День тижня
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-8 h-[400px]">
+                                <CardContent className="p-5 sm:p-8 h-[400px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart data={timePatterns.dayOfWeekData}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -461,12 +461,12 @@ export default function AnalyticsClient({
 
                         {timePatterns.burnoutAlerts && timePatterns.burnoutAlerts.length > 0 && (
                             <Card className="border-0 shadow-lg shadow-amber-200/50 rounded-[2rem] border-l-8 border-amber-500 bg-amber-50/30">
-                                <CardHeader className="p-8">
+                                <CardHeader className="p-5 sm:p-8">
                                     <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-amber-600">
                                         <AlertTriangle className="w-5 h-5" /> Попередження про вигорання
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-8 pt-0">
+                                <CardContent className="p-5 sm:p-8 pt-0">
                                     <div className="space-y-3">
                                         {timePatterns.burnoutAlerts.map((alert: any, idx: number) => (
                                             <div key={idx} className={cn(
@@ -497,24 +497,24 @@ export default function AnalyticsClient({
                 {activeTab === 'predictions' && (
                     <div className="space-y-8">
                         <Card className="border-0 shadow-lg shadow-blue-200/50 rounded-[2rem] bg-gradient-to-br from-blue-50 to-indigo-50">
-                            <CardHeader className="p-8">
+                            <CardHeader className="p-5 sm:p-8">
                                 <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-blue-600">
                                     <Zap className="w-5 h-5" /> Прогноз на наступний місяць
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="p-8 pt-0">
+                            <CardContent className="p-5 sm:p-8 pt-0">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="bg-white p-8 rounded-xl shadow-sm">
+                                    <div className="bg-white p-5 sm:p-8 rounded-xl shadow-sm">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Очікуваний рейтинг</p>
                                         <p className="text-5xl font-black text-blue-600">{avgRating.toFixed(1)}</p>
                                         <p className="text-xs text-slate-400 mt-2">На основі тренду 30 днів</p>
                                     </div>
-                                    <div className="bg-white p-8 rounded-xl shadow-sm">
+                                    <div className="bg-white p-5 sm:p-8 rounded-xl shadow-sm">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Очікувана кількість</p>
                                         <p className="text-5xl font-black text-slate-900">{Math.round(totalReports * 1.05)}</p>
                                         <p className="text-xs text-emerald-500 mt-2 font-bold">+5% зростання</p>
                                     </div>
-                                    <div className="bg-white p-8 rounded-xl shadow-sm">
+                                    <div className="bg-white p-5 sm:p-8 rounded-xl shadow-sm">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Ризик конфліктів</p>
                                         <p className="text-5xl font-black text-amber-500">{timePatterns.burnoutAlerts.length > 0 ? 'Високий' : 'Низький'}</p>
                                         <p className="text-xs text-slate-400 mt-2">{timePatterns.burnoutAlerts.length} офіцерів під ризиком</p>
@@ -524,10 +524,10 @@ export default function AnalyticsClient({
                         </Card>
 
                         <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                            <CardHeader className="p-8">
+                            <CardHeader className="p-5 sm:p-8">
                                 <CardTitle className="text-sm font-black uppercase tracking-widest">Рекомендації системи</CardTitle>
                             </CardHeader>
-                            <CardContent className="p-8 pt-0 space-y-3">
+                            <CardContent className="p-5 sm:p-8 pt-0 space-y-3">
                                 <div className="flex items-start gap-4 p-4 bg-blue-50 rounded-xl">
                                     <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-black flex-shrink-0">1</div>
                                     <div>

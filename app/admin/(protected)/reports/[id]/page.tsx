@@ -115,7 +115,7 @@ export default async function ReportDetailPage({
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content */}
-                <div className="lg:col-span-2 space-y-8">
+                <div className="lg:col-span-2 space-y-6 sm:space-y-8">
                     {/* Basic Info */}
                     <Card className="border-slate-200 shadow-sm overflow-hidden">
                         <CardHeader className="bg-slate-50/50 border-b">
@@ -139,7 +139,7 @@ export default async function ReportDetailPage({
                                 ))}
                             </div>
 
-                            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 relative">
+                            <div className="bg-slate-50 p-5 sm:p-6 rounded-3xl border border-slate-100 relative">
                                 <div className="absolute -top-3 left-6 px-3 py-1 bg-white border border-slate-100 rounded-full flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest">
                                     <MessageSquare className="w-3 h-3" />
                                     Коментар
@@ -402,7 +402,7 @@ export default async function ReportDetailPage({
                     </Card>
 
                     {/* System Info */}
-                    <div className="p-6 bg-slate-50 rounded-3xl border border-slate-200 text-[10px] text-slate-400 space-y-2 font-medium">
+                    <div className="p-5 sm:p-6 bg-slate-50 rounded-3xl border border-slate-200 text-[10px] text-slate-400 space-y-2 font-medium">
                         <div className="flex justify-between">
                             <span className="uppercase tracking-widest">Створено</span>
                             <span className="text-slate-600">{new Date(response.createdAt).toLocaleString()}</span>

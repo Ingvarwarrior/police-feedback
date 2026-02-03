@@ -257,7 +257,7 @@ export default async function DashboardPage() {
                     <div key={stat.title} className="relative group">
                         <Card className={`border-0 shadow-lg ring-1 ring-slate-200 rounded-[2rem] overflow-hidden transition-all hover:ring-blue-400/50 hover:shadow-2xl hover:shadow-blue-100 ${stat.alert ? 'ring-rose-500 ring-2' : ''}`}>
                             {'href' in stat && <Link href={stat.href as string} className="absolute inset-0 z-10" />}
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6 px-6">
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6 px-5 sm:px-6">
                                 <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     {stat.title}
                                 </CardTitle>
@@ -265,7 +265,7 @@ export default async function DashboardPage() {
                                     <stat.icon className="h-5 w-5" />
                                 </div>
                             </CardHeader>
-                            <CardContent className="pb-8 px-6">
+                            <CardContent className="pb-8 px-5 sm:px-6">
                                 <div className="flex items-end justify-between">
                                     <div className="text-4xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</div>
                                     {stat.trend !== undefined && (
@@ -293,7 +293,7 @@ export default async function DashboardPage() {
             <div className="grid gap-8 lg:grid-cols-12 items-start">
                 {/* Live Feed Component */}
                 <Card className="lg:col-span-8 border-0 shadow-xl ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden bg-slate-50/30 backdrop-blur-sm">
-                    <CardHeader className="border-b bg-white px-8 py-6">
+                    <CardHeader className="border-b bg-white px-5 sm:px-8 py-4 sm:py-6">
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-3">
                                 <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
@@ -309,7 +309,7 @@ export default async function DashboardPage() {
                     <CardContent className="p-0 bg-white">
                         <div className="divide-y divide-slate-100">
                             {recentResponses.map((res: any) => (
-                                <div key={res.id} className="group relative px-8 py-6 hover:bg-slate-50 transition-all flex flex-col sm:flex-row gap-6">
+                                <div key={res.id} className="group relative px-5 sm:px-8 py-4 sm:py-6 hover:bg-slate-50 transition-all flex flex-col sm:flex-row gap-6">
                                     <div className="flex-1 space-y-3">
                                         <div className="flex items-center gap-3">
                                             <span className={`w-2 h-2 rounded-full ${res.status === 'NEW' ? 'bg-blue-500 animate-pulse' : 'bg-slate-200'}`} />
@@ -353,13 +353,13 @@ export default async function DashboardPage() {
                 {/* Performance & Categories Column */}
                 <div className="lg:col-span-4 space-y-8">
                     <Card className="border-0 shadow-xl ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden bg-slate-900 text-white">
-                        <CardHeader className="border-b border-white/10 px-8 py-6">
+                        <CardHeader className="border-b border-white/10 px-5 sm:px-8 py-4 sm:py-6">
                             <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-3">
                                 <Award className="w-4 h-4 text-yellow-500" />
                                 Кращі в службі
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="px-8 py-6">
+                        <CardContent className="px-5 sm:px-8 py-6">
                             <div className="space-y-6">
                                 {topOfficers.map((o: any, idx: number) => (
                                     <div key={o.id} className="flex items-center justify-between group">
@@ -385,10 +385,10 @@ export default async function DashboardPage() {
                     </Card>
 
                     <Card className="border-0 shadow-xl ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden">
-                        <CardHeader className="border-b bg-slate-50/50 px-8 py-6">
+                        <CardHeader className="border-b bg-slate-50/50 px-5 sm:px-8 py-4 sm:py-6">
                             <CardTitle className="text-xs font-black uppercase tracking-widest">Якість за напрямками</CardTitle>
                         </CardHeader>
-                        <CardContent className="px-8 py-8 space-y-8">
+                        <CardContent className="px-5 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
                             {[
                                 { label: "Ввічливість", val: avgRatings._avg.ratePoliteness, tint: "from-blue-600 to-indigo-600" },
                                 { label: "Професійність", val: avgRatings._avg.rateProfessionalism, tint: "from-indigo-600 to-violet-600" },

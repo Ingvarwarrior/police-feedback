@@ -139,7 +139,7 @@ export default function DashboardCharts({
 
             <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
                 <Card className="lg:col-span-2 border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden">
-                    <CardHeader className="border-b bg-slate-50/50 px-8 py-6">
+                    <CardHeader className="border-b bg-slate-50/50 px-5 sm:px-8 py-4 sm:py-6">
                         <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                             <MapIcon className="w-4 h-4 text-primary" />
                             Теплова карта активності
@@ -152,13 +152,13 @@ export default function DashboardCharts({
 
                 <div className="space-y-6">
                     <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden">
-                        <CardHeader className="border-b bg-slate-50/50 px-8 py-6">
+                        <CardHeader className="border-b bg-slate-50/50 px-5 sm:px-8 py-4 sm:py-6">
                             <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-indigo-500" />
                                 Час інцидентів
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="px-4 sm:px-6 py-6 h-[200px]">
+                        <CardContent className="px-4 sm:px-6 py-4 sm:py-6 h-[200px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={timeDistributionData}>
                                     <XAxis
@@ -177,13 +177,13 @@ export default function DashboardCharts({
                     </Card>
 
                     <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden">
-                        <CardHeader className="border-b bg-slate-50/50 px-8 py-6">
+                        <CardHeader className="border-b bg-slate-50/50 px-5 sm:px-8 py-4 sm:py-6">
                             <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                 <Sun className="w-4 h-4 text-amber-500" />
                                 Аналіз змін
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="px-8 py-6 h-[200px]">
+                        <CardContent className="px-5 sm:px-8 py-4 sm:py-6 h-[200px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <RePieChart>
                                     <Pie
