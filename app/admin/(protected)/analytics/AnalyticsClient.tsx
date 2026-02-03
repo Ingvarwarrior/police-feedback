@@ -7,8 +7,9 @@ import {
 } from 'recharts'
 import {
     Users, MessageSquare, Star, TrendingUp, AlertTriangle,
-    Shield, ArrowUpRight, ArrowDownRight, Award
+    Shield, ArrowUpRight, ArrowDownRight, Award, Printer
 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface AnalyticsClientProps {
     trendData: any[]
@@ -38,6 +39,18 @@ export default function AnalyticsClient({
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Top Actions */}
+            <div className="flex justify-end gap-3 no-print">
+                <Button
+                    variant="outline"
+                    className="rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 px-6 shadow-sm bg-white"
+                    onClick={() => window.print()}
+                >
+                    <Printer className="w-4 h-4" />
+                    Друк звіту
+                </Button>
+            </div>
+
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] overflow-hidden">
