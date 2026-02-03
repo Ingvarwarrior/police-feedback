@@ -310,11 +310,21 @@ export default async function ReportDetailPage({
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div>
-                                    <p className="text-[10px] text-slate-400 mb-1 font-black uppercase tracking-widest">Ім'я</p>
-                                    <p className="text-slate-900 font-bold">
-                                        {canViewSensitive ? (response.contact.name || 'Не вказано') : '*** ***'}
-                                    </p>
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <p className="text-[10px] text-slate-400 mb-1 font-black uppercase tracking-widest">Ім'я</p>
+                                        <p className="text-slate-900 font-bold">
+                                            {canViewSensitive ? (response.contact.name || 'Не вказано') : '*** ***'}
+                                        </p>
+                                    </div>
+                                    <Link
+                                        href={response.citizenId ? `/admin/citizens/${response.citizenId}` : `/admin/citizens?q=${encodeURIComponent(response.contact.phone)}`}
+                                    >
+                                        <Button variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest gap-2 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200">
+                                            <Eye className="w-3.5 h-3.5" />
+                                            Досьє
+                                        </Button>
+                                    </Link>
                                 </div>
                                 <div>
                                     <p className="text-[10px] text-slate-400 mb-2 font-black uppercase tracking-widest">Телефон</p>
