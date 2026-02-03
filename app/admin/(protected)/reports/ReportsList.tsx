@@ -659,39 +659,6 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                 </table>
             </div >
 
-            {/* Quick Filters */}
-            < div className="flex items-center gap-2 mb-6 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0" >
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">Швидкі фільтри:</span>
-                <div className="grid grid-cols-2 sm:flex gap-2 flex-1">
-                    {['ВСІ', 'НОВІ', 'В РОБОТІ', 'ВИРІШЕНІ', 'АРХІВНІ', 'ТЕРМІНОВО'].map((f) => (
-                        <button
-                            key={f}
-                            onClick={() => {
-                                if (f === 'ВСІ') setQuickFilter('ALL')
-                                else if (f === 'НОВІ') setQuickFilter('NEW')
-                                else if (f === 'В РОБОТІ') setQuickFilter('ASSIGNED')
-                                else if (f === 'ВИРІШЕНІ') setQuickFilter('RESOLVED')
-                                else if (f === 'АРХІВНІ') setQuickFilter('ARCHIVED')
-                                else if (f === 'ТЕРМІНОВО') setQuickFilter('URGENT')
-                            }}
-                            className={cn(
-                                "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all whitespace-nowrap",
-                                quickFilter === f ||
-                                    (f === 'ВСІ' && quickFilter === 'ALL') ||
-                                    (f === 'НОВІ' && quickFilter === 'NEW') ||
-                                    (f === 'В РОБОТІ' && quickFilter === 'ASSIGNED') ||
-                                    (f === 'ВИРІШЕНІ' && quickFilter === 'RESOLVED') ||
-                                    (f === 'АРХІВНІ' && quickFilter === 'ARCHIVED') ||
-                                    (f === 'ТЕРМІНОВО' && quickFilter === 'URGENT')
-                                    ? "bg-primary text-white shadow-lg shadow-primary/30"
-                                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                            )}
-                        >
-                            {f}
-                        </button>
-                    ))}
-                </div>
-            </div >
             {/* Mobile Card View */}
             < div className="lg:hidden space-y-4" >
                 {
