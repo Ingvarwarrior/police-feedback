@@ -16,6 +16,12 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import WordCloudComponent from "./WordCloudComponent"
+import dynamic from 'next/dynamic'
+
+const GeoHeatmap = dynamic(() => import('./GeoHeatmap'), {
+    ssr: false,
+    loading: () => <div className="h-[500px] w-full bg-slate-100 animate-pulse rounded-[2rem]" />
+})
 
 interface AnalyticsClientProps {
     trendData: any[]
@@ -517,10 +523,9 @@ export default function AnalyticsClient({
                                         <p className="text-3xl font-black">{geoData.filter(d => !d.isNegative).length}</p>
                                     </div>
                                 </div>
-                                <div className="bg-slate-100 rounded-2xl p-8 text-center">
-                                    <MapPin className="w-16 h-16 mx-auto text-slate-400 mb-4" />
-                                    <p className="text-slate-600 font-medium">Інтерактивна карта буде інтегрована у наступній версії</p>
-                                    <p className="text-xs text-slate-400 mt-2">Використовуватиметься Leaflet Heatmap Layer</p>
+
+                                <div className="mt-6">
+                                    <GeoHeatmap data={geoData} />
                                 </div>
                             </CardContent>
                         </Card>
@@ -588,6 +593,6 @@ export default function AnalyticsClient({
                 )}
 
             </div>
-        </div>
+        </div >
     )
 }
