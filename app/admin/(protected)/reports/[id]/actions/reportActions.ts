@@ -7,12 +7,23 @@ import { auth } from "@/auth"
 
 export async function updateReportStatus(id: string, status: string) {
     await checkPermission('permChangeStatus')
+
+    // Check ownership
+    const session = await auth()
+    const isAdmin = (session?.user as any)?.role === 'ADMIN'
+
+    if (!isAdmin) {
+        const report = await prisma.response.findUnique({ where: { id }, select: { assignedToId: true } })
+        if (report?.assignedToId !== session?.user?.id) {
+            throw new Error("You can only process reports assigned to you")
+        }
+    }
+
     await prisma.response.update({
         where: { id },
         data: { status }
     })
 
-    const session = await auth()
     if (session?.user?.id) {
         await prisma.auditLog.create({
             data: {
@@ -32,12 +43,23 @@ export async function updateReportStatus(id: string, status: string) {
 
 export async function updateInternalNotes(id: string, notes: string) {
     await checkPermission('permEditNotes')
+
+    // Check ownership
+    const session = await auth()
+    const isAdmin = (session?.user as any)?.role === 'ADMIN'
+
+    if (!isAdmin) {
+        const report = await prisma.response.findUnique({ where: { id }, select: { assignedToId: true } })
+        if (report?.assignedToId !== session?.user?.id) {
+            throw new Error("You can only edit notes on reports assigned to you")
+        }
+    }
+
     await prisma.response.update({
         where: { id },
         data: { internalNotes: notes }
     })
 
-    const session = await auth()
     if (session?.user?.id) {
         await prisma.auditLog.create({
             data: {

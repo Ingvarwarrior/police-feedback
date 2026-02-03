@@ -273,14 +273,14 @@ export default async function ReportDetailPage({
                             <AssignmentControl
                                 responseId={response.id}
                                 currentAssigneeId={response.assignedToId}
-                                canEdit={user?.role === 'ADMIN'}
+                                canEdit={isAdmin}
                             />
 
                             <div className="border-t pt-8">
                                 <StatusControl
                                     id={response.id}
                                     currentStatus={response.status}
-                                    canEdit={user?.role === 'ADMIN' || user?.permChangeStatus}
+                                    canEdit={isAdmin || response.assignedToId === user?.id}
                                 />
                             </div>
 
@@ -288,11 +288,11 @@ export default async function ReportDetailPage({
                                 <InternalNotes
                                     id={response.id}
                                     initialNotes={response.internalNotes}
-                                    canEdit={user?.role === 'ADMIN' || user?.permEditNotes}
+                                    canEdit={isAdmin || response.assignedToId === user?.id}
                                 />
                             </div>
 
-                            {user?.role === 'ADMIN' && (
+                            {isAdmin && (
                                 <div className="border-t pt-2">
                                     <DeleteReportButton id={response.id} />
                                 </div>
@@ -357,7 +357,7 @@ export default async function ReportDetailPage({
                                 initialIsConfirmed={response.isConfirmed}
                                 canEdit={
                                     response.status !== 'RESOLVED' &&
-                                    (user?.role === 'ADMIN' || response.assignedToId === user?.id)
+                                    (isAdmin || response.assignedToId === user?.id)
                                 }
                             />
                         )

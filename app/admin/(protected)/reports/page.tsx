@@ -12,9 +12,8 @@ export default async function ReportsPage() {
     if (!email) return null
 
     const where: any = {}
-    if ((session?.user as any)?.role !== 'ADMIN') {
-        where.assignedToId = (session?.user as any)?.id
-    }
+    // Previously limited to assigned only, now open to all inspectors
+
 
     const [responses, users, currentUser] = await Promise.all([
         prisma.response.findMany({
