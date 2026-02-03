@@ -17,8 +17,16 @@ import {
     ArrowUpDown,
     Download,
     Edit2,
-    Briefcase
+    Trash2,
+    Briefcase,
+    CheckSquare,
+    Square,
+    MoreVertical,
+    UserPlus,
+    XCircle,
+    Loader2
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 import {
     Select,
     SelectContent,
@@ -28,8 +36,25 @@ import {
 } from "@/components/ui/select"
 import { format } from "date-fns"
 import { uk } from "date-fns/locale"
+import { toast } from "sonner"
 
 import CreateRecordDialog from "./CreateRecordDialog"
+import {
+    deleteUnifiedRecordAction,
+    bulkDeleteUnifiedRecordsAction,
+    bulkAssignUnifiedRecordsAction
+} from "../actions/recordActions"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface RecordListProps {
     initialRecords: any[]
@@ -40,6 +65,11 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
     const [searchTerm, setSearchTerm] = useState("")
     const [categoryFilter, setCategoryFilter] = useState("ALL")
     const [sortBy, setSortBy] = useState("newest")
+
+    // Selection state
+    const [selectedIds, setSelectedIds] = useState<string[]>([])
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [isAssigning, setIsAssigning] = useState(false)
 
     const filteredRecords = useMemo(() => {
         let result = [...initialRecords]
@@ -71,6 +101,58 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
         const cats = new Set(initialRecords.map(r => r.category).filter(Boolean))
         return Array.from(cats)
     }, [initialRecords])
+
+    const toggleSelectAll = () => {
+        if (selectedIds.length === filteredRecords.length) {
+            setSelectedIds([])
+        } else {
+            setSelectedIds(filteredRecords.map(r => r.id))
+        }
+    }
+
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        )
+    }
+
+    const handleDelete = async (id: string) => {
+        setIsDeleting(true)
+        try {
+            await deleteUnifiedRecordAction(id)
+            toast.success("Запис видалено")
+        } catch (error) {
+            toast.error("Помилка видалення")
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
+    const handleBulkDelete = async () => {
+        setIsDeleting(true)
+        try {
+            await bulkDeleteUnifiedRecordsAction(selectedIds)
+            toast.success(`Видалено ${selectedIds.length} записів`)
+            setSelectedIds([])
+        } catch (error) {
+            toast.error("Помилка масового видалення")
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
+    const handleBulkAssign = async (userId: string) => {
+        setIsAssigning(true)
+        try {
+            await bulkAssignUnifiedRecordsAction(selectedIds, userId)
+            toast.success(`Призначено ${selectedIds.length} записів`)
+            setSelectedIds([])
+        } catch (error) {
+            toast.error("Помилка масового призначення")
+        } finally {
+            setIsAssigning(false)
+        }
+    }
 
     return (
         <div className="space-y-6">
@@ -110,6 +192,22 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                             <SelectItem value="oldest">Спочатку старі</SelectItem>
                         </SelectContent>
                     </Select>
+
+                    <Button
+                        variant="outline"
+                        className={cn(
+                            "h-12 rounded-xl px-4 border-slate-200 font-bold gap-2 transition-all",
+                            selectedIds.length === filteredRecords.length && filteredRecords.length > 0 ? "bg-blue-50 border-blue-200 text-blue-600" : "bg-white hover:bg-slate-50"
+                        )}
+                        onClick={toggleSelectAll}
+                    >
+                        {selectedIds.length === filteredRecords.length && filteredRecords.length > 0 ? (
+                            <CheckSquare className="w-4 h-4" />
+                        ) : (
+                            <Square className="w-4 h-4" />
+                        )}
+                        Вибрати всі
+                    </Button>
 
                     <Button variant="outline" className="h-12 rounded-xl px-4 border-slate-200 hover:bg-slate-50 font-bold gap-2">
                         <Download className="w-4 h-4" />
@@ -157,9 +255,23 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
                         {filteredRecords.map((record) => (
-                            <Card key={record.id} className="border-0 shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden group border border-transparent hover:border-blue-100">
+                            <Card key={record.id} className={cn(
+                                "border-0 shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden group border border-transparent",
+                                selectedIds.includes(record.id) ? "border-blue-200 ring-2 ring-blue-500/10" : "hover:border-blue-100"
+                            )}>
                                 <CardContent className="p-0">
-                                    <div className="flex flex-col lg:flex-row">
+                                    <div className="flex flex-col lg:flex-row relative">
+                                        {/* Row Selection Checkbox */}
+                                        <button
+                                            onClick={() => toggleSelect(record.id)}
+                                            className={cn(
+                                                "absolute left-4 top-4 z-10 w-6 h-6 rounded-lg flex items-center justify-center transition-all",
+                                                selectedIds.includes(record.id) ? "bg-blue-600 text-white" : "bg-white/80 border border-slate-200 text-slate-400 opacity-0 group-hover:opacity-100"
+                                            )}
+                                        >
+                                            <CheckSquare className="w-4 h-4" />
+                                        </button>
+
                                         {/* Status Sidebar */}
                                         <div className={`w-full lg:w-2 ${record.resolution ? 'bg-emerald-500' : 'bg-amber-500'}`} />
 
@@ -193,6 +305,34 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                                                             </Button>
                                                         }
                                                     />
+
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="ghost" size="sm" className="h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all">
+                                                                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                                                                Видалити
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle className="text-xl font-black uppercase italic tracking-tight">Будьте обережні!</AlertDialogTitle>
+                                                                <AlertDialogDescription className="text-slate-500 font-medium">
+                                                                    Ви впевнені, що хочете видалити цей запис ({record.eoNumber})? <br />
+                                                                    Цю дію неможливо буде скасувати.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter className="bg-slate-50 p-6 -m-6 mt-6 rounded-b-[2rem]">
+                                                                <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500">Скасувати</AlertDialogCancel>
+                                                                <AlertDialogAction
+                                                                    onClick={() => handleDelete(record.id)}
+                                                                    className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
+                                                                >
+                                                                    Так, видалити
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+
                                                     {record.category && (
                                                         <span className="px-3 py-1 bg-slate-900 text-white text-[9px] font-black rounded-lg uppercase tracking-wider">
                                                             {record.category}
@@ -261,6 +401,71 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                     </div>
                 )}
             </div>
+
+            {/* Bulk Actions Floating Toolbar */}
+            {selectedIds.length > 0 && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-5">
+                    <div className="bg-slate-900 text-white px-8 py-4 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-8 border border-white/10 backdrop-blur-xl">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Вибрано</span>
+                            <span className="text-xl font-black italic">{selectedIds.length} записів</span>
+                        </div>
+
+                        <div className="h-10 w-px bg-white/10" />
+
+                        <div className="flex items-center gap-3">
+                            <Select onValueChange={(val) => handleBulkAssign(val)}>
+                                <SelectTrigger className="h-12 rounded-2xl bg-white/5 border-white/10 hover:bg-white/10 transition-all min-w-[200px] text-sm font-bold">
+                                    <UserPlus className="w-4 h-4 mr-2 text-blue-400" />
+                                    <SelectValue placeholder="Призначити вибрані..." />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl border-none shadow-2xl">
+                                    {users.map(user => (
+                                        <SelectItem key={user.id} value={user.id}>
+                                            {user.lastName} {user.firstName || user.username}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button className="h-12 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold px-6 transition-all gap-2">
+                                        <Trash2 className="w-4 h-4" />
+                                        Видалити
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle className="text-xl font-black uppercase italic tracking-tight">Масове видалення</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-slate-500 font-medium">
+                                            Ви впевнені, що хочете видалити {selectedIds.length} вибраних записів? <br />
+                                            Ця дія незворотна.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter className="bg-slate-50 p-6 -m-6 mt-6 rounded-b-[2rem]">
+                                        <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500">Скасувати</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={handleBulkDelete}
+                                            className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
+                                        >
+                                            Так, видалити все
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+
+                            <Button
+                                variant="ghost"
+                                className="h-12 w-12 rounded-2xl hover:bg-white/10 text-slate-400 p-0"
+                                onClick={() => setSelectedIds([])}
+                            >
+                                <XCircle className="w-6 h-6" />
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

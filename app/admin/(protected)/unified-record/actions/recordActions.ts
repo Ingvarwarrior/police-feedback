@@ -191,3 +191,40 @@ export async function getUsersForAssignment() {
         orderBy: { lastName: 'asc' }
     })
 }
+
+export async function deleteUnifiedRecordAction(id: string) {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    await prisma.unifiedRecord.delete({
+        where: { id }
+    })
+
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
+
+export async function bulkDeleteUnifiedRecordsAction(ids: string[]) {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    await prisma.unifiedRecord.deleteMany({
+        where: { id: { in: ids } }
+    })
+
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
+
+export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: string) {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    await prisma.unifiedRecord.updateMany({
+        where: { id: { in: ids } },
+        data: { assignedUserId: userId }
+    })
+
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
