@@ -310,21 +310,20 @@ export default async function ReportDetailPage({
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <p className="text-[10px] text-slate-400 mb-1 font-black uppercase tracking-widest">Ім'я</p>
-                                        <p className="text-slate-900 font-bold">
-                                            {canViewSensitive ? (response.contact.name || 'Не вказано') : '*** ***'}
-                                        </p>
-                                    </div>
-                                    <Link
-                                        href={response.citizenId ? `/admin/citizens/${response.citizenId}` : `/admin/citizens?q=${encodeURIComponent(response.contact.phone)}`}
-                                    >
-                                        <Button variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest gap-2 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200">
+                                <div>
+                                    <p className="text-[10px] text-slate-400 mb-1 font-black uppercase tracking-widest">Ім'я</p>
+                                    <p className="text-slate-900 font-bold">
+                                        {canViewSensitive ? (response.contact.name || 'Не вказано') : '*** ***'}
+                                    </p>
+                                    <div className="absolute top-4 right-4">
+                                        <Link
+                                            href={response.citizenId ? `/admin/citizens/${response.citizenId}` : `/admin/citizens?q=${encodeURIComponent(response.contact.phone)}`}
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary hover:border-primary transition-all shadow-sm"
+                                        >
                                             <Eye className="w-3.5 h-3.5" />
                                             Досьє
-                                        </Button>
-                                    </Link>
+                                        </Link>
+                                    </div>
                                 </div>
                                 <div>
                                     <p className="text-[10px] text-slate-400 mb-2 font-black uppercase tracking-widest">Телефон</p>
