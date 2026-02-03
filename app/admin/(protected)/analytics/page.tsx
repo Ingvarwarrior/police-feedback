@@ -32,7 +32,7 @@ export default async function AnalyticsPage() {
                 ipHash: true,
                 citizenId: true,
                 resolutionDate: true,
-                description: true,
+                comment: true,
                 officerId: true,
                 geoPoint: true
             }
@@ -161,9 +161,9 @@ export default async function AnalyticsPage() {
 
     // 8. AI Text Analytics
     const negativeResponses = ratedResponses.filter(r => r.rateOverall < 3)
-    const negativeTexts = negativeResponses.map(r => r.description || '').filter(Boolean)
+    const negativeTexts = negativeResponses.map(r => r.comment || '').filter(Boolean)
     const keywords = extractKeywords(negativeTexts)
-    const sentimentDist = getSentimentDistribution(ratedResponses.map(r => r.description || ''))
+    const sentimentDist = getSentimentDistribution(ratedResponses.map(r => r.comment || ''))
 
     // 9. Time Analytics
     const hourlyData = getHourlyDistribution(ratedResponses)
