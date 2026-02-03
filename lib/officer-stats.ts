@@ -25,7 +25,7 @@ export async function refreshOfficerStats(officerId: string) {
                 { taggedOfficers: { some: { id: officerId } } }
             ],
             isConfirmed: true,
-            rateOverall: { not: null }
+            rateOverall: { gt: 0 }
         },
         select: {
             rateOverall: true
@@ -37,7 +37,11 @@ export async function refreshOfficerStats(officerId: string) {
             OR: [
                 { officerId },
                 { taggedOfficers: { some: { id: officerId } } }
-            ]
+            ],
+            // Should we count unrated reports in totalResponses? 
+            // User said: "not rated means haven't been evaluated yet".
+            // Let's count only rated ones for the main statistics.
+            rateOverall: { gt: 0 }
         }
     })
 
@@ -52,7 +56,7 @@ export async function refreshOfficerStats(officerId: string) {
             e.scoreCommunication,
             e.scoreProfessionalism,
             e.scorePhysical
-        ].filter((s): s is number => typeof s === 'number')
+        ].filter((s): s is number => typeof s === 'number' && s > 0)
 
         if (scores.length > 0) {
             totalPoints += scores.reduce((a, b) => a + b, 0) / scores.length
@@ -62,7 +66,7 @@ export async function refreshOfficerStats(officerId: string) {
 
     // Add Citizen Feedback to average
     citizenFeedback.forEach((f: any) => {
-        if (f.rateOverall) {
+        if (f.rateOverall && f.rateOverall > 0) {
             totalPoints += f.rateOverall
             totalCount++
         }
@@ -75,9 +79,7 @@ export async function refreshOfficerStats(officerId: string) {
         data: {
             avgScore: Number(avgScore.toFixed(2)),
             totalEvaluations: evals.length,
-            totalResponses: citizenFeedback.length // Only confirmed ones for the "active" count? 
-            // Usually totalResponses in the UI shows ALL responses, but let's keep it as is or update.
-            // Let's use the actual count of all responses for the badge.
+            totalResponses: totalResponsesCount
         }
     })
 }

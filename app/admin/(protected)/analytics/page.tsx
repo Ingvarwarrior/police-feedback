@@ -59,6 +59,7 @@ export default async function AnalyticsPage() {
             }
         }),
         prisma.response.groupBy({
+            where: { rateOverall: { gt: 0 } },
             by: ['incidentType'],
             _count: true,
             _avg: {
@@ -84,9 +85,9 @@ export default async function AnalyticsPage() {
     }
     responses.forEach(r => {
         const dateStr = new Date(r.createdAt).toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' })
-        if (dailyTrends[dateStr]) {
+        if (dailyTrends[dateStr] && r.rateOverall && r.rateOverall > 0) {
             dailyTrends[dateStr].count++
-            dailyTrends[dateStr].avg += (r.rateOverall || 0)
+            dailyTrends[dateStr].avg += r.rateOverall
         }
     })
     const trendData = Object.values(dailyTrends).reverse().map(t => ({

@@ -19,6 +19,7 @@ export default async function DashboardPage() {
         }),
         // Average ratings
         prisma.response.aggregate({
+            where: { rateOverall: { gt: 0 } },
             _avg: {
                 rateOverall: true,
                 ratePoliteness: true,

@@ -30,8 +30,12 @@ export function calculateCitizenTags(responses: any[]): BehavioralTag[] {
     }
 
     // 2. Critical Reporter
-    const avgScore = responses.reduce((acc, r) => acc + (r.rateOverall || 0), 0) / responses.length
-    if (avgScore <= 2) {
+    const ratedResponses = responses.filter(r => r.rateOverall && r.rateOverall > 0)
+    const avgScore = ratedResponses.length > 0
+        ? ratedResponses.reduce((acc, r) => acc + r.rateOverall, 0) / ratedResponses.length
+        : 0
+
+    if (avgScore > 0 && avgScore <= 2) {
         tags.push({
             id: 'critical_reporter',
             label: 'Критичний',
@@ -79,13 +83,15 @@ export function getOfficerInteractions(responses: any[]): OfficerInteraction[] {
                     avgScore: 0
                 }
             }
-            interactions[off.id].count++
-            // Add score contribution for this interaction
-            interactions[off.id].avgScore += (resp.rateOverall || 0)
+            if (resp.rateOverall && resp.rateOverall > 0) {
+                interactions[off.id].count++
+                interactions[off.id].avgScore += resp.rateOverall
+            }
         })
     })
 
     return Object.values(interactions)
+        .filter(i => i.count > 0) // Only show if rated
         .map(i => ({
             ...i,
             avgScore: i.avgScore / i.count
