@@ -377,19 +377,39 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                                                         <span className="text-xs font-bold uppercase tracking-widest">Відповідальний</span>
                                                     </div>
                                                     <div className="space-y-1">
-                                                        {record.assignedUser ? (
-                                                            <div className="flex items-center gap-1.5 mt-1">
-                                                                <p className="text-sm font-bold text-slate-900">
-                                                                    {record.assignedUser.lastName || ''} {record.assignedUser.firstName || record.assignedUser.username}
-                                                                </p>
-                                                            </div>
-                                                        ) : record.officerName ? (
-                                                            <p className="text-sm font-bold text-slate-700">
-                                                                {record.officerName}
-                                                            </p>
-                                                        ) : (
-                                                            <p className="text-sm font-bold text-slate-400 italic">
-                                                                Не призначено
+                                                        <Select
+                                                            defaultValue={record.assignedUserId || undefined}
+                                                            onValueChange={async (val) => {
+                                                                // We use current selections or just this one ID
+                                                                const targetIds = selectedIds.includes(record.id) ? selectedIds : [record.id]
+                                                                setIsAssigning(true)
+                                                                try {
+                                                                    await bulkAssignUnifiedRecordsAction(targetIds, val)
+                                                                    toast.success(targetIds.length > 1 ? `Призначено ${targetIds.length} записів` : "Інспектора призначено")
+                                                                    setSelectedIds([])
+                                                                } catch (error) {
+                                                                    toast.error("Помилка призначення")
+                                                                } finally {
+                                                                    setIsAssigning(false)
+                                                                }
+                                                            }}
+                                                            disabled={isAssigning}
+                                                        >
+                                                            <SelectTrigger className="h-9 rounded-xl border-slate-100 bg-slate-50/50 hover:bg-slate-100 transition-all text-sm font-bold w-full">
+                                                                <SelectValue placeholder="Оберіть інспектора..." />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="rounded-2xl border-none shadow-2xl">
+                                                                {users.map(user => (
+                                                                    <SelectItem key={user.id} value={user.id}>
+                                                                        {user.lastName} {user.firstName || user.username}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+
+                                                        {record.officerName && !record.assignedUser && (
+                                                            <p className="text-[10px] font-medium text-slate-400 mt-1 italic pl-1">
+                                                                З файлу: {record.officerName}
                                                             </p>
                                                         )}
                                                     </div>
