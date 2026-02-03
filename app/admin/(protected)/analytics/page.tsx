@@ -160,7 +160,7 @@ export default async function AnalyticsPage() {
     const ratedResponses = responses.filter(r => r.rateOverall && r.rateOverall > 0)
 
     // 8. AI Text Analytics
-    const negativeResponses = ratedResponses.filter(r => r.rateOverall < 3)
+    const negativeResponses = ratedResponses.filter(r => r.rateOverall! < 3)
     const negativeTexts = negativeResponses.map(r => r.comment || '').filter(Boolean)
     const keywords = extractKeywords(negativeTexts)
     const sentimentDist = getSentimentDistribution(ratedResponses.map(r => r.comment || ''))
@@ -183,10 +183,10 @@ export default async function AnalyticsPage() {
     const geoData = ratedResponses
         .filter(r => r.geoPoint)
         .map(r => ({
-            lat: (r.geoPoint as any).coordinates[1],
-            lng: (r.geoPoint as any).coordinates[0],
-            rating: r.rateOverall,
-            isNegative: r.rateOverall < 3
+            lat: r.geoPoint!.lat,
+            lng: r.geoPoint!.lon,
+            rating: r.rateOverall!,
+            isNegative: r.rateOverall! < 3
         }))
 
     return (
