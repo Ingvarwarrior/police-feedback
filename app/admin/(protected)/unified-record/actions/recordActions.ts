@@ -1,0 +1,97 @@
+'use server'
+
+import { prisma } from "@/lib/prisma"
+import { auth } from "@/auth"
+import { revalidatePath } from "next/cache"
+import * as XLSX from 'xlsx'
+
+export async function getUnifiedRecords(params?: {
+    search?: string
+    category?: string
+    from?: string
+    to?: string
+}) {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    const where: any = {}
+
+    if (params?.search) {
+        where.OR = [
+            { eoNumber: { contains: params.search } },
+            { description: { contains: params.search } },
+            { address: { contains: params.search } },
+            { applicant: { contains: params.search } },
+        ]
+    }
+
+    if (params?.category && params.category !== 'ALL') {
+        where.category = params.category
+    }
+
+    if (params?.from || params?.to) {
+        where.eoDate = {}
+        if (params.from) where.eoDate.gte = new Date(params.from)
+        if (params.to) where.eoDate.lte = new Date(params.to)
+    }
+
+    return await prisma.unifiedRecord.findMany({
+        where,
+        orderBy: { eoDate: 'desc' },
+        take: 100 // Limit for performance
+    })
+}
+
+export async function importUnifiedRecordsFromExcel(formData: FormData) {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    const file = formData.get('file') as File
+    if (!file) throw new Error("No file provided")
+
+    const buffer = await file.arrayBuffer()
+    const workbook = XLSX.read(buffer)
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+    const data = XLSX.utils.sheet_to_json(worksheet)
+
+    let importedCount = 0
+    let updatedCount = 0
+
+    for (const row of data as any[]) {
+        // Mapping logic - assuming standard or common column names
+        // Adjust these mappings based on actual file format
+        const eoNumber = row['Номер ЄО'] || row['Номер'] || row['eoNumber'] || row['ID']
+        if (!eoNumber) continue
+
+        const eoDateStr = row['Дата'] || row['Дата/Час'] || row['Date']
+        const eoDate = eoDateStr ? new Date(eoDateStr) : new Date()
+
+        const record = {
+            eoNumber: String(eoNumber),
+            eoDate,
+            district: row['Район'] || row['District'] || null,
+            address: row['Адреса'] || row['Address'] || null,
+            description: row['Зміст'] || row['Опис'] || row['Description'] || null,
+            applicant: row['Заявник'] || row['Applicant'] || null,
+            category: row['Категорія'] || row['Category'] || null,
+            officerName: row['Офіцер'] || row['Officer'] || null,
+            resolution: row['Рішення'] || row['Resolution'] || null,
+            resolutionDate: row['Дата рішення'] ? new Date(row['Дата рішення']) : null,
+            sourceFile: file.name
+        }
+
+        try {
+            await prisma.unifiedRecord.upsert({
+                where: { eoNumber: record.eoNumber },
+                update: record,
+                create: record
+            })
+            importedCount++
+        } catch (e) {
+            console.error(`Error importing EO ${eoNumber}:`, e)
+        }
+    }
+
+    revalidatePath('/admin/unified-record')
+    return { success: true, count: importedCount }
+}

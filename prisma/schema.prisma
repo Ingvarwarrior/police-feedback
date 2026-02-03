@@ -331,3 +331,27 @@ model CitizenPhone {
   phone       String   @unique
   createdAt   DateTime @default(now())
 }
+
+model UnifiedRecord {
+  id              String   @id @default(uuid())
+  eoNumber        String   @unique
+  eoDate          DateTime
+  district        String?
+  address         String?
+  description     String?
+  applicant       String?
+  category        String?
+  officerName     String?
+  resolution      String?
+  resolutionDate  DateTime?
+  
+  sourceFile      String?  // Name of the uploaded Excel file
+  importedAt      DateTime @default(now())
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([eoNumber])
+  @@index([eoDate])
+  @@index([category])
+}

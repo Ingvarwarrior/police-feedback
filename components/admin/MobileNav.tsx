@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Menu, X, LayoutDashboard, FileText, Users, Settings, LogOut, ShieldCheck, Map as MapIcon, Activity } from "lucide-react"
+import { Menu, X, LayoutDashboard, FileText, Users, Settings, LogOut, ShieldCheck, Map as MapIcon, Activity, ClipboardList } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
@@ -32,6 +32,7 @@ export default function MobileNav({ user }: MobileNavProps) {
         { href: "/admin/dashboard", label: "Дашборд", icon: LayoutDashboard },
         { href: "/admin/analytics", label: "Аналітика", icon: Activity },
         { href: "/admin/reports", label: "Відгуки громадян", icon: FileText },
+        { href: "/admin/unified-record", label: "Єдиний облік", icon: ClipboardList },
         { href: "/admin/map", label: "Мапа", icon: MapIcon },
         { href: "/admin/citizens", label: "Громадяни", icon: Users },
         { href: "/admin/officers", label: "Особовий склад", icon: ShieldCheck },
