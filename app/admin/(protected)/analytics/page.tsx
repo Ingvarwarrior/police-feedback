@@ -179,15 +179,7 @@ export default async function AnalyticsPage() {
             return levelOrder[b!.alertLevel] - levelOrder[a!.alertLevel]
         })
 
-    // 11. Geo clustering (prepare data for heatmap)
-    const geoData = ratedResponses
-        .filter(r => r.geoPoint)
-        .map(r => ({
-            lat: r.geoPoint!.lat,
-            lng: r.geoPoint!.lon,
-            rating: r.rateOverall!,
-            isNegative: r.rateOverall! < 3
-        }))
+
 
     return (
         <div className="space-y-8 pb-10">
@@ -222,7 +214,7 @@ export default async function AnalyticsPage() {
                     dayOfWeekData,
                     burnoutAlerts: burnoutAlerts as any[]
                 }}
-                geoData={geoData}
+
             />
         </div>
     )

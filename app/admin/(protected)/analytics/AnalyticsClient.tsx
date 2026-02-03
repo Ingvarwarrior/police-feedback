@@ -16,12 +16,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import WordCloudComponent from "./WordCloudComponent"
-import dynamic from 'next/dynamic'
 
-const GeoHeatmap = dynamic(() => import('./GeoHeatmap'), {
-    ssr: false,
-    loading: () => <div className="h-[500px] w-full bg-slate-100 animate-pulse rounded-[2rem]" />
-})
 
 interface AnalyticsClientProps {
     trendData: any[]
@@ -49,7 +44,6 @@ interface AnalyticsClientProps {
         dayOfWeekData: any[]
         burnoutAlerts: any[]
     }
-    geoData: any[]
 }
 
 const COLORS = ['#0f172a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444']
@@ -67,7 +61,6 @@ export default function AnalyticsClient({
     correlationData,
     aiInsights,
     timePatterns,
-    geoData
 }: AnalyticsClientProps) {
     const [activeTab, setActiveTab] = useState<'feedback' | 'personnel' | 'citizens' | 'efficiency' | 'ai' | 'time' | 'geo' | 'predictions'>('feedback')
 
@@ -84,7 +77,7 @@ export default function AnalyticsClient({
         { id: 'efficiency', label: 'Ефективність', icon: TrendingUp },
         { id: 'ai', label: 'AI Інсайти', icon: Brain },
         { id: 'time', label: 'Час', icon: Clock3 },
-        { id: 'geo', label: 'Карта', icon: MapPin },
+
         { id: 'predictions', label: 'Прогнози', icon: Zap },
     ]
 
@@ -499,38 +492,7 @@ export default function AnalyticsClient({
                     </div>
                 )}
 
-                {activeTab === 'geo' && (
-                    <div>
-                        <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                            <CardHeader className="p-8">
-                                <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                                    <MapPin className="w-4 h-4 text-blue-500" /> Географічний розподіл
-                                </CardTitle>
-                                <p className="text-xs text-slate-400 mt-2">Точки негативних відгуків (рейтинг &lt; 3)</p>
-                            </CardHeader>
-                            <CardContent className="p-8">
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-                                    <div className="bg-slate-900 text-white p-6 rounded-xl text-center">
-                                        <p className="text-[10px] font-black uppercase tracking-widest mb-2">Всього точок</p>
-                                        <p className="text-3xl font-black">{geoData.length}</p>
-                                    </div>
-                                    <div className="bg-rose-500 text-white p-6 rounded-xl text-center">
-                                        <p className="text-[10px] font-black uppercase tracking-widest mb-2">Негативні</p>
-                                        <p className="text-3xl font-black">{geoData.filter(d => d.isNegative).length}</p>
-                                    </div>
-                                    <div className="bg-emerald-500 text-white p-6 rounded-xl text-center">
-                                        <p className="text-[10px] font-black uppercase tracking-widest mb-2">Позитивні</p>
-                                        <p className="text-3xl font-black">{geoData.filter(d => !d.isNegative).length}</p>
-                                    </div>
-                                </div>
 
-                                <div className="mt-6">
-                                    <GeoHeatmap data={geoData} />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
 
                 {activeTab === 'predictions' && (
                     <div className="space-y-8">
