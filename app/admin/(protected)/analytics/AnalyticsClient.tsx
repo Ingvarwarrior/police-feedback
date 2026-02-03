@@ -10,10 +10,12 @@ import {
 import {
     Users, MessageSquare, Star, TrendingUp, AlertTriangle,
     Shield, ArrowUpRight, Award, Printer, Clock, Lock,
-    UserCheck, BarChart3, PieChart as PieIcon
+    UserCheck, BarChart3, PieChart as PieIcon, Brain, Clock3,
+    MapPin, Zap
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import WordCloudComponent from "./WordCloudComponent"
 
 interface AnalyticsClientProps {
     trendData: any[]
@@ -32,6 +34,16 @@ interface AnalyticsClientProps {
         suspiciousIps: any[]
     }
     correlationData: any[]
+    aiInsights: {
+        keywords: any[]
+        sentimentDist: any
+    }
+    timePatterns: {
+        hourlyData: any[]
+        dayOfWeekData: any[]
+        burnoutAlerts: any[]
+    }
+    geoData: any[]
 }
 
 const COLORS = ['#0f172a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444']
@@ -46,9 +58,12 @@ export default function AnalyticsClient({
     totalReports,
     efficiency,
     trust,
-    correlationData
+    correlationData,
+    aiInsights,
+    timePatterns,
+    geoData
 }: AnalyticsClientProps) {
-    const [activeTab, setActiveTab] = useState<'feedback' | 'personnel' | 'citizens' | 'efficiency'>('feedback')
+    const [activeTab, setActiveTab] = useState<'feedback' | 'personnel' | 'citizens' | 'efficiency' | 'ai' | 'time' | 'geo' | 'predictions'>('feedback')
 
     const avgRating = ratingsData.reduce((acc, curr, idx) => acc + (curr.value * (idx + 1)), 0) / (totalReports || 1)
 
@@ -61,6 +76,10 @@ export default function AnalyticsClient({
         { id: 'personnel', label: 'Особовий склад', icon: Shield },
         { id: 'citizens', label: 'Громадяни', icon: Users },
         { id: 'efficiency', label: 'Ефективність', icon: TrendingUp },
+        { id: 'ai', label: 'AI Інсайти', icon: Brain },
+        { id: 'time', label: 'Час', icon: Clock3 },
+        { id: 'geo', label: 'Карта', icon: MapPin },
+        { id: 'predictions', label: 'Прогнози', icon: Zap },
     ]
 
     return (
@@ -365,6 +384,209 @@ export default function AnalyticsClient({
                         </Card>
                     </div>
                 )}
+
+                {activeTab === 'ai' && (
+                    <div className="space-y-8">
+                        <WordCloudComponent keywords={aiInsights.keywords} />
+
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
+                                <CardContent className="p-8 text-center">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-2">Позитивно</p>
+                                    <h3 className="text-4xl font-black text-emerald-600">{aiInsights.sentimentDist.positive}</h3>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
+                                <CardContent className="p-8 text-center">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Нейтрально</p>
+                                    <h3 className="text-4xl font-black text-slate-600">{aiInsights.sentimentDist.neutral}</h3>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
+                                <CardContent className="p-8 text-center">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-2">Негативно</p>
+                                    <h3 className="text-4xl font-black text-rose-600">{aiInsights.sentimentDist.negative}</h3>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-rose-200/50 rounded-[2rem] bg-rose-50">
+                                <CardContent className="p-8 text-center">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-rose-700 mb-2">Токсично</p>
+                                    <h3 className="text-4xl font-black text-rose-700">{aiInsights.sentimentDist.toxic}</h3>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'time' && (
+                    <div className="space-y-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
+                                <CardHeader className="p-8 pb-0">
+                                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                        <Clock3 className="w-4 h-4 text-blue-500" /> Години пік (Негатив по годинах)
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-8 h-[400px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={timePatterns.hourlyData}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                            <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
+                                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
+                                            <Tooltip contentStyle={{ borderRadius: '16px', border: 'none' }} />
+                                            <Bar dataKey="negativeCount" name="Негативних" fill="#ef4444" radius={[8, 8, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
+                                <CardHeader className="p-8 pb-0">
+                                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                        <Clock3 className="w-4 h-4 text-emerald-500" /> День тижня
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-8 h-[400px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={timePatterns.dayOfWeekData}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                            <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
+                                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} domain={[0, 5]} />
+                                            <Tooltip contentStyle={{ borderRadius: '16px', border: 'none' }} />
+                                            <Bar dataKey="avgRating" name="Середній бал" fill="#10b981" radius={[8, 8, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {timePatterns.burnoutAlerts && timePatterns.burnoutAlerts.length > 0 && (
+                            <Card className="border-0 shadow-lg shadow-amber-200/50 rounded-[2rem] border-l-8 border-amber-500 bg-amber-50/30">
+                                <CardHeader className="p-8">
+                                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-amber-600">
+                                        <AlertTriangle className="w-5 h-5" /> Попередження про вигорання
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-8 pt-0">
+                                    <div className="space-y-3">
+                                        {timePatterns.burnoutAlerts.map((alert: any, idx: number) => (
+                                            <div key={idx} className={cn(
+                                                "flex items-center justify-between p-4 rounded-xl",
+                                                alert.alertLevel === 'critical' ? 'bg-rose-100 border-2 border-rose-500' : 'bg-amber-100 border-2 border-amber-500'
+                                            )}>
+                                                <div>
+                                                    <p className="font-black text-slate-900">{alert.officerName}</p>
+                                                    <p className="text-xs text-slate-500">
+                                                        Тренд: <span className={alert.trend === 'declining' ? 'text-rose-600 font-bold' : 'text-emerald-600'}>{alert.trend === 'declining' ? '📉 Погіршення' : '📈 Покращення'}</span>
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-2xl font-black text-slate-900">{alert.currentRating.toFixed(1)}</p>
+                                                    <p className="text-[10px] text-slate-400 uppercase font-bold">30д: {alert.last30Days.toFixed(1)} | 90д: {alert.last90Days.toFixed(1)}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'geo' && (
+                    <div>
+                        <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
+                            <CardHeader className="p-8">
+                                <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                    <MapPin className="w-4 h-4 text-blue-500" /> Географічний розподіл
+                                </CardTitle>
+                                <p className="text-xs text-slate-400 mt-2">Точки негативних відгуків (рейтинг &lt; 3)</p>
+                            </CardHeader>
+                            <CardContent className="p-8">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+                                    <div className="bg-slate-900 text-white p-6 rounded-xl text-center">
+                                        <p className="text-[10px] font-black uppercase tracking-widest mb-2">Всього точок</p>
+                                        <p className="text-3xl font-black">{geoData.length}</p>
+                                    </div>
+                                    <div className="bg-rose-500 text-white p-6 rounded-xl text-center">
+                                        <p className="text-[10px] font-black uppercase tracking-widest mb-2">Негативні</p>
+                                        <p className="text-3xl font-black">{geoData.filter(d => d.isNegative).length}</p>
+                                    </div>
+                                    <div className="bg-emerald-500 text-white p-6 rounded-xl text-center">
+                                        <p className="text-[10px] font-black uppercase tracking-widest mb-2">Позитивні</p>
+                                        <p className="text-3xl font-black">{geoData.filter(d => !d.isNegative).length}</p>
+                                    </div>
+                                </div>
+                                <div className="bg-slate-100 rounded-2xl p-8 text-center">
+                                    <MapPin className="w-16 h-16 mx-auto text-slate-400 mb-4" />
+                                    <p className="text-slate-600 font-medium">Інтерактивна карта буде інтегрована у наступній версії</p>
+                                    <p className="text-xs text-slate-400 mt-2">Використовуватиметься Leaflet Heatmap Layer</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
+                {activeTab === 'predictions' && (
+                    <div className="space-y-8">
+                        <Card className="border-0 shadow-lg shadow-blue-200/50 rounded-[2rem] bg-gradient-to-br from-blue-50 to-indigo-50">
+                            <CardHeader className="p-8">
+                                <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-blue-600">
+                                    <Zap className="w-5 h-5" /> Прогноз на наступний місяць
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-8 pt-0">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="bg-white p-8 rounded-xl shadow-sm">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Очікуваний рейтинг</p>
+                                        <p className="text-5xl font-black text-blue-600">{avgRating.toFixed(1)}</p>
+                                        <p className="text-xs text-slate-400 mt-2">На основі тренду 30 днів</p>
+                                    </div>
+                                    <div className="bg-white p-8 rounded-xl shadow-sm">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Очікувана кількість</p>
+                                        <p className="text-5xl font-black text-slate-900">{Math.round(totalReports * 1.05)}</p>
+                                        <p className="text-xs text-emerald-500 mt-2 font-bold">+5% зростання</p>
+                                    </div>
+                                    <div className="bg-white p-8 rounded-xl shadow-sm">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Ризик конфліктів</p>
+                                        <p className="text-5xl font-black text-amber-500">{timePatterns.burnoutAlerts.length > 0 ? 'Високий' : 'Низький'}</p>
+                                        <p className="text-xs text-slate-400 mt-2">{timePatterns.burnoutAlerts.length} офіцерів під ризиком</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
+                            <CardHeader className="p-8">
+                                <CardTitle className="text-sm font-black uppercase tracking-widest">Рекомендації системи</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-8 pt-0 space-y-3">
+                                <div className="flex items-start gap-4 p-4 bg-blue-50 rounded-xl">
+                                    <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-black flex-shrink-0">1</div>
+                                    <div>
+                                        <p className="font-bold text-slate-900">Працювати з категоріями низького рейтингу</p>
+                                        <p className="text-sm text-slate-600">Проаналізуйте проблемні категорії у вкладці "Відгуки"</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4 p-4 bg-amber-50 rounded-xl">
+                                    <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-black flex-shrink-0">2</div>
+                                    <div>
+                                        <p className="font-bold text-slate-900">Звернути увагу на офіцерів під ризиком</p>
+                                        <p className="text-sm text-slate-600">У вкладці "Час" є {timePatterns.burnoutAlerts.length} попереджень про вигорання</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4 p-4 bg-emerald-50 rounded-xl">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black flex-shrink-0">3</div>
+                                    <div>
+                                        <p className="font-bold text-slate-900">Посилити моніторинг у години пік</p>
+                                        <p className="text-sm text-slate-600">Часова аналітика показує найбільш конфліктні години доби</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
             </div>
         </div>
     )

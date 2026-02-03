@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma"
 import { checkPermission } from "@/lib/auth-utils"
 import AnalyticsClient from "./AnalyticsClient"
 import { subDays, startOfDay, endOfDay } from "date-fns"
+import { extractKeywords, getSentimentDistribution } from "@/lib/text-analytics"
+import { getHourlyDistribution, detectBurnout, getDayOfWeekDistribution } from "@/lib/time-analytics"
 
 export default async function AnalyticsPage() {
     await checkPermission("permViewReports", true)
@@ -29,7 +31,10 @@ export default async function AnalyticsPage() {
                 wantContact: true,
                 ipHash: true,
                 citizenId: true,
-                resolutionDate: true
+                resolutionDate: true,
+                description: true,
+                officerId: true,
+                geoPoint: true
             }
         }),
         prisma.officer.findMany({
@@ -151,6 +156,39 @@ export default async function AnalyticsPage() {
         .map(([hash, count]) => ({ hash, count }))
         .sort((a, b) => b.count - a.count)
 
+    // Filter responses with valid ratings (exclude 0 or null)
+    const ratedResponses = responses.filter(r => r.rateOverall && r.rateOverall > 0)
+
+    // 8. AI Text Analytics
+    const negativeResponses = ratedResponses.filter(r => r.rateOverall < 3)
+    const negativeTexts = negativeResponses.map(r => r.description || '').filter(Boolean)
+    const keywords = extractKeywords(negativeTexts)
+    const sentimentDist = getSentimentDistribution(ratedResponses.map(r => r.description || ''))
+
+    // 9. Time Analytics
+    const hourlyData = getHourlyDistribution(ratedResponses)
+    const dayOfWeekData = getDayOfWeekDistribution(ratedResponses)
+
+    // 10. Burnout Detection
+    const burnoutAlerts = officers
+        .map(o => detectBurnout(o.id, `${o.firstName} ${o.lastName}`, ratedResponses))
+        .filter(Boolean)
+        .filter(alert => alert!.alertLevel !== 'none')
+        .sort((a, b) => {
+            const levelOrder = { 'critical': 3, 'warning': 2, 'none': 1 }
+            return levelOrder[b!.alertLevel] - levelOrder[a!.alertLevel]
+        })
+
+    // 11. Geo clustering (prepare data for heatmap)
+    const geoData = ratedResponses
+        .filter(r => r.geoPoint)
+        .map(r => ({
+            lat: (r.geoPoint as any).coordinates[1],
+            lng: (r.geoPoint as any).coordinates[0],
+            rating: r.rateOverall,
+            isNegative: r.rateOverall < 3
+        }))
+
     return (
         <div className="space-y-8 pb-10">
             <div>
@@ -175,6 +213,16 @@ export default async function AnalyticsPage() {
                     suspiciousIps
                 }}
                 correlationData={correlationData}
+                aiInsights={{
+                    keywords,
+                    sentimentDist
+                }}
+                timePatterns={{
+                    hourlyData,
+                    dayOfWeekData,
+                    burnoutAlerts: burnoutAlerts as any[]
+                }}
+                geoData={geoData}
             />
         </div>
     )
