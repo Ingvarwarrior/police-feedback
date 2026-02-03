@@ -26,6 +26,12 @@ function HeatmapLayer({ points }: { points: [number, number, number][] }) {
             }
         }).addTo(map)
 
+        // Auto-fit bounds
+        const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]))
+        if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [50, 50] })
+        }
+
         return () => {
             map.removeLayer(heat)
         }
@@ -64,7 +70,7 @@ export default function GeoHeatmap({ data }: GeoHeatmapProps) {
                     center={center}
                     zoom={13}
                     style={{ height: '100%', width: '100%' }}
-                    scrollWheelZoom={false}
+                    scrollWheelZoom={true}
                 >
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
