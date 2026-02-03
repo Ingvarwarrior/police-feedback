@@ -33,10 +33,19 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /opt/police-feedback
-            git pull origin main
+            echo "--- DEBUG INFO ---"
+            whoami
+            pwd
+            cd /opt/police-feedback || { echo "Directory /opt/police-feedback NOT FOUND"; exit 1; }
+            git status
+            git log -n 1 --oneline
+            echo "--- STARTING DEPLOY ---"
+            git fetch origin main
+            git reset --hard origin/main
             npm install
             npx prisma generate
             npx prisma db push --accept-data-loss
             npm run build
-            sudo systemctl restart police-feedback
+            echo "--- RESTARTING SERVICE ---"
+            sudo systemctl restart police-feedback || echo "Failed to restart service"
+            echo "--- DEPLOY FINISHED ---"
