@@ -13,6 +13,13 @@ import {
     UserCheck, BarChart3, PieChart as PieIcon, Brain, Clock3,
     MapPin, Zap
 } from "lucide-react"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import WordCloudComponent from "./WordCloudComponent"
@@ -85,7 +92,31 @@ export default function AnalyticsClient({
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Top Navigation & Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 no-print">
-                <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-2xl w-full sm:w-fit overflow-x-auto no-scrollbar">
+                {/* Mobile Navigation */}
+                <div className="sm:hidden w-full">
+                    <Select value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+                        <SelectTrigger className="w-full h-12 rounded-[1.5rem] bg-slate-100 border-0 font-black uppercase text-[10px] tracking-widest px-5 shadow-inner">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-[1.5rem] border-slate-200 shadow-2xl">
+                            {tabs.map((tab) => (
+                                <SelectItem
+                                    key={tab.id}
+                                    value={tab.id}
+                                    className="font-black uppercase text-[10px] tracking-widest py-3 focus:bg-slate-50"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <tab.icon className="w-3.5 h-3.5" />
+                                        {tab.label}
+                                    </div>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Desktop Navigation */}
+                <div className="hidden sm:flex items-center gap-1 bg-slate-100 p-1.5 rounded-[2rem] w-fit">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
@@ -105,7 +136,7 @@ export default function AnalyticsClient({
 
                 <Button
                     variant="outline"
-                    className="rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 px-6 shadow-sm bg-white"
+                    className="w-full sm:w-auto rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 px-6 shadow-sm bg-white"
                     onClick={() => window.print()}
                 >
                     <Printer className="w-4 h-4" />
