@@ -61,6 +61,10 @@ export default async function AdminLayout({
                         <LayoutDashboard className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
                         Дашборд
                     </Link>
+                    <Link href="/admin/analytics" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
+                        <Activity className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                        Аналітика
+                    </Link>
                     <Link href="/admin/reports" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
                         <FileText className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
                         Відгуки громадян
