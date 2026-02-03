@@ -16,6 +16,7 @@ const UnifiedRecordSchema = z.object({
     applicant: z.string().optional().nullable(),
     category: z.string().optional().nullable(),
     officerName: z.string().optional().nullable(),
+    assignedOfficerId: z.string().optional().nullable(),
     resolution: z.string().optional().nullable(),
     resolutionDate: z.date().optional().nullable(),
 })
@@ -52,6 +53,16 @@ export async function getUnifiedRecords(params?: {
 
     return await prisma.unifiedRecord.findMany({
         where,
+        include: {
+            assignedOfficer: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    badgeNumber: true
+                }
+            }
+        },
         orderBy: { eoDate: 'desc' },
         take: 100 // Limit for performance
     })
@@ -129,4 +140,21 @@ export async function upsertUnifiedRecordAction(data: any) {
 
     revalidatePath('/admin/unified-record')
     return { success: true, record }
+}
+
+export async function getOfficersForAssignment() {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    return await prisma.officer.findMany({
+        where: { status: 'ACTIVE' },
+        select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            badgeNumber: true,
+            rank: true
+        },
+        orderBy: { lastName: 'asc' }
+    })
 }

@@ -15,7 +15,9 @@ import {
     Clock,
     Filter,
     ArrowUpDown,
-    Download
+    Download,
+    Edit2,
+    Briefcase
 } from "lucide-react"
 import {
     Select,
@@ -27,11 +29,14 @@ import {
 import { format } from "date-fns"
 import { uk } from "date-fns/locale"
 
+import CreateRecordDialog from "./CreateRecordDialog"
+
 interface RecordListProps {
     initialRecords: any[]
+    officers?: any[]
 }
 
-export default function RecordList({ initialRecords }: RecordListProps) {
+export default function RecordList({ initialRecords, officers = [] }: RecordListProps) {
     const [searchTerm, setSearchTerm] = useState("")
     const [categoryFilter, setCategoryFilter] = useState("ALL")
     const [sortBy, setSortBy] = useState("newest")
@@ -168,7 +173,7 @@ export default function RecordList({ initialRecords }: RecordListProps) {
                                                         <div className="flex items-center gap-1.5 text-slate-400">
                                                             <CalendarIcon className="w-3.5 h-3.5" />
                                                             <span className="text-[10px] font-bold">
-                                                                {format(new Date(record.eoDate), 'dd MMMM yyyy, HH:mm', { locale: uk })}
+                                                                {format(new Date(record.eoDate), 'dd MMMM yyyy', { locale: uk })}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -178,6 +183,16 @@ export default function RecordList({ initialRecords }: RecordListProps) {
                                                 </div>
 
                                                 <div className="flex flex-wrap gap-2">
+                                                    <CreateRecordDialog
+                                                        initialData={record}
+                                                        officers={officers}
+                                                        trigger={
+                                                            <Button variant="ghost" size="sm" className="h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
+                                                                <Edit2 className="w-3.5 h-3.5 mr-1.5" />
+                                                                Змінити
+                                                            </Button>
+                                                        }
+                                                    />
                                                     {record.category && (
                                                         <span className="px-3 py-1 bg-slate-900 text-white text-[9px] font-black rounded-lg uppercase tracking-wider">
                                                             {record.category}
@@ -213,11 +228,18 @@ export default function RecordList({ initialRecords }: RecordListProps) {
                                                         <p className="text-sm font-bold text-slate-700">
                                                             <span className="text-slate-400 text-[10px] mr-1">Гр.</span> {record.applicant || '—'}
                                                         </p>
-                                                        {record.officerName && (
+                                                        {record.assignedOfficer ? (
+                                                            <div className="flex items-center gap-1.5 mt-1">
+                                                                <Briefcase className="w-3 h-3 text-blue-500" />
+                                                                <p className="text-[10px] font-bold text-slate-900">
+                                                                    {record.assignedOfficer.lastName} {record.assignedOfficer.firstName}
+                                                                </p>
+                                                            </div>
+                                                        ) : record.officerName ? (
                                                             <p className="text-[10px] font-medium text-slate-500">
                                                                 Відповідальний: {record.officerName}
                                                             </p>
-                                                        )}
+                                                        ) : null}
                                                     </div>
                                                 </div>
 

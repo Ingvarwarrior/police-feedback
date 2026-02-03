@@ -13,18 +13,21 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
 import { uk } from "date-fns/locale"
-import { CalendarIcon, Plus, Loader2 } from "lucide-react"
+import { CalendarIcon, Plus, Loader2, Edit2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { upsertUnifiedRecordAction } from "../actions/recordActions"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const formSchema = z.object({
+    id: z.string().optional(),
     eoNumber: z.string().min(1, "Номер ЄО обов'язковий"),
     eoDate: z.date(),
     description: z.string().optional(),
     applicant: z.string().optional(),
     address: z.string().optional(),
     officerName: z.string().optional(),
+    assignedOfficerId: z.string().optional().nullable(),
     category: z.string().optional(),
     district: z.string().optional(),
     resolution: z.string().optional(),
@@ -33,23 +36,33 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>
 
-export default function CreateRecordDialog() {
+interface CreateRecordDialogProps {
+    initialData?: Partial<FormValues>
+    officers?: { id: string, firstName: string, lastName: string, badgeNumber: string }[]
+    trigger?: React.ReactNode
+}
+
+export default function CreateRecordDialog({ initialData, officers = [], trigger }: CreateRecordDialogProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+
+    const isEdit = !!initialData?.id
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            eoNumber: "",
-            eoDate: new Date(),
-            description: "",
-            applicant: "",
-            address: "",
-            officerName: "",
-            category: "Загальне",
-            district: "Хмільницький",
-            resolution: "",
-            resolutionDate: null,
+            id: initialData?.id,
+            eoNumber: initialData?.eoNumber || "",
+            eoDate: initialData?.eoDate ? new Date(initialData.eoDate) : new Date(),
+            description: initialData?.description || "",
+            applicant: initialData?.applicant || "",
+            address: initialData?.address || "",
+            officerName: initialData?.officerName || "",
+            assignedOfficerId: initialData?.assignedOfficerId || null,
+            category: initialData?.category || "Загальне",
+            district: initialData?.district || "Хмільницький",
+            resolution: initialData?.resolution || "",
+            resolutionDate: initialData?.resolutionDate ? new Date(initialData.resolutionDate) : null,
         },
     })
 
@@ -58,9 +71,9 @@ export default function CreateRecordDialog() {
         try {
             const result = await upsertUnifiedRecordAction(data)
             if (result.success) {
-                toast.success("Запис успішно збережено")
+                toast.success(isEdit ? "Запис оновлено" : "Запис успішно збережено")
                 setIsOpen(false)
-                form.reset()
+                if (!isEdit) form.reset()
             }
         } catch (error: any) {
             toast.error(error.message || "Помилка збереження")
@@ -72,14 +85,18 @@ export default function CreateRecordDialog() {
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-6 h-12 shadow-lg shadow-blue-500/20 group transition-all">
-                    <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform" />
-                    Додати запис
-                </Button>
+                {trigger || (
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-6 h-12 shadow-lg shadow-blue-500/20 group transition-all">
+                        <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform" />
+                        Додати запис
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px] bg-white rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
                 <DialogHeader className="p-8 bg-slate-900 text-white">
-                    <DialogTitle className="text-2xl font-black italic uppercase tracking-tight">Нова картка ЄО</DialogTitle>
+                    <DialogTitle className="text-2xl font-black italic uppercase tracking-tight">
+                        {isEdit ? "Редагування картки" : "Нова картка ЄО"}
+                    </DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={form.handleSubmit(onSubmit)} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
@@ -91,6 +108,7 @@ export default function CreateRecordDialog() {
                                 {...form.register("eoNumber")}
                                 placeholder="Напр. 1256"
                                 className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                disabled={isEdit}
                             />
                             {form.formState.errors.eoNumber && (
                                 <p className="text-[10px] text-red-500 font-bold">{form.formState.errors.eoNumber.message}</p>
@@ -98,7 +116,7 @@ export default function CreateRecordDialog() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Дата та час</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Дата</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button
@@ -110,7 +128,7 @@ export default function CreateRecordDialog() {
                                     >
                                         <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" />
                                         {form.getValues("eoDate") ? (
-                                            format(form.getValues("eoDate"), "PPP HH:mm", { locale: uk })
+                                            format(form.getValues("eoDate"), "PPP", { locale: uk })
                                         ) : (
                                             <span>Оберіть дату</span>
                                         )}
@@ -139,13 +157,22 @@ export default function CreateRecordDialog() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="officerName" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Хто склав (ПІБ)</Label>
-                            <Input
-                                id="officerName"
-                                {...form.register("officerName")}
-                                placeholder="Офіцер поліції"
-                                className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                            />
+                            <Label htmlFor="assignedOfficerId" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Виконавець (Інспектор)</Label>
+                            <Select
+                                onValueChange={(val) => form.setValue("assignedOfficerId", val)}
+                                defaultValue={form.getValues("assignedOfficerId") || undefined}
+                            >
+                                <SelectTrigger className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                                    <SelectValue placeholder="Оберіть інспектора" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-none shadow-2xl">
+                                    {officers.map(off => (
+                                        <SelectItem key={off.id} value={off.id}>
+                                            {off.lastName} {off.firstName} ({off.badgeNumber})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 
@@ -190,7 +217,7 @@ export default function CreateRecordDialog() {
                                 Зберігаємо...
                             </>
                         ) : (
-                            "Зберегти запис"
+                            isEdit ? "Оновити картку" : "Зберегти запис"
                         )}
                     </Button>
                 </DialogFooter>

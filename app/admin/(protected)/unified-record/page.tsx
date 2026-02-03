@@ -1,4 +1,4 @@
-import { getUnifiedRecords } from "./actions/recordActions"
+import { getUnifiedRecords, getOfficersForAssignment } from "./actions/recordActions"
 import RecordList from "./components/RecordList"
 import ImportDialog from "./components/ImportDialog"
 import CreateRecordDialog from "./components/CreateRecordDialog"
@@ -6,6 +6,7 @@ import { ClipboardList, Info } from "lucide-react"
 
 export default async function UnifiedRecordPage() {
     const records = await getUnifiedRecords()
+    const officers = await getOfficersForAssignment()
 
     return (
         <div className="space-y-8 pb-10">
@@ -32,7 +33,7 @@ export default async function UnifiedRecordPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-4 relative z-10">
-                    <CreateRecordDialog />
+                    <CreateRecordDialog officers={officers} />
                     <ImportDialog />
                 </div>
             </div>
@@ -43,12 +44,12 @@ export default async function UnifiedRecordPage() {
                     <Info className="w-5 h-5" />
                 </div>
                 <p className="text-xs font-medium text-slate-600">
-                    Тут відображаються дані, імпортовані з офіційних звітів Excel. Ви можете фільтрувати їх за категорією або шукати за адресою та номером ЄО.
+                    Тут відображаються дані журналів ЄО. Ви можете редагувати існуючі картки, призначати відповідальних офіцерів та фільтрувати записи.
                 </p>
             </div>
 
             {/* Content Section */}
-            <RecordList initialRecords={records} />
+            <RecordList initialRecords={records} officers={officers} />
         </div>
     )
 }
