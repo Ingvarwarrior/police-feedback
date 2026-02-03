@@ -66,6 +66,9 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         },
     })
 
+    const eoDate = form.watch("eoDate")
+    const resolutionDate = form.watch("resolutionDate")
+
     const onSubmit = async (data: FormValues) => {
         setIsLoading(true)
         try {
@@ -127,8 +130,8 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                         )}
                                     >
                                         <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" />
-                                        {form.getValues("eoDate") ? (
-                                            format(form.getValues("eoDate"), "PPP", { locale: uk })
+                                        {eoDate ? (
+                                            format(eoDate, "PPP", { locale: uk })
                                         ) : (
                                             <span>Оберіть дату</span>
                                         )}
@@ -137,7 +140,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-2xl" align="start">
                                     <Calendar
                                         mode="single"
-                                        selected={form.getValues("eoDate")}
+                                        selected={eoDate}
                                         onSelect={(date) => date && form.setValue("eoDate", date)}
                                         initialFocus
                                         locale={uk}

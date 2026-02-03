@@ -76,9 +76,9 @@ export async function importUnifiedRecordsFromExcel(formData: FormData) {
     if (!file) throw new Error("No file provided")
 
     const buffer = await file.arrayBuffer()
-    const workbook = XLSX.read(buffer)
+    const workbook = XLSX.read(buffer, { cellDates: true, cellNF: true, cellText: true })
     const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-    const data = XLSX.utils.sheet_to_json(worksheet)
+    const data = XLSX.utils.sheet_to_json(worksheet, { raw: false, dateNF: 'yyyy-mm-dd' })
 
     let importedCount = 0
     let updatedCount = 0
@@ -89,7 +89,30 @@ export async function importUnifiedRecordsFromExcel(formData: FormData) {
         if (!eoNumber) continue
 
         const eoDateStr = row['дата, час повідомлення'] || row['Дата'] || row['Date']
-        const eoDate = eoDateStr ? new Date(eoDateStr) : new Date()
+        let eoDate = new Date()
+
+        if (eoDateStr) {
+            // Try to parse Ukrainian format DD.MM.YYYY
+            const parts = String(eoDateStr).split(/[./-]/)
+            if (parts.length >= 3) {
+                const day = parseInt(parts[0])
+                const month = parseInt(parts[1]) - 1
+                const year = parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2])
+                const trialDate = new Date(year, month, day)
+                if (!isNaN(trialDate.getTime())) {
+                    eoDate = trialDate
+                } else {
+                    eoDate = new Date(eoDateStr)
+                }
+            } else {
+                eoDate = new Date(eoDateStr)
+            }
+        }
+
+        // Final check for 1970 or Invalid Date
+        if (isNaN(eoDate.getTime()) || eoDate.getFullYear() < 1980) {
+            eoDate = new Date()
+        }
 
         const record = {
             eoNumber: String(eoNumber),
@@ -126,6 +149,18 @@ export async function upsertUnifiedRecordAction(data: any) {
     if (!session) throw new Error("Unauthorized")
 
     const validated = UnifiedRecordSchema.parse(data)
+
+    if (validated.id) {
+        const record = await prisma.unifiedRecord.update({
+            where: { id: validated.id },
+            data: {
+                ...validated,
+                updatedAt: new Date()
+            }
+        })
+        revalidatePath('/admin/unified-record')
+        return { success: true, record }
+    }
 
     const record = await prisma.unifiedRecord.upsert({
         where: { eoNumber: validated.eoNumber },
