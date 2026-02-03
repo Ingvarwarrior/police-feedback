@@ -39,7 +39,7 @@ interface AnalyticsClientProps {
     trust: {
         anonymityData: any[]
         engagementData: any[]
-        suspiciousIps: any[]
+        suspiciousIps: { hash: string, count: number, phones: string[] }[]
     }
     correlationData: any[]
     aiInsights: {
@@ -377,12 +377,24 @@ export default function AnalyticsClient({
                                 <CardContent className="p-5 sm:p-8 pt-0">
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {trust.suspiciousIps.map((ip: any) => (
-                                            <div key={ip.hash} className="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                                                    <span className="text-xs font-mono text-slate-500">{ip.hash.substring(0, 16)}...</span>
+                                            <div key={ip.hash} className="bg-white p-4 rounded-2xl shadow-sm space-y-3 border border-slate-100">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                                                        <span className="text-xs font-mono text-slate-500">{ip.hash.substring(0, 16)}...</span>
+                                                    </div>
+                                                    <span className="text-sm font-black text-rose-600">{ip.count} відгуків</span>
                                                 </div>
-                                                <span className="text-sm font-black text-rose-600">{ip.count} відгуків</span>
+
+                                                {ip.phones && ip.phones.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-50">
+                                                        {ip.phones.map((phone: string) => (
+                                                            <div key={phone} className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600">
+                                                                {phone}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

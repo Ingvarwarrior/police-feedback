@@ -34,7 +34,10 @@ export default async function AnalyticsPage() {
                 resolutionDate: true,
                 comment: true,
                 officerId: true,
-                geoPoint: true
+                geoPoint: true,
+                contact: {
+                    select: { phone: true }
+                }
             }
         }),
         prisma.officer.findMany({
@@ -159,15 +162,25 @@ export default async function AnalyticsPage() {
     }).filter(d => d.internal > 0 && d.citizen > 0).slice(0, 10) // Top 10 for visibility
 
     // 7. Security (Suspicious IPs)
-    const ipClusters: Record<string, number> = {}
+    const ipClusters: Record<string, { count: number, phones: Set<string> }> = {}
     responses.forEach(r => {
         if (r.ipHash) {
-            ipClusters[r.ipHash] = (ipClusters[r.ipHash] || 0) + 1
+            if (!ipClusters[r.ipHash]) {
+                ipClusters[r.ipHash] = { count: 0, phones: new Set() }
+            }
+            ipClusters[r.ipHash].count++
+            if (r.contact?.phone) {
+                ipClusters[r.ipHash].phones.add(r.contact.phone)
+            }
         }
     })
     const suspiciousIps = Object.entries(ipClusters)
-        .filter(([_, count]) => count > 3) // More than 3 reports from same IP in 30 days
-        .map(([hash, count]) => ({ hash, count }))
+        .filter(([_, data]) => data.count > 3) // More than 3 reports from same IP in 30 days
+        .map(([hash, data]) => ({
+            hash,
+            count: data.count,
+            phones: Array.from(data.phones)
+        }))
         .sort((a, b) => b.count - a.count)
 
     // Filter responses with valid ratings (exclude 0 or null)
