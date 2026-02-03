@@ -34,11 +34,17 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             echo "--- DEBUG INFO ---"
-            whoami
-            pwd
             cd /opt/police-feedback || { echo "Directory /opt/police-feedback NOT FOUND"; exit 1; }
-            git status
             git log -n 1 --oneline
+            echo "--- SERVICE INFO ---"
+            systemctl status police-feedback --no-pager || echo "Service status failed"
+            systemctl cat police-feedback --no-pager || echo "Failed to cat service"
+            echo "--- PROCESSES ---"
+            ps aux | grep next | grep -v grep || echo "No next processes found"
+            echo "--- PORT INFO ---"
+            sudo netstat -tulpn | grep LISTEN || echo "Netstat failed"
+            echo "--- WEB SERVER INFO ---"
+            ls /etc/nginx/sites-enabled/ || ls /etc/apache2/sites-enabled/ || echo "No web server configs found"
             echo "--- STARTING DEPLOY ---"
             git fetch origin main
             git reset --hard origin/main
