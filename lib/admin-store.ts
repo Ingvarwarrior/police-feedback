@@ -50,7 +50,11 @@ export const useAdminStore = create<AdminState>()(
         }),
         {
             name: 'admin-officers-cache',
-            storage: createJSONStorage(() => sessionStorage)
+            storage: createJSONStorage(() => sessionStorage),
+            partialize: (state) => ({
+                scrollPosition: state.scrollPosition,
+                searchTerm: state.searchTerm
+            })
         }
     )
 )
