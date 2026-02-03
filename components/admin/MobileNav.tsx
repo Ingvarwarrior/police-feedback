@@ -30,7 +30,7 @@ export default function MobileNav({ user }: MobileNavProps) {
 
     const navItems = [
         { href: "/admin/dashboard", label: "Дашборд", icon: LayoutDashboard },
-        { href: "/admin/reports", label: "Звіти", icon: FileText },
+        { href: "/admin/reports", label: "Відгуки громадян", icon: FileText },
         { href: "/admin/map", label: "Мапа", icon: MapIcon },
         { href: "/admin/citizens", label: "Громадяни", icon: Users },
         { href: "/admin/officers", label: "Особовий склад", icon: ShieldCheck },
