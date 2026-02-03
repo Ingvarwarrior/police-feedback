@@ -1,6 +1,7 @@
 import { getUnifiedRecords } from "./actions/recordActions"
 import RecordList from "./components/RecordList"
 import ImportDialog from "./components/ImportDialog"
+import CreateRecordDialog from "./components/CreateRecordDialog"
 import { ClipboardList, Info } from "lucide-react"
 
 export default async function UnifiedRecordPage() {
@@ -31,6 +32,7 @@ export default async function UnifiedRecordPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-4 relative z-10">
+                    <CreateRecordDialog />
                     <ImportDialog />
                 </div>
             </div>

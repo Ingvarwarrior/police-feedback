@@ -4,6 +4,21 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import * as XLSX from 'xlsx'
+import { z } from "zod"
+
+const UnifiedRecordSchema = z.object({
+    id: z.string().optional(),
+    eoNumber: z.string().min(1, "Номер ЄО обов'язковий"),
+    eoDate: z.date(),
+    district: z.string().optional().nullable(),
+    address: z.string().optional().nullable(),
+    description: z.string().optional().nullable(),
+    applicant: z.string().optional().nullable(),
+    category: z.string().optional().nullable(),
+    officerName: z.string().optional().nullable(),
+    resolution: z.string().optional().nullable(),
+    resolutionDate: z.date().optional().nullable(),
+})
 
 export async function getUnifiedRecords(params?: {
     search?: string
@@ -93,4 +108,25 @@ export async function importUnifiedRecordsFromExcel(formData: FormData) {
 
     revalidatePath('/admin/unified-record')
     return { success: true, count: importedCount }
+}
+
+export async function upsertUnifiedRecordAction(data: any) {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    const validated = UnifiedRecordSchema.parse(data)
+
+    const record = await prisma.unifiedRecord.upsert({
+        where: { eoNumber: validated.eoNumber },
+        update: {
+            ...validated,
+            updatedAt: new Date()
+        },
+        create: {
+            ...validated
+        }
+    })
+
+    revalidatePath('/admin/unified-record')
+    return { success: true, record }
 }
