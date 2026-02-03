@@ -105,7 +105,7 @@ export default function ImportDialog() {
                         <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                         <div className="text-xs text-amber-800 space-y-1">
                             <p className="font-bold uppercase tracking-tight">Вимоги до файлу:</p>
-                            <p>Система шукає колонки: "Номер ЄО", "Дата", "Зміст", "Заявник", "Адреса". Якщо колонки називаються інакше, імпорт може бути неповним.</p>
+                            <p>Система шукає колонки: "№ ЄО", "дата, час повідомлення", "подія", "Рапорт- ПІБ хто склав", "заявник".</p>
                         </div>
                     </div>
 

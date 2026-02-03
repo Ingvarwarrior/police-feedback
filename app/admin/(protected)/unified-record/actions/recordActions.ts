@@ -58,23 +58,22 @@ export async function importUnifiedRecordsFromExcel(formData: FormData) {
     let updatedCount = 0
 
     for (const row of data as any[]) {
-        // Mapping logic - assuming standard or common column names
-        // Adjust these mappings based on actual file format
-        const eoNumber = row['Номер ЄО'] || row['Номер'] || row['eoNumber'] || row['ID']
+        // Exact mapping based on user provided Excel format
+        const eoNumber = row['№ ЄО'] || row['Номер ЄО'] || row['eoNumber']
         if (!eoNumber) continue
 
-        const eoDateStr = row['Дата'] || row['Дата/Час'] || row['Date']
+        const eoDateStr = row['дата, час повідомлення'] || row['Дата'] || row['Date']
         const eoDate = eoDateStr ? new Date(eoDateStr) : new Date()
 
         const record = {
             eoNumber: String(eoNumber),
             eoDate,
-            district: row['Район'] || row['District'] || null,
-            address: row['Адреса'] || row['Address'] || null,
-            description: row['Зміст'] || row['Опис'] || row['Description'] || null,
-            applicant: row['Заявник'] || row['Applicant'] || null,
-            category: row['Категорія'] || row['Category'] || null,
-            officerName: row['Офіцер'] || row['Officer'] || null,
+            district: row['Район'] || null,
+            address: row['Адреса'] || row['local_address'] || null, // Assuming address might be implicit or in separate col sometimes
+            description: row['подія'] || row['Зміст'] || null,
+            applicant: row['заявник'] || row['Applicant'] || null,
+            category: row['Категорія'] || null,
+            officerName: row['Рапорт- ПІБ хто склав'] || row['Офіцер'] || null,
             resolution: row['Рішення'] || row['Resolution'] || null,
             resolutionDate: row['Дата рішення'] ? new Date(row['Дата рішення']) : null,
             sourceFile: file.name
