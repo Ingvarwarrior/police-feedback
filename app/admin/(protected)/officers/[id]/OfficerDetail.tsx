@@ -464,12 +464,69 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
                                     </CardHeader>
                                     <CardContent className="p-8">
                                         {ev.notes && <p className="text-sm text-slate-600 italic bg-blue-50/50 p-5 rounded-2xl mb-6 leading-relaxed border border-blue-100/30">"{ev.notes}"</p>}
+
+                                        {/* Low Rating Issues */}
+                                        {ev.issuesJson && (() => {
+                                            const issues = JSON.parse(ev.issuesJson).filter((i: any) => i.description || (i.attachmentIds && i.attachmentIds.length > 0));
+                                            if (issues.length === 0) return null;
+
+                                            return (
+                                                <div className="mb-8 space-y-4">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-rose-500">Виявлені зауваження:</p>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {issues.map((issue: any, i: number) => {
+                                                            const catLabels: any = {
+                                                                knowledge: 'Знання законодавства',
+                                                                tactics: 'Тактика та безпека',
+                                                                communication: 'Комунікація',
+                                                                professionalism: 'Професіоналізм',
+                                                                physical: 'Фізична підготовка'
+                                                            };
+                                                            const issueAttachments = ev.attachments?.filter((a: any) => issue.attachmentIds?.includes(a.id)) || [];
+
+                                                            return (
+                                                                <div key={i} className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100 flex flex-col gap-3">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-rose-700">{catLabels[issue.category] || issue.category}</span>
+                                                                    </div>
+                                                                    {issue.description && <p className="text-xs text-slate-700 font-medium leading-relaxed">{issue.description}</p>}
+
+                                                                    {issueAttachments.length > 0 && (
+                                                                        <div className="flex flex-wrap gap-2 mt-2">
+                                                                            {issueAttachments.map((attach: any) => (
+                                                                                <a
+                                                                                    key={attach.id}
+                                                                                    href={`/api/uploads/${attach.pathOrKey}`}
+                                                                                    target="_blank"
+                                                                                    className="relative w-16 h-16 rounded-lg overflow-hidden border border-rose-200 bg-white group hover:scale-105 transition-transform"
+                                                                                >
+                                                                                    <img
+                                                                                        src={`/api/uploads/${attach.pathOrKey}`}
+                                                                                        alt="Evidence"
+                                                                                        className="w-full h-full object-cover"
+                                                                                    />
+                                                                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                                                        <ImageIcon className="w-4 h-4 text-white" />
+                                                                                    </div>
+                                                                                </a>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
                                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                            <div>Знання: <span className="text-slate-900 block text-sm mt-1">{ev.scoreKnowledge}</span></div>
-                                            <div>Тактика: <span className="text-slate-900 block text-sm mt-1">{ev.scoreTactics}</span></div>
-                                            <div>Комунікація: <span className="text-slate-900 block text-sm mt-1">{ev.scoreCommunication}</span></div>
-                                            <div>Профі: <span className="text-slate-900 block text-sm mt-1">{ev.scoreProfessionalism}</span></div>
-                                            <div>Фіз: <span className="text-slate-900 block text-sm mt-1">{ev.scorePhysical}</span></div>
+                                            <div>Знання: <span className="text-slate-900 block text-sm mt-1">{ev.scoreKnowledge || '-'}</span></div>
+                                            <div>Тактика: <span className="text-slate-900 block text-sm mt-1">{ev.scoreTactics || '-'}</span></div>
+                                            <div>Комунікація: <span className="text-slate-900 block text-sm mt-1">{ev.scoreCommunication || '-'}</span></div>
+                                            <div>Профі: <span className="text-slate-900 block text-sm mt-1">{ev.scoreProfessionalism || '-'}</span></div>
+                                            <div>Фіз: <span className="text-slate-900 block text-sm mt-1">{ev.scorePhysical || '-'}</span></div>
                                         </div>
                                     </CardContent>
                                 </Card>

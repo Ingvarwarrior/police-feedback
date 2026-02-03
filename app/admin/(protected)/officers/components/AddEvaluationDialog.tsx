@@ -30,28 +30,59 @@ export function AddEvaluationDialog({ officerId, onSuccess, open, setOpen, varia
     })
 
     const [lowRatingIssues, setLowRatingIssues] = useState<{ [key: string]: { description: string, photos: File[] } }>({})
+    const [isUploading, setIsUploading] = useState(false)
 
     const handleSubmit = async () => {
+        setIsUploading(true)
         try {
+            // 1. Upload all photos first
+            const issuesWithAttachments = await Promise.all(
+                Object.entries(lowRatingIssues).map(async ([category, data]) => {
+                    const attachmentIds: string[] = []
+
+                    if (data.photos.length > 0) {
+                        for (const photo of data.photos) {
+                            const formData = new FormData()
+                            formData.append('file', photo)
+                            const uploadRes = await fetch('/api/upload', {
+                                method: 'POST',
+                                body: formData
+                            })
+                            if (uploadRes.ok) {
+                                const { id } = await uploadRes.json()
+                                attachmentIds.push(id)
+                            }
+                        }
+                    }
+
+                    return {
+                        category,
+                        description: data.description,
+                        attachmentIds
+                    }
+                })
+            )
+
+            // 2. Submit evaluation
             const res = await fetch(`/api/admin/officers/${officerId}/evaluations`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...evalData,
-                    lowRatingIssues: Object.entries(lowRatingIssues).map(([category, data]) => ({
-                        category,
-                        description: data.description,
-                        photoCount: data.photos.length
-                    }))
+                    lowRatingIssues: issuesWithAttachments
                 })
             })
+
             if (res.ok) {
                 toast.success("✅ Оцінку зафіксовано")
                 setOpen(false)
                 onSuccess()
             }
         } catch (e) {
+            console.error(e)
             toast.error("❌ Помилка збереження")
+        } finally {
+            setIsUploading(false)
         }
     }
 
@@ -144,10 +175,11 @@ export function AddEvaluationDialog({ officerId, onSuccess, open, setOpen, varia
                     </div>
 
                     <Button
-                        className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-900/20 active:scale-[0.98] transition-all"
+                        className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-900/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleSubmit}
+                        disabled={isUploading}
                     >
-                        Зафіксувати в журналі
+                        {isUploading ? 'Завантаження...' : 'Зафіксувати в журналі'}
                     </Button>
                 </div>
             </DialogContent>

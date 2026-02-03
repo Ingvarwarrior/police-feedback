@@ -186,6 +186,8 @@ model Attachment {
   sizeBytes   Int
   hash        String
   exifStripped Boolean  @default(true)
+  evaluationId String?
+  evaluation  OfficerEvaluation? @relation(fields: [evaluationId], references: [id])
   createdAt   DateTime  @default(now())
 }
 
@@ -268,6 +270,11 @@ model OfficerEvaluation {
   weaknesses      String?
   recommendations String?
   notes           String?
+  
+  // Per-category issues
+  issuesJson      String?  // JSON with custom descriptions per category
+  
+  attachments     Attachment[]
 }
 
 model AdminNotification {

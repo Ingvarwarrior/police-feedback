@@ -21,7 +21,8 @@ export async function GET(
             include: {
                 evaluations: {
                     include: {
-                        evaluator: { select: { email: true } }
+                        evaluator: { select: { email: true } },
+                        attachments: true
                     },
                     orderBy: { createdAt: 'desc' }
                 },

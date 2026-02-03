@@ -57,28 +57,45 @@ export async function POST(
             strengths,
             weaknesses,
             recommendations,
-            notes
+            notes,
+            lowRatingIssues
         } = body
 
         if (!type) {
             return new NextResponse("Evaluation type is required", { status: 400 })
         }
 
-        const evaluation = await prisma.officerEvaluation.create({
-            data: {
-                officerId: params.id,
-                evaluatorId: user.id,
-                type,
-                scoreKnowledge: scoreKnowledge || null,
-                scoreTactics: scoreTactics || null,
-                scoreCommunication: scoreCommunication || null,
-                scoreProfessionalism: scoreProfessionalism || null,
-                scorePhysical: scorePhysical || null,
-                strengths: strengths || null,
-                weaknesses: weaknesses || null,
-                recommendations: recommendations || null,
-                notes: notes || null
+        const evaluation = await prisma.$transaction(async (tx) => {
+            const ev = await tx.officerEvaluation.create({
+                data: {
+                    officerId: params.id,
+                    evaluatorId: user.id,
+                    type,
+                    scoreKnowledge: scoreKnowledge || null,
+                    scoreTactics: scoreTactics || null,
+                    scoreCommunication: scoreCommunication || null,
+                    scoreProfessionalism: scoreProfessionalism || null,
+                    scorePhysical: scorePhysical || null,
+                    strengths: strengths || null,
+                    weaknesses: weaknesses || null,
+                    recommendations: recommendations || null,
+                    notes: notes || null,
+                    issuesJson: lowRatingIssues ? JSON.stringify(lowRatingIssues) : null
+                }
+            })
+
+            // Link attachments
+            if (lowRatingIssues && Array.isArray(lowRatingIssues)) {
+                const attachmentIds = lowRatingIssues.flatMap((issue: any) => issue.attachmentIds || [])
+                if (attachmentIds.length > 0) {
+                    await tx.attachment.updateMany({
+                        where: { id: { in: attachmentIds } },
+                        data: { evaluationId: ev.id }
+                    })
+                }
             }
+
+            return ev
         })
 
         // Recalculate stats for the officer
