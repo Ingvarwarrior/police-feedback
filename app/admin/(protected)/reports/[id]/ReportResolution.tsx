@@ -77,8 +77,12 @@ export default function ReportResolution({
     }, [searchQuery, taggedOfficers])
 
     const handleSave = async () => {
-        if (!notes.trim() || !category) {
-            toast.error('❌ заповніть всі поля')
+        if (!notes.trim()) {
+            toast.error('❌ Введіть текст резолюції')
+            return
+        }
+        if (!category) {
+            toast.error('❌ Виберіть категорію')
             return
         }
 
@@ -273,6 +277,24 @@ export default function ReportResolution({
                                 </p>
                             </div>
                         )}
+
+                        {/* Explicit Option: No Officers */}
+                        <div className="flex items-center gap-3 px-1 py-2">
+                            <Checkbox
+                                id="no-officers"
+                                checked={taggedOfficers.length === 0 && !searchQuery}
+                                onCheckedChange={(checked) => {
+                                    if (checked) {
+                                        setTaggedOfficers([])
+                                        setSearchQuery("")
+                                    }
+                                }}
+                                className="border-slate-600 data-[state=checked]:bg-slate-500"
+                            />
+                            <Label htmlFor="no-officers" className="text-xs text-slate-400 font-medium cursor-pointer">
+                                Неможливо встановити офіцерів / Не стосується конкретних осіб
+                            </Label>
+                        </div>
                     </div>
 
                     <div className="space-y-2">
