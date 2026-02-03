@@ -42,7 +42,8 @@ import CreateRecordDialog from "./CreateRecordDialog"
 import {
     deleteUnifiedRecordAction,
     bulkDeleteUnifiedRecordsAction,
-    bulkAssignUnifiedRecordsAction
+    bulkAssignUnifiedRecordsAction,
+    bulkUpdateResolutionAction
 } from "../actions/recordActions"
 import {
     AlertDialog,
@@ -55,6 +56,12 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { Textarea } from "@/components/ui/textarea"
 
 interface RecordListProps {
     initialRecords: any[]
@@ -153,6 +160,25 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
             setIsAssigning(false)
         }
     }
+
+    const handleUpdateResolution = async (ids: string[], resolution: string) => {
+        try {
+            await bulkUpdateResolutionAction(ids, resolution)
+            toast.success("Рішення оновлено")
+            setSelectedIds([])
+        } catch (error) {
+            toast.error("Помилка оновлення рішення")
+        }
+    }
+
+    const resolutionPresets = [
+        "Складено адмінпротокол",
+        "Проведено профілактичну бесіду",
+        "Надіслано за належністю",
+        "Долучено до матеріалів справи",
+        "Кримінальне провадження",
+        "Списано в справу"
+    ]
 
     return (
         <div className="space-y-6">
@@ -363,12 +389,51 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                                                         <FileText className="w-4 h-4 shrink-0" />
                                                         <span className="text-xs font-bold uppercase tracking-widest">Результат</span>
                                                     </div>
-                                                    <p className={cn(
-                                                        "text-sm font-bold italic",
-                                                        record.resolution ? "text-emerald-700" : (record.assignedUser || record.officerName ? "text-blue-600" : "text-amber-600")
-                                                    )}>
-                                                        {record.resolution || (record.assignedUser || record.officerName ? 'В процесі розгляду...' : 'Не призначено')}
-                                                    </p>
+
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <button className={cn(
+                                                                "text-sm font-bold italic text-left hover:underline decoration-dotted underline-offset-4 transition-all w-full",
+                                                                record.resolution ? "text-emerald-700" : (record.assignedUser || record.officerName ? "text-blue-600" : "text-amber-600")
+                                                            )}>
+                                                                {record.resolution || (record.assignedUser || record.officerName ? 'В процесі розгляду...' : 'Не призначено')}
+                                                            </button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-80 p-6 rounded-[2rem] border-none shadow-2xl space-y-4">
+                                                            <div className="space-y-2">
+                                                                <h4 className="text-sm font-black uppercase tracking-tight italic">Впишіть рішення:</h4>
+                                                                <Textarea
+                                                                    placeholder="Текст рішення..."
+                                                                    defaultValue={record.resolution || ""}
+                                                                    className="min-h-[100px] rounded-2xl bg-slate-50 border-none focus-visible:ring-blue-500 font-medium"
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter' && e.ctrlKey) {
+                                                                            handleUpdateResolution([record.id], e.currentTarget.value)
+                                                                        }
+                                                                    }}
+                                                                    onBlur={(e) => {
+                                                                        if (e.target.value !== (record.resolution || "")) {
+                                                                            handleUpdateResolution([record.id], e.target.value)
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Або виберіть готове:</p>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {resolutionPresets.map(preset => (
+                                                                        <button
+                                                                            key={preset}
+                                                                            onClick={() => handleUpdateResolution([record.id], preset)}
+                                                                            className="px-3 py-1.5 bg-slate-100 hover:bg-blue-600 hover:text-white rounded-xl text-[10px] font-bold transition-all"
+                                                                        >
+                                                                            {preset}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </PopoverContent>
+                                                    </Popover>
                                                 </div>
 
                                                 <div className="space-y-3">
@@ -449,6 +514,31 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                                     ))}
                                 </SelectContent>
                             </Select>
+
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button className="h-12 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/20 font-bold px-6 transition-all gap-2">
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        Вказати рішення
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 p-6 rounded-[2rem] border-none shadow-2xl space-y-4 mb-4">
+                                    <div className="space-y-2">
+                                        <h4 className="text-sm font-black uppercase tracking-tight italic">Рішення для {selectedIds.length} записів:</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {resolutionPresets.map(preset => (
+                                                <button
+                                                    key={preset}
+                                                    onClick={() => handleUpdateResolution(selectedIds, preset)}
+                                                    className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-600 hover:text-white rounded-xl text-[10px] font-bold transition-all w-full text-left"
+                                                >
+                                                    {preset}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
 
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>

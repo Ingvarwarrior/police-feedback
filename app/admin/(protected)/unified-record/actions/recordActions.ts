@@ -228,3 +228,18 @@ export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: stri
     revalidatePath('/admin/unified-record')
     return { success: true }
 }
+export async function bulkUpdateResolutionAction(ids: string[], resolution: string) {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    await prisma.unifiedRecord.updateMany({
+        where: { id: { in: ids } },
+        data: {
+            resolution,
+            resolutionDate: new Date()
+        }
+    })
+
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
