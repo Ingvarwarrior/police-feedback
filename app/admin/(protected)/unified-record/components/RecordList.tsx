@@ -33,10 +33,10 @@ import CreateRecordDialog from "./CreateRecordDialog"
 
 interface RecordListProps {
     initialRecords: any[]
-    officers?: any[]
+    users?: { id: string, firstName: string | null, lastName: string | null, username: string }[]
 }
 
-export default function RecordList({ initialRecords, officers = [] }: RecordListProps) {
+export default function RecordList({ initialRecords, users = [] }: RecordListProps) {
     const [searchTerm, setSearchTerm] = useState("")
     const [categoryFilter, setCategoryFilter] = useState("ALL")
     const [sortBy, setSortBy] = useState("newest")
@@ -185,7 +185,7 @@ export default function RecordList({ initialRecords, officers = [] }: RecordList
                                                 <div className="flex flex-wrap gap-2">
                                                     <CreateRecordDialog
                                                         initialData={record}
-                                                        officers={officers}
+                                                        users={users}
                                                         trigger={
                                                             <Button variant="ghost" size="sm" className="h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
                                                                 <Edit2 className="w-3.5 h-3.5 mr-1.5" />
@@ -228,11 +228,11 @@ export default function RecordList({ initialRecords, officers = [] }: RecordList
                                                         <p className="text-sm font-bold text-slate-700">
                                                             <span className="text-slate-400 text-[10px] mr-1">Гр.</span> {record.applicant || '—'}
                                                         </p>
-                                                        {record.assignedOfficer ? (
+                                                        {record.assignedUser ? (
                                                             <div className="flex items-center gap-1.5 mt-1">
                                                                 <Briefcase className="w-3 h-3 text-blue-500" />
                                                                 <p className="text-[10px] font-bold text-slate-900">
-                                                                    {record.assignedOfficer.lastName} {record.assignedOfficer.firstName}
+                                                                    {record.assignedUser.lastName || ''} {record.assignedUser.firstName || record.assignedUser.username}
                                                                 </p>
                                                             </div>
                                                         ) : record.officerName ? (

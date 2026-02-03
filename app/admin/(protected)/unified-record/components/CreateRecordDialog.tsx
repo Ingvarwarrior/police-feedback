@@ -27,7 +27,7 @@ const formSchema = z.object({
     applicant: z.string().optional(),
     address: z.string().optional(),
     officerName: z.string().optional(),
-    assignedOfficerId: z.string().optional().nullable(),
+    assignedUserId: z.string().optional().nullable(),
     category: z.string().optional(),
     district: z.string().optional(),
     resolution: z.string().optional(),
@@ -38,11 +38,11 @@ type FormValues = z.infer<typeof formSchema>
 
 interface CreateRecordDialogProps {
     initialData?: Partial<FormValues>
-    officers?: { id: string, firstName: string, lastName: string, badgeNumber: string }[]
+    users?: { id: string, firstName: string | null, lastName: string | null, username: string }[]
     trigger?: React.ReactNode
 }
 
-export default function CreateRecordDialog({ initialData, officers = [], trigger }: CreateRecordDialogProps) {
+export default function CreateRecordDialog({ initialData, users = [], trigger }: CreateRecordDialogProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
 
@@ -58,7 +58,7 @@ export default function CreateRecordDialog({ initialData, officers = [], trigger
             applicant: initialData?.applicant || "",
             address: initialData?.address || "",
             officerName: initialData?.officerName || "",
-            assignedOfficerId: initialData?.assignedOfficerId || null,
+            assignedUserId: initialData?.assignedUserId || null,
             category: initialData?.category || "Загальне",
             district: initialData?.district || "Хмільницький",
             resolution: initialData?.resolution || "",
@@ -157,18 +157,18 @@ export default function CreateRecordDialog({ initialData, officers = [], trigger
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="assignedOfficerId" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Виконавець (Інспектор)</Label>
+                            <Label htmlFor="assignedUserId" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Виконавець (Інспектор)</Label>
                             <Select
-                                onValueChange={(val) => form.setValue("assignedOfficerId", val)}
-                                defaultValue={form.getValues("assignedOfficerId") || undefined}
+                                onValueChange={(val) => form.setValue("assignedUserId", val)}
+                                defaultValue={form.getValues("assignedUserId") || undefined}
                             >
                                 <SelectTrigger className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
                                     <SelectValue placeholder="Оберіть інспектора" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none shadow-2xl">
-                                    {officers.map(off => (
-                                        <SelectItem key={off.id} value={off.id}>
-                                            {off.lastName} {off.firstName} ({off.badgeNumber})
+                                    {users.map(user => (
+                                        <SelectItem key={user.id} value={user.id}>
+                                            {user.lastName} {user.firstName} ({user.username})
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

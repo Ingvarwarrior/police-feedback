@@ -55,6 +55,7 @@ model User {
   createdAt     DateTime  @default(now())
   
   assignedResponses Response[] @relation("AssignedTo")
+  assignedUnifiedRecords UnifiedRecord[] @relation("AssignedUnifiedRecords")
   evaluations       OfficerEvaluation[] @relation("Evaluations")
   auditLogs         AuditLog[]
   notifications     AdminNotification[]
@@ -238,7 +239,6 @@ model Officer {
   evaluations     OfficerEvaluation[]
   responses       Response[] @relation("OfficerFeedback")
   taggedInResponses Response[] @relation("TaggedOfficers")
-  assignedUnifiedRecords UnifiedRecord[] @relation("AssignedUnifiedRecords")
 
   @@index([lastName, firstName])
   @@index([badgeNumber])
@@ -343,8 +343,8 @@ model UnifiedRecord {
   applicant       String?
   category        String?
   officerName     String?  // Keep for legacy/manual text entry
-  assignedOfficerId String?
-  assignedOfficer   Officer? @relation("AssignedUnifiedRecords", fields: [assignedOfficerId], references: [id])
+  assignedUserId  String?
+  assignedUser    User?    @relation("AssignedUnifiedRecords", fields: [assignedUserId], references: [id])
   resolution      String?
   resolutionDate  DateTime?
   
