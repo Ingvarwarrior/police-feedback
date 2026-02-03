@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import WordCloudComponent from "./WordCloudComponent"
 
 
 interface AnalyticsClientProps {
@@ -42,10 +41,6 @@ interface AnalyticsClientProps {
         suspiciousIps: { hash: string, count: number, phones: string[] }[]
     }
     correlationData: any[]
-    aiInsights: {
-        keywords: any[]
-        sentimentDist: any
-    }
     timePatterns: {
         hourlyData: any[]
         dayOfWeekData: any[]
@@ -66,10 +61,9 @@ export default function AnalyticsClient({
     efficiency,
     trust,
     correlationData,
-    aiInsights,
     timePatterns,
 }: AnalyticsClientProps) {
-    const [activeTab, setActiveTab] = useState<'feedback' | 'personnel' | 'citizens' | 'efficiency' | 'ai' | 'time' | 'geo' | 'predictions'>('feedback')
+    const [activeTab, setActiveTab] = useState<'feedback' | 'personnel' | 'citizens' | 'efficiency' | 'time' | 'geo' | 'predictions'>('feedback')
 
     const avgRating = ratingsData.reduce((acc, curr, idx) => acc + (curr.value * (idx + 1)), 0) / (totalReports || 1)
 
@@ -83,7 +77,6 @@ export default function AnalyticsClient({
         { id: 'personnel', label: 'Особовий склад', icon: Shield },
         { id: 'citizens', label: 'Громадяни', icon: Users },
         { id: 'efficiency', label: 'Ефективність', icon: TrendingUp },
-        { id: 'ai', label: 'AI Інсайти', icon: Brain },
         { id: 'time', label: 'Час', icon: Clock3 },
 
         { id: 'predictions', label: 'Прогнози', icon: Zap },
@@ -428,38 +421,6 @@ export default function AnalyticsClient({
                     </div>
                 )}
 
-                {activeTab === 'ai' && (
-                    <div className="space-y-8">
-                        <WordCloudComponent keywords={aiInsights.keywords} />
-
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardContent className="p-5 sm:p-8 text-center">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-2">Позитивно</p>
-                                    <h3 className="text-4xl font-black text-emerald-600">{aiInsights.sentimentDist.positive}</h3>
-                                </CardContent>
-                            </Card>
-                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardContent className="p-5 sm:p-8 text-center">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Нейтрально</p>
-                                    <h3 className="text-4xl font-black text-slate-600">{aiInsights.sentimentDist.neutral}</h3>
-                                </CardContent>
-                            </Card>
-                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
-                                <CardContent className="p-5 sm:p-8 text-center">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-2">Негативно</p>
-                                    <h3 className="text-4xl font-black text-rose-600">{aiInsights.sentimentDist.negative}</h3>
-                                </CardContent>
-                            </Card>
-                            <Card className="border-0 shadow-lg shadow-rose-200/50 rounded-[2rem] bg-rose-50">
-                                <CardContent className="p-5 sm:p-8 text-center">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-rose-700 mb-2">Токсично</p>
-                                    <h3 className="text-4xl font-black text-rose-700">{aiInsights.sentimentDist.toxic}</h3>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-                )}
 
                 {activeTab === 'time' && (
                     <div className="space-y-8">

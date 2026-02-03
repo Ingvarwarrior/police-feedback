@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma"
 import { checkPermission } from "@/lib/auth-utils"
 import AnalyticsClient from "./AnalyticsClient"
 import { subDays, startOfDay, endOfDay } from "date-fns"
-import { extractKeywords, getSentimentDistribution } from "@/lib/text-analytics"
 import { getHourlyDistribution, detectBurnout, getDayOfWeekDistribution } from "@/lib/time-analytics"
 
 export default async function AnalyticsPage() {
@@ -186,12 +185,6 @@ export default async function AnalyticsPage() {
     // Filter responses with valid ratings (exclude 0 or null)
     const ratedResponses = responses.filter(r => r.rateOverall && r.rateOverall > 0)
 
-    // 8. AI Text Analytics
-    const negativeResponses = ratedResponses.filter(r => r.rateOverall! < 3)
-    const negativeTexts = negativeResponses.map(r => r.comment || '').filter(Boolean)
-    const keywords = extractKeywords(negativeTexts)
-    const sentimentDist = getSentimentDistribution(ratedResponses.map(r => r.comment || ''))
-
     // 9. Time Analytics
     const hourlyData = getHourlyDistribution(ratedResponses)
     const dayOfWeekData = getDayOfWeekDistribution(ratedResponses)
@@ -232,10 +225,6 @@ export default async function AnalyticsPage() {
                     suspiciousIps
                 }}
                 correlationData={correlationData}
-                aiInsights={{
-                    keywords,
-                    sentimentDist
-                }}
                 timePatterns={{
                     hourlyData,
                     dayOfWeekData,
