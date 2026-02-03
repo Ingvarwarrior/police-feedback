@@ -73,7 +73,8 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
 
     const [mainTab, setMainTab] = useState<'all' | 'active' | 'processed'>(() => {
         const status = searchParams.get('status')
-        if (!status) return 'all'
+        if (!status) return 'active'
+        if (status === 'ALL') return 'all'
         if (['RESOLVED', 'ARCHIVED', 'REVIEWED'].includes(status)) return 'processed'
         return 'active'
     })
