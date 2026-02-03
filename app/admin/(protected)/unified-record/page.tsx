@@ -3,10 +3,23 @@ import RecordList from "./components/RecordList"
 import ImportDialog from "./components/ImportDialog"
 import CreateRecordDialog from "./components/CreateRecordDialog"
 import { ClipboardList, Info } from "lucide-react"
+import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
 
 export default async function UnifiedRecordPage() {
-    const records = await getUnifiedRecords()
-    const users = await getUsersForAssignment()
+    const session = await auth()
+    if (!session?.user?.email) return null
+
+    const [records, users, currentUser] = await Promise.all([
+        getUnifiedRecords(),
+        getUsersForAssignment(),
+        prisma.user.findUnique({
+            where: { username: session.user.email },
+            select: { id: true, role: true, firstName: true, lastName: true, username: true }
+        })
+    ])
+
+    if (!currentUser) return null
 
     return (
         <div className="space-y-8 pb-10">
@@ -49,7 +62,7 @@ export default async function UnifiedRecordPage() {
             </div>
 
             {/* Content Section */}
-            <RecordList initialRecords={records} users={users} />
+            <RecordList initialRecords={records} users={users} currentUser={currentUser} />
         </div>
     )
 }

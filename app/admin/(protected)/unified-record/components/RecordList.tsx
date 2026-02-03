@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -24,7 +24,8 @@ import {
     MoreVertical,
     UserPlus,
     XCircle,
-    Loader2
+    Loader2,
+    CalendarCheck2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -62,27 +63,42 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
+import { Calendar } from "@/components/ui/calendar"
 
 interface RecordListProps {
     initialRecords: any[]
-    users?: { id: string, firstName: string | null, lastName: string | null, username: string }[]
+    users: { id: string, firstName: string | null, lastName: string | null, username: string }[]
+    currentUser: {
+        id: string
+        role: string
+        firstName: string | null
+        lastName: string | null
+        username: string
+    }
 }
 
-export default function RecordList({ initialRecords, users = [] }: RecordListProps) {
-    const [searchTerm, setSearchTerm] = useState("")
-    const [categoryFilter, setCategoryFilter] = useState("ALL")
+export default function RecordList({ initialRecords, users = [], currentUser }: RecordListProps) {
+    const [records, setRecords] = useState(initialRecords)
+    const [filterSearch, setFilterSearch] = useState("")
+    const [filterCategory, setFilterCategory] = useState("ALL")
     const [sortBy, setSortBy] = useState("newest")
+    const [showOnlyMine, setShowOnlyMine] = useState(false)
 
     // Selection state
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [isDeleting, setIsDeleting] = useState(false)
     const [isAssigning, setIsAssigning] = useState(false)
 
-    const filteredRecords = useMemo(() => {
-        let result = [...initialRecords]
+    useEffect(() => {
+        setRecords(initialRecords)
+    }, [initialRecords])
 
-        if (searchTerm) {
-            const lowerSearch = searchTerm.toLowerCase()
+    const filteredRecords = useMemo(() => {
+        let result = [...records]
+
+        // Apply search filter
+        if (filterSearch) {
+            const lowerSearch = filterSearch.toLowerCase()
             result = result.filter(r =>
                 r.eoNumber.toLowerCase().includes(lowerSearch) ||
                 (r.description?.toLowerCase().includes(lowerSearch)) ||
@@ -91,10 +107,17 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
             )
         }
 
-        if (categoryFilter !== 'ALL') {
-            result = result.filter(r => r.category === categoryFilter)
+        // Apply category filter
+        if (filterCategory !== 'ALL') {
+            result = result.filter(r => r.category === filterCategory)
         }
 
+        // Apply "show only mine" filter
+        if (showOnlyMine) {
+            result = result.filter(r => r.assignedUserId === currentUser.id)
+        }
+
+        // Apply sorting
         result.sort((a, b) => {
             if (sortBy === 'newest') return new Date(b.eoDate).getTime() - new Date(a.eoDate).getTime()
             if (sortBy === 'oldest') return new Date(a.eoDate).getTime() - new Date(b.eoDate).getTime()
@@ -102,7 +125,7 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
         })
 
         return result
-    }, [initialRecords, searchTerm, categoryFilter, sortBy])
+    }, [records, filterSearch, filterCategory, sortBy, showOnlyMine, currentUser.id])
 
     const categories = useMemo(() => {
         const cats = new Set(initialRecords.map(r => r.category).filter(Boolean))
@@ -128,6 +151,7 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
         try {
             await deleteUnifiedRecordAction(id)
             toast.success("Запис видалено")
+            setRecords(prev => prev.filter(r => r.id !== id))
         } catch (error) {
             toast.error("Помилка видалення")
         } finally {
@@ -140,6 +164,7 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
         try {
             await bulkDeleteUnifiedRecordsAction(selectedIds)
             toast.success(`Видалено ${selectedIds.length} записів`)
+            setRecords(prev => prev.filter(r => !selectedIds.includes(r.id)))
             setSelectedIds([])
         } catch (error) {
             toast.error("Помилка масового видалення")
@@ -153,6 +178,7 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
         try {
             await bulkAssignUnifiedRecordsAction(selectedIds, userId)
             toast.success(`Призначено ${selectedIds.length} записів`)
+            setRecords(prev => prev.map(r => selectedIds.includes(r.id) ? { ...r, assignedUserId: userId, assignedUser: users.find(u => u.id === userId) } : r))
             setSelectedIds([])
         } catch (error) {
             toast.error("Помилка масового призначення")
@@ -161,10 +187,11 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
         }
     }
 
-    const handleUpdateResolution = async (ids: string[], resolution: string) => {
+    const handleUpdateResolution = async (ids: string[], resolution: string, resolutionDate?: Date) => {
         try {
-            await bulkUpdateResolutionAction(ids, resolution)
+            await bulkUpdateResolutionAction(ids, resolution, resolutionDate)
             toast.success("Рішення оновлено")
+            setRecords(prev => prev.map(r => ids.includes(r.id) ? { ...r, resolution, resolutionDate: resolutionDate?.toISOString() || null } : r))
             setSelectedIds([])
         } catch (error) {
             toast.error("Помилка оновлення рішення")
@@ -189,13 +216,13 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                     <Input
                         placeholder="Пошук за номером, адресою чи змістом..."
                         className="pl-12 bg-slate-50 border-0 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        value={filterSearch}
+                        onChange={(e) => setFilterSearch(e.target.value)}
                     />
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <Select value={filterCategory} onValueChange={setFilterCategory}>
                         <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-white h-12 font-medium">
                             <Filter className="w-4 h-4 mr-2 text-slate-400" />
                             <SelectValue placeholder="Категорія" />
@@ -219,6 +246,23 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                         </SelectContent>
                     </Select>
 
+                    <div className="h-8 w-px bg-slate-100 hidden sm:block mx-1" />
+
+                    <Button
+                        variant={showOnlyMine ? "default" : "outline"}
+                        onClick={() => setShowOnlyMine(!showOnlyMine)}
+                        className={cn(
+                            "h-12 rounded-xl font-bold transition-all px-6 gap-2",
+                            showOnlyMine ? "bg-slate-900 text-white shadow-lg" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                        )}
+                    >
+                        <CalendarCheck2 className="w-4 h-4" />
+                        {showOnlyMine ? "Мої завдання" : "Всі записи"}
+                    </Button>
+                </div>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
                     <Button
                         variant="outline"
                         className={cn(
@@ -392,12 +436,20 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
 
                                                     <Popover>
                                                         <PopoverTrigger asChild>
-                                                            <button className={cn(
-                                                                "text-sm font-bold italic text-left hover:underline decoration-dotted underline-offset-4 transition-all w-full",
-                                                                record.resolution ? "text-emerald-700" : (record.assignedUser || record.officerName ? "text-blue-600" : "text-amber-600")
-                                                            )}>
-                                                                {record.resolution || (record.assignedUser || record.officerName ? 'В процесі розгляду...' : 'Не призначено')}
-                                                            </button>
+                                                            <div className="space-y-1 cursor-pointer group/res">
+                                                                <button className={cn(
+                                                                    "text-sm font-bold italic text-left group-hover/res:underline decoration-dotted underline-offset-4 transition-all w-full",
+                                                                    record.resolution ? "text-emerald-700" : (record.assignedUser || record.officerName ? "text-blue-600" : "text-amber-600")
+                                                                )}>
+                                                                    {record.resolution || (record.assignedUser || record.officerName ? 'В процесі розгляду...' : 'Не призначено')}
+                                                                </button>
+                                                                {record.resolutionDate && (
+                                                                    <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium italic">
+                                                                        <CalendarIcon className="w-3 h-3" />
+                                                                        Виконано: {format(new Date(record.resolutionDate), "dd.MM.yyyy", { locale: uk })}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </PopoverTrigger>
                                                         <PopoverContent className="w-80 p-6 rounded-[2rem] border-none shadow-2xl space-y-4">
                                                             <div className="space-y-2">
@@ -408,12 +460,12 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                                                                     className="min-h-[100px] rounded-2xl bg-slate-50 border-none focus-visible:ring-blue-500 font-medium"
                                                                     onKeyDown={(e) => {
                                                                         if (e.key === 'Enter' && e.ctrlKey) {
-                                                                            handleUpdateResolution([record.id], e.currentTarget.value)
+                                                                            handleUpdateResolution([record.id], e.currentTarget.value, record.resolutionDate ? new Date(record.resolutionDate) : new Date())
                                                                         }
                                                                     }}
                                                                     onBlur={(e) => {
                                                                         if (e.target.value !== (record.resolution || "")) {
-                                                                            handleUpdateResolution([record.id], e.target.value)
+                                                                            handleUpdateResolution([record.id], e.target.value, record.resolutionDate ? new Date(record.resolutionDate) : new Date())
                                                                         }
                                                                     }}
                                                                 />
@@ -424,13 +476,23 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                                                                     {resolutionPresets.map(preset => (
                                                                         <button
                                                                             key={preset}
-                                                                            onClick={() => handleUpdateResolution([record.id], preset)}
+                                                                            onClick={() => handleUpdateResolution([record.id], preset, record.resolutionDate ? new Date(record.resolutionDate) : new Date())}
                                                                             className="px-3 py-1.5 bg-slate-100 hover:bg-blue-600 hover:text-white rounded-xl text-[10px] font-bold transition-all"
                                                                         >
                                                                             {preset}
                                                                         </button>
                                                                     ))}
                                                                 </div>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Дата рішення:</p>
+                                                                <Calendar
+                                                                    mode="single"
+                                                                    selected={record.resolutionDate ? new Date(record.resolutionDate) : undefined}
+                                                                    onSelect={(date) => handleUpdateResolution([record.id], record.resolution || "", date || new Date())}
+                                                                    initialFocus
+                                                                    className="rounded-2xl border bg-slate-50"
+                                                                />
                                                             </div>
                                                         </PopoverContent>
                                                     </Popover>
@@ -451,6 +513,7 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                                                                 try {
                                                                     await bulkAssignUnifiedRecordsAction(targetIds, val)
                                                                     toast.success(targetIds.length > 1 ? `Призначено ${targetIds.length} записів` : "Інспектора призначено")
+                                                                    setRecords(prev => prev.map(r => targetIds.includes(r.id) ? { ...r, assignedUserId: val, assignedUser: users.find(u => u.id === val) } : r))
                                                                     setSelectedIds([])
                                                                 } catch (error) {
                                                                     toast.error("Помилка призначення")
@@ -498,7 +561,7 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                             <span className="text-xl font-black italic">{selectedIds.length} записів</span>
                         </div>
 
-                        <div className="h-10 w-px bg-white/10" />
+                        <div className="h-10 w-px bg-slate-100 hidden sm:block" />
 
                         <div className="flex items-center gap-3">
                             <Select onValueChange={(val) => handleBulkAssign(val)}>
