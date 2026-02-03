@@ -350,37 +350,12 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-50">
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-slate-400">
-                                                        <MapPin className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-bold uppercase tracking-widest">Адреса та район</span>
+                                                        <User className="w-4 h-4 shrink-0" />
+                                                        <span className="text-xs font-bold uppercase tracking-widest">Заявник</span>
                                                     </div>
                                                     <p className="text-sm font-bold text-slate-700">
-                                                        {record.address || 'Не вказано'}
-                                                        {record.district && <span className="text-slate-400 font-medium ml-1">({record.district})</span>}
+                                                        <span className="text-slate-400 text-[10px] mr-1">Гр.</span> {record.applicant || '—'}
                                                     </p>
-                                                </div>
-
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center gap-2 text-slate-400">
-                                                        <User className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-bold uppercase tracking-widest">Заявник / Офіцер</span>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <p className="text-sm font-bold text-slate-700">
-                                                            <span className="text-slate-400 text-[10px] mr-1">Гр.</span> {record.applicant || '—'}
-                                                        </p>
-                                                        {record.assignedUser ? (
-                                                            <div className="flex items-center gap-1.5 mt-1">
-                                                                <Briefcase className="w-3 h-3 text-blue-500" />
-                                                                <p className="text-[10px] font-bold text-slate-900">
-                                                                    {record.assignedUser.lastName || ''} {record.assignedUser.firstName || record.assignedUser.username}
-                                                                </p>
-                                                            </div>
-                                                        ) : record.officerName ? (
-                                                            <p className="text-[10px] font-medium text-slate-500">
-                                                                Відповідальний: {record.officerName}
-                                                            </p>
-                                                        ) : null}
-                                                    </div>
                                                 </div>
 
                                                 <div className="space-y-3">
@@ -388,9 +363,36 @@ export default function RecordList({ initialRecords, users = [] }: RecordListPro
                                                         <FileText className="w-4 h-4 shrink-0" />
                                                         <span className="text-xs font-bold uppercase tracking-widest">Результат</span>
                                                     </div>
-                                                    <p className="text-sm font-bold text-emerald-700 italic">
-                                                        {record.resolution || 'В процесі розгляду...'}
+                                                    <p className={cn(
+                                                        "text-sm font-bold italic",
+                                                        record.resolution ? "text-emerald-700" : (record.assignedUser || record.officerName ? "text-blue-600" : "text-amber-600")
+                                                    )}>
+                                                        {record.resolution || (record.assignedUser || record.officerName ? 'В процесі розгляду...' : 'Не призначено')}
                                                     </p>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2 text-slate-400">
+                                                        <Briefcase className="w-4 h-4 shrink-0" />
+                                                        <span className="text-xs font-bold uppercase tracking-widest">Відповідальний</span>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        {record.assignedUser ? (
+                                                            <div className="flex items-center gap-1.5 mt-1">
+                                                                <p className="text-sm font-bold text-slate-900">
+                                                                    {record.assignedUser.lastName || ''} {record.assignedUser.firstName || record.assignedUser.username}
+                                                                </p>
+                                                            </div>
+                                                        ) : record.officerName ? (
+                                                            <p className="text-sm font-bold text-slate-700">
+                                                                {record.officerName}
+                                                            </p>
+                                                        ) : (
+                                                            <p className="text-sm font-bold text-slate-400 italic">
+                                                                Не призначено
+                                                            </p>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
