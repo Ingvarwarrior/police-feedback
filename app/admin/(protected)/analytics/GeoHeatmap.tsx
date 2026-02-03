@@ -1,39 +1,71 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import 'leaflet.heat'
 import { Card, CardContent } from "@/components/ui/card"
 
 function HeatmapLayer({ points }: { points: [number, number, number][] }) {
     const map = useMap()
+    const layerRef = useRef<any>(null)
 
     useEffect(() => {
         if (!points || points.length === 0) return
 
-        const heat = (L as any).heatLayer(points, {
-            radius: 25,
-            blur: 15,
-            maxZoom: 17,
-            gradient: {
-                0.4: 'blue',
-                0.6: 'cyan',
-                0.7: 'lime',
-                0.8: 'yellow',
-                1.0: 'red'
-            }
-        }).addTo(map)
+        let mounted = true
 
-        // Auto-fit bounds
-        const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]))
-        if (bounds.isValid()) {
-            map.fitBounds(bounds, { padding: [50, 50] })
+        const initHeatmap = async () => {
+            if (typeof window !== 'undefined') {
+                // Ensure globally available L for the plugin
+                (window as any).L = L
+
+                // Dynamically import leaflet.heat
+                await import('leaflet.heat')
+
+                if (!mounted) return
+
+                // Remove previous layer if exists
+                if (layerRef.current) {
+                    map.removeLayer(layerRef.current)
+                    layerRef.current = null
+                }
+
+                // Check if plugin loaded correctly
+                if ((L as any).heatLayer) {
+                    const heat = (L as any).heatLayer(points, {
+                        radius: 25,
+                        blur: 15,
+                        maxZoom: 17,
+                        gradient: {
+                            0.4: 'blue',
+                            0.6: 'cyan',
+                            0.7: 'lime',
+                            0.8: 'yellow',
+                            1.0: 'red'
+                        }
+                    }).addTo(map)
+
+                    layerRef.current = heat
+
+                    // Auto-fit bounds
+                    const latLngs = points.map(p => [p[0], p[1]] as [number, number])
+                    const bounds = L.latLngBounds(latLngs)
+                    if (bounds.isValid()) {
+                        map.fitBounds(bounds, { padding: [50, 50] })
+                    }
+                }
+            }
         }
 
+        initHeatmap()
+
         return () => {
-            map.removeLayer(heat)
+            mounted = false
+            if (layerRef.current) {
+                map.removeLayer(layerRef.current)
+                layerRef.current = null
+            }
         }
     }, [points, map])
 
@@ -52,11 +84,10 @@ interface GeoHeatmapProps {
 }
 
 export default function GeoHeatmap({ data }: GeoHeatmapProps) {
-    // Focus on Ukraine/Vinnytsia region by default or calculate bounds
-    const center: [number, number] = [49.5558, 27.9587] // Khmilnyk center approx
+    // Center on Vinnytsia/Khmilnyk region by default
+    const center: [number, number] = [49.5558, 27.9587]
 
     // Prepare heat data: [lat, lng, intensity]
-    // Intensity: 1.0 for negative, 0.3 for positive
     const heatData: [number, number, number][] = data.map(p => [
         p.lat,
         p.lng,
@@ -68,7 +99,7 @@ export default function GeoHeatmap({ data }: GeoHeatmapProps) {
             <CardContent className="p-0 h-[500px] relative z-0">
                 <MapContainer
                     center={center}
-                    zoom={13}
+                    zoom={10}
                     style={{ height: '100%', width: '100%' }}
                     scrollWheelZoom={true}
                 >
