@@ -189,15 +189,25 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
                             <DetailRow label="Звання" value={officer.rank || 'Офіцер'} icon={<Award className="w-5 h-5 text-primary" />} />
                             <DetailRow label="Жетон" value={officer.badgeNumber} icon={<Shield className="w-5 h-5 text-primary" />} />
                             <DetailRow label="Дата народження" value={officer.birthDate ? new Date(officer.birthDate).toLocaleDateString() : '—'} icon={<Star className="w-5 h-5 text-primary" />} />
-                            <div className="flex items-end justify-between group">
-                                <DetailRow label="Телефон" value={officer.phone || '—'} icon={<Phone className="w-5 h-5 text-primary" />} />
-                                {officer.phone && (
-                                    <a href={`tel:${formatPhoneNumberForCall(officer.phone)}`} className="mb-1 p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm">
-                                        <Phone className="w-4 h-4" />
-                                    </a>
-                                )}
-                            </div>
+                            <DetailRow label="Телефон" value={officer.phone || '—'} icon={<Phone className="w-5 h-5 text-primary" />} />
+                            <DetailRow label="Освіта" value={officer.education || '—'} icon={<FileText className="w-5 h-5 text-primary" />} />
+                            <DetailRow label="Домашня адреса" value={officer.address || '—'} icon={<Activity className="w-5 h-5 text-primary" />} />
                         </div>
+
+                        {/* Service History Section */}
+                        {officer.serviceHistory && (
+                            <div className="w-full mt-8 pt-8 border-t border-slate-100 text-left">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                                    <Activity className="w-3.5 h-3.5 text-primary" />
+                                    Служба в ОВС
+                                </h3>
+                                <div className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                                    <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                        {officer.serviceHistory}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Top Actions */}
                         <div className="flex flex-wrap items-center justify-center gap-4 pt-8 border-t border-slate-50">
@@ -646,5 +656,3 @@ function StatsCard({ title, value, icon }: any) {
         </Card>
     )
 }
-
-

@@ -14,6 +14,10 @@ interface Officer {
     totalEvaluations: number
     totalResponses: number
     phone?: string | null
+    birthDate?: string | null
+    address?: string | null
+    education?: string | null
+    serviceHistory?: string | null
 }
 
 interface AdminState {

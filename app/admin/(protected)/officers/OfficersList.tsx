@@ -39,6 +39,7 @@ interface Officer {
     totalEvaluations: number
     totalResponses: number
     phone?: string | null
+    birthDate?: string | null
 }
 
 interface OfficersListProps {
@@ -60,7 +61,7 @@ const RANK_PRIORITY: Record<string, number> = {
     'рядовий': 0
 }
 
-type SortKey = 'name' | 'rank' | 'department' | 'rating' | 'reviews'
+type SortKey = 'name' | 'rank' | 'department' | 'rating' | 'reviews' | 'birthDate'
 type SortDir = 'asc' | 'desc'
 
 export default function OfficersList({ currentUser }: OfficersListProps) {
@@ -229,6 +230,8 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                 case 'reviews':
                     // Activity: Sort by total evaluations + responses combined
                     return dir * ((a.totalEvaluations + a.totalResponses) - (b.totalEvaluations + b.totalResponses))
+                case 'birthDate':
+                    return dir * ((a.birthDate || '').localeCompare(b.birthDate || ''))
                 default:
                     return 0
             }
@@ -400,6 +403,15 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                     </div>
                                 </button>
                             </th>
+                            <th className="px-6 py-4 text-left">
+                                <button onClick={() => handleSort('birthDate')} className="flex items-center gap-1 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">
+                                    Дата народж.
+                                    <div className="flex flex-col">
+                                        <ChevronUp className={`w-2.5 h-2.5 -mb-1 ${sortConfig.key === 'birthDate' && sortConfig.dir === 'asc' ? 'text-slate-900' : 'text-slate-300'}`} />
+                                        <ChevronDown className={`w-2.5 h-2.5 ${sortConfig.key === 'birthDate' && sortConfig.dir === 'desc' ? 'text-slate-900' : 'text-slate-300'}`} />
+                                    </div>
+                                </button>
+                            </th>
                             <th className="px-6 py-4 text-center text-xs font-black uppercase tracking-widest text-slate-500">Дії</th>
                         </tr>
                     </thead>
@@ -484,6 +496,11 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                             <span className="text-slate-500">{officer.totalResponses}</span>
                                         </div>
                                     </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-sm text-slate-600 font-mono">
+                                            {officer.birthDate ? new Date(officer.birthDate).toLocaleDateString() : '—'}
+                                        </span>
+                                    </td>
                                     <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center justify-center gap-2">
                                             {officer.phone && (
@@ -559,7 +576,14 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                     <div className="flex items-start justify-between">
                                         <div>
                                             <h3 className="font-black text-slate-900 text-lg leading-tight mb-1">{officer.lastName} {officer.firstName}</h3>
-                                            <p className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md w-fit">#{officer.badgeNumber}</p>
+                                            <div className="flex gap-2 items-center">
+                                                <p className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md w-fit">#{officer.badgeNumber}</p>
+                                                {officer.birthDate && (
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                                                        {new Date(officer.birthDate).toLocaleDateString()}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded-lg font-black text-xs">
                                             {officer.avgScore > 0 ? officer.avgScore : '-'} <Star className="w-3 h-3 fill-amber-500 text-amber-500" />

@@ -180,7 +180,7 @@ export async function PATCH(
 
     try {
         const body = await req.json()
-        const { firstName, lastName, middleName, rank, department, hireDate, birthDate, status, phone, email, driversLicense, imageUrl } = body
+        const { firstName, lastName, middleName, rank, department, hireDate, birthDate, status, phone, email, driversLicense, imageUrl, address, education, serviceHistory } = body
 
         const officer = await prisma.officer.update({
             where: { id: params.id },
@@ -196,6 +196,9 @@ export async function PATCH(
                 imageUrl: imageUrl !== undefined ? imageUrl : undefined,
                 hireDate: hireDate !== undefined ? (hireDate ? new Date(hireDate) : null) : undefined,
                 birthDate: birthDate !== undefined ? (birthDate ? new Date(birthDate) : null) : undefined,
+                address: address !== undefined ? address : undefined,
+                education: education !== undefined ? education : undefined,
+                serviceHistory: serviceHistory !== undefined ? serviceHistory : undefined,
                 status: status !== undefined ? status : undefined
             }
         })

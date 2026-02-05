@@ -28,7 +28,10 @@ export function OfficerForm({ initialData, onSubmit, loading, submitLabel = "З�
         driversLicense: initialData?.driversLicense || "",
         imageUrl: initialData?.imageUrl || "",
         hireDate: initialData?.hireDate ? new Date(initialData.hireDate).toISOString().split('T')[0] : "",
-        birthDate: initialData?.birthDate ? new Date(initialData.birthDate).toISOString().split('T')[0] : ""
+        birthDate: initialData?.birthDate ? new Date(initialData.birthDate).toISOString().split('T')[0] : "",
+        address: initialData?.address || "",
+        education: initialData?.education || "",
+        serviceHistory: initialData?.serviceHistory || ""
     })
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -164,6 +167,35 @@ export function OfficerForm({ initialData, onSubmit, loading, submitLabel = "З�
                         placeholder="Патрульна поліція м. Києва, 1 батальйон"
                     />
                 </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Освіта</label>
+                    <Input
+                        value={formData.education}
+                        onChange={e => setFormData({ ...formData, education: e.target.value })}
+                        placeholder="Вища освіта..."
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Домашня адреса</label>
+                    <Input
+                        value={formData.address}
+                        onChange={e => setFormData({ ...formData, address: e.target.value })}
+                        placeholder="Вул. Прикладна, буд. 1..."
+                    />
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Служба в ОВС (історія)</label>
+                <textarea
+                    className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={formData.serviceHistory}
+                    onChange={e => setFormData({ ...formData, serviceHistory: e.target.value })}
+                    placeholder="З 2015 по 2020..."
+                />
             </div>
 
             <div className="pt-4 flex justify-end">
