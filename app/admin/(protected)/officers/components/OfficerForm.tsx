@@ -48,7 +48,7 @@ export function OfficerForm({ initialData, onSubmit, loading, submitLabel = "З�
                 />
 
                 <div className="flex-1 w-full space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-slate-700">Прізвище *</label>
                             <Input

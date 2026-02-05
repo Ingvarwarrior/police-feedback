@@ -589,9 +589,9 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                             {officer.avgScore > 0 ? officer.avgScore : '-'} <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                                         </div>
                                     </div>
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                        {officer.rank && <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase">{officer.rank}</span>}
-                                        {officer.department && <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase">{officer.department}</span>}
+                                    <div className="mt-3 flex flex-col gap-2">
+                                        {officer.rank && <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase w-fit">{officer.rank}</span>}
+                                        {officer.department && <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase w-fit">{officer.department}</span>}
                                     </div>
                                 </div>
                             </div>
