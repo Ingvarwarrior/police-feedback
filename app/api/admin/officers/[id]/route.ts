@@ -153,7 +153,7 @@ export async function GET(
                 trendData,
                 recentEvaluations: officer.evaluations.slice(0, 5),
                 recentFeedback: officer.responses,
-                taggedFeedback: (officer as any).taggedInResponses || [],
+                taggedFeedback: ((officer as any).taggedInResponses || []).filter((tf: any) => !officer.responses.some((rf: any) => rf.id === tf.id)),
                 qrUrl: surveyUrl
             }
         })
