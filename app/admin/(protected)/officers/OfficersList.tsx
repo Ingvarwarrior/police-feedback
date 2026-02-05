@@ -6,7 +6,7 @@ import { formatPhoneNumberForCall } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, UserPlus, Star, Shield, Trash2, AlertTriangle, Phone, RefreshCw } from "lucide-react"
+import { Search, UserPlus, Star, Shield, Trash2, AlertTriangle, Phone, RefreshCw, ChevronUp, ChevronDown } from "lucide-react"
 import { AddEvaluationDialog } from "./components/AddEvaluationDialog"
 import { ImportOfficersDialog } from "./ImportOfficersDialog"
 import { useAdminStore } from "@/lib/admin-store"
@@ -60,7 +60,7 @@ const RANK_PRIORITY: Record<string, number> = {
     'рядовий': 0
 }
 
-type SortKey = 'name' | 'rank' | 'rating' | 'reviews'
+type SortKey = 'name' | 'rank' | 'department' | 'rating' | 'reviews'
 type SortDir = 'asc' | 'desc'
 
 export default function OfficersList({ currentUser }: OfficersListProps) {
@@ -197,6 +197,14 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
         return key ? RANK_PRIORITY[key] : 0
     }
 
+    const handleSort = (key: SortKey) => {
+        if (sortConfig.key === key) {
+            setSortConfig({ key, dir: sortConfig.dir === 'asc' ? 'desc' : 'asc' })
+        } else {
+            setSortConfig({ key, dir: 'asc' })
+        }
+    }
+
     const filteredOfficers = officers
         .filter(o => {
             const matchesSearch =
@@ -214,10 +222,13 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                     return dir * a.lastName.localeCompare(b.lastName)
                 case 'rank':
                     return dir * (getRankPriority(a.rank) - getRankPriority(b.rank))
+                case 'department':
+                    return dir * (a.department || '').localeCompare(b.department || '')
                 case 'rating':
                     return dir * (a.avgScore - b.avgScore)
                 case 'reviews':
-                    return dir * (a.totalEvaluations - b.totalEvaluations)
+                    // Activity: Sort by total evaluations + responses combined
+                    return dir * ((a.totalEvaluations + a.totalResponses) - (b.totalEvaluations + b.totalResponses))
                 default:
                     return 0
             }
@@ -284,6 +295,8 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                             <SelectItem value="name-desc">🔤 За прізвищем (Я-А)</SelectItem>
                             <SelectItem value="rank-desc">👮 За званням (високі-низькі)</SelectItem>
                             <SelectItem value="rank-asc">👮 За званням (низькі-високі)</SelectItem>
+                            <SelectItem value="department-asc">🏢 За підрозділом (А-Я)</SelectItem>
+                            <SelectItem value="department-desc">🏢 За підрозділом (Я-А)</SelectItem>
                             <SelectItem value="rating-desc">⭐ Рейтинг (найкращі)</SelectItem>
                             <SelectItem value="rating-asc">⭐ Рейтинг (найгірші)</SelectItem>
                             <SelectItem value="reviews-desc">💬 Активність (багато відгуків)</SelectItem>
@@ -342,11 +355,51 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                     />
                                 </th>
                             )}
-                            <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-widest text-slate-500">Офіцер</th>
-                            <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-widest text-slate-500">Звання</th>
-                            <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-widest text-slate-500">Підрозділ</th>
-                            <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-widest text-slate-500">Рейтинг</th>
-                            <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-widest text-slate-500">Відгуки</th>
+                            <th className="px-6 py-4 text-left">
+                                <button onClick={() => handleSort('name')} className="flex items-center gap-1 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">
+                                    Офіцер
+                                    <div className="flex flex-col">
+                                        <ChevronUp className={`w-2.5 h-2.5 -mb-1 ${sortConfig.key === 'name' && sortConfig.dir === 'asc' ? 'text-slate-900' : 'text-slate-300'}`} />
+                                        <ChevronDown className={`w-2.5 h-2.5 ${sortConfig.key === 'name' && sortConfig.dir === 'desc' ? 'text-slate-900' : 'text-slate-300'}`} />
+                                    </div>
+                                </button>
+                            </th>
+                            <th className="px-6 py-4 text-left">
+                                <button onClick={() => handleSort('rank')} className="flex items-center gap-1 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">
+                                    Звання
+                                    <div className="flex flex-col">
+                                        <ChevronUp className={`w-2.5 h-2.5 -mb-1 ${sortConfig.key === 'rank' && sortConfig.dir === 'asc' ? 'text-slate-900' : 'text-slate-300'}`} />
+                                        <ChevronDown className={`w-2.5 h-2.5 ${sortConfig.key === 'rank' && sortConfig.dir === 'desc' ? 'text-slate-900' : 'text-slate-300'}`} />
+                                    </div>
+                                </button>
+                            </th>
+                            <th className="px-6 py-4 text-left">
+                                <button onClick={() => handleSort('department')} className="flex items-center gap-1 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">
+                                    Підрозділ
+                                    <div className="flex flex-col">
+                                        <ChevronUp className={`w-2.5 h-2.5 -mb-1 ${sortConfig.key === 'department' && sortConfig.dir === 'asc' ? 'text-slate-900' : 'text-slate-300'}`} />
+                                        <ChevronDown className={`w-2.5 h-2.5 ${sortConfig.key === 'department' && sortConfig.dir === 'desc' ? 'text-slate-900' : 'text-slate-300'}`} />
+                                    </div>
+                                </button>
+                            </th>
+                            <th className="px-6 py-4 text-left">
+                                <button onClick={() => handleSort('rating')} className="flex items-center gap-1 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">
+                                    Рейтинг
+                                    <div className="flex flex-col">
+                                        <ChevronUp className={`w-2.5 h-2.5 -mb-1 ${sortConfig.key === 'rating' && sortConfig.dir === 'asc' ? 'text-slate-900' : 'text-slate-300'}`} />
+                                        <ChevronDown className={`w-2.5 h-2.5 ${sortConfig.key === 'rating' && sortConfig.dir === 'desc' ? 'text-slate-900' : 'text-slate-300'}`} />
+                                    </div>
+                                </button>
+                            </th>
+                            <th className="px-6 py-4 text-left">
+                                <button onClick={() => handleSort('reviews')} className="flex items-center gap-1 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">
+                                    Відгуки
+                                    <div className="flex flex-col">
+                                        <ChevronUp className={`w-2.5 h-2.5 -mb-1 ${sortConfig.key === 'reviews' && sortConfig.dir === 'asc' ? 'text-slate-900' : 'text-slate-300'}`} />
+                                        <ChevronDown className={`w-2.5 h-2.5 ${sortConfig.key === 'reviews' && sortConfig.dir === 'desc' ? 'text-slate-900' : 'text-slate-300'}`} />
+                                    </div>
+                                </button>
+                            </th>
                             <th className="px-6 py-4 text-center text-xs font-black uppercase tracking-widest text-slate-500">Дії</th>
                         </tr>
                     </thead>
