@@ -40,6 +40,8 @@ jobs:
             npm install
             npx prisma generate
             npx prisma db push --accept-data-loss
+            export NODE_OPTIONS="--max-old-space-size=1536"
+            export CI=true
             npm run build
             sudo systemctl restart police-feedback
             echo "--- DEPLOY FINISHED ---"
