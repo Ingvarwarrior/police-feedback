@@ -1,9 +1,9 @@
-
 import { PrismaClient } from '@prisma/client'
 import { JSDOM } from 'jsdom'
 import fs from 'fs'
 import path from 'path'
 import sharp from 'sharp'
+import crypto from 'node:crypto'
 
 const prisma = new PrismaClient()
 
