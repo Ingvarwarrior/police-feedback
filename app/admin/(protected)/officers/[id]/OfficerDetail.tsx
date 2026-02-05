@@ -164,8 +164,8 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
 
                 {/* Vertical Stack */}
                 <div className="flex flex-col items-center max-w-2xl w-full">
-                    {/* Large Photo */}
-                    <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-[3.5rem] overflow-hidden bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xl border-[6px] border-white ring-1 ring-slate-100 mb-8 transform hover:scale-[1.02] transition-transform duration-500">
+                    {/* Large Photo - Made Rectangular 3:4 */}
+                    <div className="relative w-48 h-60 md:w-64 md:h-80 rounded-[2.5rem] overflow-hidden bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xl border-[6px] border-white ring-1 ring-slate-100 mb-8 transform hover:scale-[1.02] transition-transform duration-500">
                         {officer.imageUrl ? (
                             <img src={officer.imageUrl} alt="Officer" className="w-full h-full object-cover" />
                         ) : (
