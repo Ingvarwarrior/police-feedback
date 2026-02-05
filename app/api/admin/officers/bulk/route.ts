@@ -21,6 +21,7 @@ export async function POST(req: Request) {
 
         const results = {
             created: 0,
+            updated: 0,
             errors: [] as any[]
         }
 
@@ -39,10 +40,20 @@ export async function POST(req: Request) {
                 })
 
                 if (existing) {
-                    results.errors.push({
-                        badge: officer.badgeNumber,
-                        error: `Officer with badge ${officer.badgeNumber} already exists`
+                    // Update existing officer
+                    await prisma.officer.update({
+                        where: { id: existing.id },
+                        data: {
+                            firstName: officer.firstName,
+                            lastName: officer.lastName,
+                            middleName: officer.middleName || existing.middleName,
+                            rank: officer.rank || existing.rank,
+                            department: officer.department || existing.department,
+                            phone: officer.phone || existing.phone,
+                            birthDate: officer.birthDate ? new Date(officer.birthDate) : existing.birthDate,
+                        }
                     })
+                    results.updated++
                     continue
                 }
 

@@ -80,9 +80,12 @@ export function ImportOfficersDialog({ onSuccess }: ImportDialogProps) {
             const json = await res.json()
 
             if (res.ok) {
-                toast.success(`Імпортовано ${json.created} офіцерів`)
+                let msg = `Створено: ${json.created}`
+                if (json.updated > 0) msg += `, Оновлено: ${json.updated}`
+                toast.success(msg)
+
                 if (json.errors.length > 0) {
-                    toast.warning(`${json.errors.length} пропущено (дублікати або помилки)`)
+                    toast.warning(`${json.errors.length} помилок (пропущено)`)
                 }
                 setOpen(false)
                 onSuccess()
