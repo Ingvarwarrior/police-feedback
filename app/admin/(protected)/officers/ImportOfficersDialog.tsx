@@ -58,7 +58,8 @@ export function ImportOfficersDialog({ onSuccess }: ImportDialogProps) {
                     department: row["Відділення"] || row["Відділення / Підрозділ"] || row.department || row.Department || null,
                     birthDate: row["Дата народження"] || row.birthDate || row.BirthDate || null,
                     phone: row["Телефон"] || row.phone || row.Phone || null,
-                    hireDate: row["Служба в ОВС"] || row.hireDate || row.HireDate || null,
+                    hireDate: row["Дата найму"] || row.hireDate || null,
+                    serviceHistory: row["Служба в ОВС"] || row.serviceHistory || null,
                     education: row["Освіта"] || row.education || row.Education || null,
                     address: row["Домашня адреса"] || row["Адреса"] || row.address || row.Address || null,
                     imageUrl: row["Фото"] || row.imageUrl || row.ImageUrl || null

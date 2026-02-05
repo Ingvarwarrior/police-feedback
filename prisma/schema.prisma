@@ -178,6 +178,7 @@ model Officer {
   birthDate         DateTime?
   address           String?
   education         String?
+  serviceHistory    String?
   email             String?
   driversLicense    String?
   status            String              @default("ACTIVE")
