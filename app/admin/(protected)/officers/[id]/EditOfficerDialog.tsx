@@ -48,7 +48,7 @@ export function EditOfficerDialog({ officer }: EditOfficerDialogProps) {
                     <span className="hidden sm:inline">Редагувати профіль</span>
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Редагування профілю</DialogTitle>
                 </DialogHeader>

@@ -141,7 +141,7 @@ export function OfficerForm({ initialData, onSubmit, loading, submitLabel = "З�
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
                 <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">Звання</label>
                     <Select value={formData.rank} onValueChange={(val) => setFormData({ ...formData, rank: val })}>
