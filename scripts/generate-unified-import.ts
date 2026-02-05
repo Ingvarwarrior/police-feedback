@@ -25,6 +25,23 @@ function getDeterministicPhotoUrl(fullName: string) {
     return "";
 }
 
+function safeParseDate(val: any) {
+    if (!val) return "";
+    if (typeof val === 'number') {
+        // Excel date
+        const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+        return isNaN(d.getTime()) ? "" : d.toISOString().split('T')[0];
+    }
+    const str = String(val).trim();
+    // Try to match DD.MM.YYYY
+    const dMatch = str.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+    if (dMatch) {
+        const d = new Date(`${dMatch[3]}-${dMatch[2]}-${dMatch[1]}`);
+        return isNaN(d.getTime()) ? "" : d.toISOString().split('T')[0];
+    }
+    return "";
+}
+
 async function main() {
     console.log(`Reading Excel file: ${EXCEL_FILE}`);
     const workbook = XLSX.readFile(EXCEL_FILE);
@@ -47,22 +64,42 @@ async function main() {
 
     [1, 2, 3].forEach(idx => {
         const sheetName = workbook.SheetNames[idx];
-        if (!sheetName) {
-            console.log(`Sheet at index ${idx} not found`);
-            return;
-        }
+        if (!sheetName) return;
 
         const worksheet = workbook.Sheets[sheetName];
         const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
         const suffix = SUFFIXES[idx] || "";
-        let sheetCount = 0;
 
-        data.forEach((row, rowIdx) => {
+        // Find columns
+        const headerRow = data.find(r => r && r.some(c => String(c).includes('ПІБ')));
+        if (!headerRow) {
+            console.log(`[${sheetName}] Header row NOT found`);
+            return;
+        }
+
+        const findCol = (names: string[]) => {
+            return headerRow.findIndex(v => v && names.some(n => String(v).toLowerCase().includes(n.toLowerCase())));
+        };
+
+        const colMap = {
+            pib: findCol(['ПІБ']),
+            pos: findCol(['ПОСАДА']),
+            zvan: findCol(['НАЯВНЕ ЗВАННЯ']),
+            osv: findCol(['ОСВІТА']),
+            sluz: findCol(['СЛУЖБА В ОВС']),
+            tel: findCol(['телефони']),
+            adr: findCol(['домашня адреса', 'фактичне місце']),
+            birth: findCol(['дата народження'])
+        };
+
+        console.log(`[${sheetName}] Columns:`, colMap);
+
+        let sheetCount = 0;
+        data.forEach((row) => {
             if (!row || !Array.isArray(row)) return;
 
-            // Name + Badge is at Col 11
-            const nameCell = row[11];
-            if (!nameCell || typeof nameCell !== 'string') return;
+            const nameCell = String(row[colMap.pib] || "");
+            if (!nameCell || nameCell.includes('ВАКАНСІЯ')) return;
 
             const match = nameCell.match(/^(.+?)\s+\((\d{7})\)/);
             if (!match) return;
@@ -74,49 +111,28 @@ async function main() {
             // Normalize name: Title Case
             const normalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
             const cleanName = fullNameRaw.replace(/[\(\)]/g, ' ').replace(/\s+/g, ' ').trim();
-            const nameParts = cleanName.split(/\s+/).filter(Boolean);
+            const nameParts = cleanName.split(/\s+/).filter(Boolean).filter(p => !p.includes('.')); // Filter out т.в.о. etc
             const fullNameNormalized = nameParts.map(normalize).join(' ');
 
             const photoUrl = getDeterministicPhotoUrl(fullNameNormalized);
 
-            // Columns according to user and debug log:
-            // 1. Посада: Col 4 + suffix
-            const position = String(row[4] || "").trim() + suffix;
-
-            // 2. Звання: Col 6
-            const rank = String(row[6] || "").trim();
-
-            // 5. Дата народження: Col 12
-            const rawBirthVal = row[12];
-            let birthDateRaw = "";
-            if (typeof rawBirthVal === 'number') {
-                const d = new Date(Math.round((rawBirthVal - 25569) * 86400 * 1000));
-                birthDateRaw = d.toISOString().split('T')[0];
-            } else {
-                birthDateRaw = String(rawBirthVal || "").trim();
-            }
-
-            // 6. Служба в ОВС: Col 14
-            const serviceHistory = String(row[14] || "").trim();
-
-            // 7. Телефон: Col 22
-            let phone = String(row[22] || "").replace(/\s+/g, '');
+            const position = String(row[colMap.pos] || "").trim() + suffix;
+            const rank = String(row[colMap.zvan] || "").trim();
+            const birthDate = safeParseDate(row[colMap.birth]);
+            const serviceHistory = String(row[colMap.sluz] || "").trim();
+            let phone = String(row[colMap.tel] || "").replace(/\s+/g, '');
             if (phone.length === 10 && phone.startsWith('0')) phone = '38' + phone;
-
-            // 8. Домашня адреса: Col 23
-            const address = String(row[23] || "").trim();
-
-            // 9. Освіта: Col 13
-            const education = String(row[13] || "").trim();
+            const address = String(row[colMap.adr] || "").trim();
+            const education = String(row[colMap.osv] || "").trim();
 
             resultRows.push([
                 position,
                 rank,
-                nameParts[0] || "", // Прізвище
-                nameParts[1] || "", // Ім'я
-                nameParts.slice(2).join(' ') || "", // По-батькові
+                nameParts[0] || "",
+                nameParts[1] || "",
+                nameParts.slice(2).join(' ') || "",
                 badge,
-                birthDateRaw,
+                birthDate,
                 serviceHistory,
                 phone,
                 address,
