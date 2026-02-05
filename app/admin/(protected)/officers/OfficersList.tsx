@@ -300,6 +300,8 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                             <SelectItem value="rank-asc">👮 За званням (низькі-високі)</SelectItem>
                             <SelectItem value="department-asc">🏢 За підрозділом (А-Я)</SelectItem>
                             <SelectItem value="department-desc">🏢 За підрозділом (Я-А)</SelectItem>
+                            <SelectItem value="birthDate-asc">🎂 За віком (спочатку старші)</SelectItem>
+                            <SelectItem value="birthDate-desc">👶 За віком (спочатку молоді)</SelectItem>
                             <SelectItem value="rating-desc">⭐ Рейтинг (найкращі)</SelectItem>
                             <SelectItem value="rating-asc">⭐ Рейтинг (найгірші)</SelectItem>
                             <SelectItem value="reviews-desc">💬 Активність (багато відгуків)</SelectItem>

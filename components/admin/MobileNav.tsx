@@ -29,18 +29,48 @@ export default function MobileNav({ user }: MobileNavProps) {
         : user.email?.split('@')[0] || 'Admin'
 
     const navItems = [
-        { href: "/admin/dashboard", label: "Дашборд", icon: LayoutDashboard },
-        { href: "/admin/analytics", label: "Аналітика", icon: Activity },
-        { href: "/admin/reports", label: "Відгуки громадян", icon: FileText },
-        { href: "/admin/unified-record", label: "Єдиний облік", icon: ClipboardList },
-        { href: "/admin/map", label: "Мапа", icon: MapIcon },
-        { href: "/admin/citizens", label: "Громадяни", icon: Users },
+        {
+            href: "/admin/dashboard",
+            label: "Дашборд",
+            icon: LayoutDashboard,
+            permission: user.role !== 'OFFICER_VIEWER'
+        },
+        {
+            href: "/admin/analytics",
+            label: "Аналітика",
+            icon: Activity,
+            permission: user.role !== 'OFFICER_VIEWER'
+        },
+        {
+            href: "/admin/reports",
+            label: "Відгуки громадян",
+            icon: FileText,
+            permission: user.role !== 'OFFICER_VIEWER'
+        },
+        {
+            href: "/admin/unified-record",
+            label: "Єдиний облік",
+            icon: ClipboardList,
+            permission: user.role !== 'OFFICER_VIEWER'
+        },
+        {
+            href: "/admin/map",
+            label: "Мапа",
+            icon: MapIcon,
+            permission: user.role !== 'OFFICER_VIEWER'
+        },
+        {
+            href: "/admin/citizens",
+            label: "Громадяни",
+            icon: Users,
+            permission: user.role !== 'OFFICER_VIEWER'
+        },
         { href: "/admin/officers", label: "Особовий склад", icon: ShieldCheck },
         {
             href: "/admin/users",
             label: "Користувачі",
             icon: Users,
-            permission: user.role === 'ADMIN' || user.permManageUsers
+            permission: (user.role === 'ADMIN' || user.permManageUsers) && user.role !== 'OFFICER_VIEWER'
         },
         {
             href: "/admin/audit",
