@@ -77,6 +77,8 @@ export async function GET(
         if (evaluations.length > 0) {
             const counts = { knowledge: 0, tactics: 0, communication: 0, professionalism: 0, physical: 0 }
             evaluations.forEach((e: any) => {
+                if (e.isConfirmed === false) return // Skip unconfirmed
+
                 if (e.scoreKnowledge && e.scoreKnowledge > 0) { avgScores.knowledge += e.scoreKnowledge; counts.knowledge++ }
                 if (e.scoreTactics && e.scoreTactics > 0) { avgScores.tactics += e.scoreTactics; counts.tactics++ }
                 if (e.scoreCommunication && e.scoreCommunication > 0) { avgScores.communication += e.scoreCommunication; counts.communication++ }

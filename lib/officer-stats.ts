@@ -4,9 +4,13 @@ import { prisma } from "./prisma"
  * Recalculates and updates denormalized stats for an officer
  */
 export async function refreshOfficerStats(officerId: string) {
-    // 1. Internal Evaluations
+    // 1. Internal Evaluations (Exclude auto-created citizen feedback to avoid double counting)
     const evals = await prisma.officerEvaluation.findMany({
-        where: { officerId },
+        where: {
+            officerId,
+            type: { not: 'CITIZEN_FEEDBACK' },
+            isConfirmed: true
+        },
         select: {
             scoreKnowledge: true,
             scoreTactics: true,

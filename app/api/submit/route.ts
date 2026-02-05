@@ -123,6 +123,7 @@ export async function POST(req: NextRequest) {
                     ipHash,
                     userAgent: headerPayload.get('user-agent'),
                     suspicious: isSuspicious,
+                    isConfirmed: !isSuspicious,
                     consent: data.hasConsent,
                     wantContact: data.wantContact,
                     districtOrCity: data.districtOrCity,
@@ -153,7 +154,8 @@ export async function POST(req: NextRequest) {
                         sourceId: response.id,
                         scoreCommunication: data.ratings.politeness,
                         scoreProfessionalism: data.ratings.professionalism,
-                        notes: data.comment
+                        notes: data.comment,
+                        isConfirmed: !isSuspicious
                     }
                 })
             }

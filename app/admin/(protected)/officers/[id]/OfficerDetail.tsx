@@ -434,7 +434,12 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
                                         <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                                             {new Date(ev.createdAt).toLocaleDateString()} • {ev.type}
                                         </div>
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-3">
+                                            {ev.isConfirmed === false && (
+                                                <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase bg-slate-200 text-slate-500 px-2 py-0.5 rounded-md">
+                                                    <XCircle className="w-2.5 h-2.5" /> Не підтверджено
+                                                </span>
+                                            )}
                                             <div className="bg-slate-900 text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest">
                                                 СЕРЕДНЯ: {(() => {
                                                     const s = [ev.scoreKnowledge, ev.scoreTactics, ev.scoreCommunication, ev.scoreProfessionalism, ev.scorePhysical].filter(v => v > 0);

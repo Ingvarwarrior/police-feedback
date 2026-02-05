@@ -44,6 +44,12 @@ export async function POST(req: Request) {
             include: { taggedOfficers: true }
         })
 
+        // Sync confirmation to linked evaluations
+        await prisma.officerEvaluation.updateMany({
+            where: { sourceId: responseId },
+            data: { isConfirmed: response.isConfirmed }
+        })
+
         // Recalculate stats for all tagged officers
         const officerIdsToUpdate = new Set<string>()
         if (response.officerId) officerIdsToUpdate.add(response.officerId)

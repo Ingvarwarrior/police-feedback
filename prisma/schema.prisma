@@ -275,6 +275,8 @@ model OfficerEvaluation {
   // Per-category issues
   issuesJson      String?  // JSON with custom descriptions per category
   
+  isConfirmed     Boolean  @default(true)
+
   attachments     Attachment[]
 }
 
