@@ -145,7 +145,7 @@ async function main() {
 
     const csvContent = [
         headers.join(","),
-        ...resultRows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(","))
+        ...resultRows.map(r => r.map((c: any) => '"' + String(c).replace(/"/g, '""') + '"').join(","))
     ].join("\n");
 
     fs.writeFileSync(OUTPUT_FILE, csvContent);

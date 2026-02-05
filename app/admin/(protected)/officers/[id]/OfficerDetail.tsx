@@ -38,6 +38,9 @@ interface OfficerDetailProps {
     officerId: string
     userRole: string
     canViewStats: boolean
+    canExport: boolean
+    canEdit: boolean
+    canEvaluate: boolean
 }
 
 interface OfficerDetailData {
@@ -62,7 +65,7 @@ interface OfficerDetailData {
     }
 }
 
-export default function OfficerDetail({ officerId, userRole, canViewStats }: OfficerDetailProps) {
+export default function OfficerDetail({ officerId, userRole, canViewStats, canExport, canEdit, canEvaluate }: OfficerDetailProps) {
     const router = useRouter()
     const [data, setData] = useState<OfficerDetailData | null>(null)
     const [loading, setLoading] = useState(true)
@@ -164,7 +167,7 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
 
                 {/* Vertical Stack */}
                 <div className="flex flex-col items-center max-w-2xl w-full">
-                    {/* Large Photo - Made Rectangular 3:4 */}
+                    {/* Large Photo */}
                     <div className="relative w-48 h-60 md:w-64 md:h-80 rounded-[2.5rem] overflow-hidden bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xl border-[6px] border-white ring-1 ring-slate-100 mb-8 transform hover:scale-[1.02] transition-transform duration-500">
                         {officer.imageUrl ? (
                             <img src={officer.imageUrl} alt="Officer" className="w-full h-full object-cover" />
@@ -211,15 +214,17 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
 
                         {/* Top Actions */}
                         <div className="flex flex-wrap items-center justify-center gap-4 pt-8 border-t border-slate-50">
-                            <EditOfficerDialog officer={officer} />
-                            <Button
-                                onClick={() => handlePrint('DOSSIER')}
-                                variant="outline"
-                                className="rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 border-slate-200 hover:bg-slate-50 gap-2 px-6"
-                            >
-                                <FileText className="w-4 h-4" />
-                                Експорт досьє
-                            </Button>
+                            {canEdit && <EditOfficerDialog officer={officer} />}
+                            {canExport && (
+                                <Button
+                                    onClick={() => handlePrint('DOSSIER')}
+                                    variant="outline"
+                                    className="rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 border-slate-200 hover:bg-slate-50 gap-2 px-6"
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    Експорт досьє
+                                </Button>
+                            )}
                             {isAdmin && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -286,20 +291,22 @@ export default function OfficerDetail({ officerId, userRole, canViewStats }: Off
             </div>
 
             {/* Prominent Evaluate Button before Charts */}
-            <div className="flex justify-center pt-4 no-print">
-                <AddEvaluationDialog
-                    officerId={officer.id}
-                    onSuccess={fetchOfficerData}
-                    open={isEvalOpen}
-                    setOpen={setIsEvalOpen}
-                />
-            </div>
+            {canEvaluate && (
+                <div className="flex justify-center pt-4 no-print">
+                    <AddEvaluationDialog
+                        officerId={officer.id}
+                        onSuccess={fetchOfficerData}
+                        open={isEvalOpen}
+                        setOpen={setIsEvalOpen}
+                    />
+                </div>
+            )}
 
             {/* Analytics Grid */}
             {canViewStats ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 no-print">
                     {/* Radar Chart */}
-                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden h-[400px]">
+                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden leading-none h-[400px]">
                         <CardHeader className="bg-slate-50/50 border-b px-8 py-6">
                             <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                 <Activity className="w-4 h-4 text-indigo-500" />

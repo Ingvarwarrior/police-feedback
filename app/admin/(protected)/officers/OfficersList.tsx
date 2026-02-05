@@ -85,6 +85,7 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
 
     const canCreate = currentUser?.role === 'ADMIN' || currentUser?.permCreateOfficers
     const canDelete = currentUser?.role === 'ADMIN' || currentUser?.permDeleteOfficers
+    const canEvaluate = currentUser?.role === 'ADMIN' || currentUser?.permCreateEvaluations
     const router = useRouter()
 
     useEffect(() => {
@@ -512,17 +513,19 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                                     </Button>
                                                 </a>
                                             )}
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="h-8 w-8 rounded-lg border-blue-100 text-blue-600 hover:bg-blue-50"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setEvalOfficerId(officer.id);
-                                                }}
-                                            >
-                                                <Star className="w-4 h-4" />
-                                            </Button>
+                                            {canEvaluate && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    className="h-8 w-8 rounded-lg border-blue-100 text-blue-600 hover:bg-blue-50"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEvalOfficerId(officer.id);
+                                                    }}
+                                                >
+                                                    <Star className="w-4 h-4" />
+                                                </Button>
+                                            )}
 
                                             <Link href={`/admin/officers/${officer.id}`}>
                                                 <Button variant="ghost" size="sm" className="rounded-lg text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-slate-900">
@@ -606,17 +609,19 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                             </Button>
                                         </a>
                                     )}
-                                    <Button
-                                        size="icon"
-                                        variant="outline"
-                                        className="h-10 w-10 rounded-2xl border-blue-100 text-blue-600"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setEvalOfficerId(officer.id);
-                                        }}
-                                    >
-                                        <Star className="w-4 h-4" />
-                                    </Button>
+                                    {canEvaluate && (
+                                        <Button
+                                            size="icon"
+                                            variant="outline"
+                                            className="h-10 w-10 rounded-2xl border-blue-100 text-blue-600"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEvalOfficerId(officer.id);
+                                            }}
+                                        >
+                                            <Star className="w-4 h-4" />
+                                        </Button>
+                                    )}
                                 </div>
                                 <Button size="sm" variant="ghost" className="text-primary font-black uppercase tracking-widest text-[10px] h-10 px-4 rounded-xl hover:bg-primary/5">
                                     Деталі →
