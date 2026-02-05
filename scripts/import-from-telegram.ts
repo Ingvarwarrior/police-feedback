@@ -40,12 +40,16 @@ async function main() {
             if (!textContent) continue
 
             // Parse text content
-            // Example: Мацюк Ірина Олександрівна 02.11.1990 р.н.<br>- поліцейський взводу ...
-            const lines = textContent.split('<br>').map(l => l.replace(/^- /, '').trim())
+            // Split by br and strip all HTML tags from each line
+            const lines = textContent.split('<br>').map(l =>
+                l.replace(/<[^>]*>/g, '') // Strip tags
+                    .replace(/^- /, '')
+                    .trim()
+            )
 
             // 1. Name and BirthDate
             const firstLine = lines[0] // "Мацюк Ірина Олександрівна 02.11.1990 р.н."
-            const nameMatch = firstLine.match(/^([^0-9]+)\s+(\d{2}\.\d{2}\.\d{4})\s+р\.н\./)
+            const nameMatch = firstLine.match(/^([^0-9]+)\s+(\d{2}\.\d{2}\.\d{4})\s*р\.н\./)
             if (!nameMatch) {
                 // Try alternate match without birth date if needed, but the current data seems consistent
                 continue
