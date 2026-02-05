@@ -8,237 +8,185 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  username      String    @unique
-  email         String?   @unique
-  passwordHash  String
-  firstName     String?
-  lastName      String?
-  badgeNumber   String?
-  role          String    @default("VIEWER") // ADMIN, VIEWER
-  active        Boolean   @default(true)
-  phone         String?   
-  
-  // Permissions - Reports
-  permViewReports   Boolean @default(true)
-  permAssignReports Boolean @default(false)
-  permViewSensitiveData Boolean @default(false)
-  permBulkActionReports Boolean @default(false)
-  
-  // Permissions - User Management
-  permManageUsers   Boolean @default(false)
-  
-  // Permissions - Officers
-  permCreateOfficers Boolean @default(false)
-  permEditOfficers   Boolean @default(false)
-  permDeleteOfficers Boolean @default(false)
-  permViewOfficerStats Boolean @default(false)
-  permCreateEvaluations Boolean @default(false)
-  permManageOfficerStatus Boolean @default(false)
-  
-  // Permissions - Citizens
-  permEditCitizens   Boolean @default(false)
-  permDeleteCitizens Boolean @default(false)
-  permMarkSuspicious Boolean @default(false)
-  
-  // Permissions - Administrative
-  permEditNotes     Boolean @default(true)
-  permChangeStatus  Boolean @default(true)
-  permExportData    Boolean @default(false)
-  permDeleteReports Boolean @default(false)
-  permViewAudit     Boolean @default(false)
-  
-  // Permissions - System Settings
-  permManageSettings Boolean @default(false)
-  permManageMailAlerts Boolean @default(false)
-  
-  createdAt     DateTime  @default(now())
-  
-  assignedResponses Response[] @relation("AssignedTo")
-  assignedUnifiedRecords UnifiedRecord[] @relation("AssignedUnifiedRecords")
-  evaluations       OfficerEvaluation[] @relation("Evaluations")
-  auditLogs         AuditLog[]
-  notifications     AdminNotification[]
-  notificationReads NotificationRead[]
+  id                      String              @id @default(uuid())
+  username                String              @unique
+  email                   String?             @unique
+  passwordHash            String
+  firstName               String?
+  lastName                String?
+  badgeNumber             String?
+  role                    String              @default("VIEWER")
+  active                  Boolean             @default(true)
+  permViewReports         Boolean             @default(true)
+  permAssignReports       Boolean             @default(false)
+  permViewSensitiveData   Boolean             @default(false)
+  permBulkActionReports   Boolean             @default(false)
+  permManageUsers         Boolean             @default(false)
+  permCreateOfficers      Boolean             @default(false)
+  permEditOfficers        Boolean             @default(false)
+  permDeleteOfficers      Boolean             @default(false)
+  permViewOfficerStats    Boolean             @default(false)
+  permCreateEvaluations   Boolean             @default(false)
+  permManageOfficerStatus Boolean             @default(false)
+  permEditCitizens        Boolean             @default(false)
+  permDeleteCitizens      Boolean             @default(false)
+  permMarkSuspicious      Boolean             @default(false)
+  permEditNotes           Boolean             @default(true)
+  permChangeStatus        Boolean             @default(true)
+  permExportData          Boolean             @default(false)
+  permDeleteReports       Boolean             @default(false)
+  permViewAudit           Boolean             @default(false)
+  permManageSettings      Boolean             @default(false)
+  permManageMailAlerts    Boolean             @default(false)
+  createdAt               DateTime            @default(now())
+  phone                   String?
+  notifications           AdminNotification[]
+  auditLogs               AuditLog[]
+  notificationReads       NotificationRead[]
+  evaluations             OfficerEvaluation[] @relation("Evaluations")
+  assignedResponses       Response[]          @relation("AssignedTo")
+  assignedUnifiedRecords  UnifiedRecord[]     @relation("AssignedUnifiedRecords")
 }
 
 model Settings {
-  id                String   @id @default("global")
-  unitName          String   @default("Патрульна поліція Хмільницького району")
-  unitAddress       String   @default("")
-  emergencyPhone    String   @default("102")
-  
-  // Operational Triggers
-  criticalRatingThreshold Float @default(2.5)
-  piiRetentionDays       Int     @default(30)
-  
-  // Survey Config
-  welcomeMessage    String   @default("Вітаємо в системі відгуків про роботу патрульної поліції.")
-  warningKeywords   String   @default("корупція, хабар, насилля, катування")
-  
-  updatedAt         DateTime @updatedAt
+  id                      String   @id @default("global")
+  unitName                String   @default("Патрульна поліція Хмільницького району")
+  unitAddress             String   @default("")
+  emergencyPhone          String   @default("102")
+  criticalRatingThreshold Float    @default(2.5)
+  piiRetentionDays        Int      @default(30)
+  welcomeMessage          String   @default("Вітаємо в системі відгуків про роботу патрульної поліції.")
+  warningKeywords         String   @default("корупція, хабар, насилля, катування")
+  updatedAt               DateTime @updatedAt
 }
 
 model Survey {
   id          String     @id @default(uuid())
   title       String
   description String?
-  status      String     @default("ACTIVE") // ACTIVE, ARCHIVED, DRAFT
+  status      String     @default("ACTIVE")
   opensAt     DateTime?
   closesAt    DateTime?
   createdById String?
   createdAt   DateTime   @default(now())
-  
   responses   Response[]
 }
 
 model Response {
   id                  String       @id @default(uuid())
   surveyId            String?
-  survey              Survey?      @relation(fields: [surveyId], references: [id])
   createdAt           DateTime     @default(now())
   submittedAt         DateTime?
-  
-  // Anti-spam / Meta
   clientGeneratedId   String       @unique
-  ipHash              String?      
+  ipHash              String?
   userAgent           String?
   suspicious          Boolean      @default(false)
-
-  // Consent & Contact
   consent             Boolean
   wantContact         Boolean
-  contact             Contact?
-
-  // Context
   districtOrCity      String?
   interactionDate     DateTime?
-  interactionTime     String?      // Time interval e.g. "09:00-12:00"
-  incidentType        String? 
-  responseTimeBucket  String? 
-
-  // Patrol Info
+  interactionTime     String?
+  incidentType        String?
+  responseTimeBucket  String?
   patrolRef           String?
   officerName         String?
   badgeNumber         String?
-
-  // Geo & Media
-  geoPoint            GeoPoint?
-  attachments         Attachment[]
-
-  // Ratings
   ratePoliteness      Int?
   rateProfessionalism Int?
   rateEffectiveness   Int?
   rateOverall         Int?
   comment             String?
-  
-  // Administrative Workflow
-  status              String       @default("NEW") // NEW, ASSIGNED, RESOLVED, ARCHIVED
+  status              String       @default("NEW")
   internalNotes       String?
-  
   assignedToId        String?
-  assignedTo          User?        @relation("AssignedTo", fields: [assignedToId], references: [id])
   resolutionNotes     String?
   resolutionDate      DateTime?
-  incidentCategory    String?      // e.g., TRAFFIC, DOC_CHECK, ASSISTANCE
+  incidentCategory    String?
   isConfirmed         Boolean      @default(true)
-  
-  // Tagged Officers (Many-to-Many)
-  taggedOfficers      Officer[]    @relation("TaggedOfficers")
-  
-  // Officer Link (for evaluation system)
   officerId           String?
-  officer             Officer?     @relation("OfficerFeedback", fields: [officerId], references: [id])
-
-  // Citizen Link
   citizenId           String?
+  attachments         Attachment[]
+  contact             Contact?
+  geoPoint            GeoPoint?
   citizen             Citizen?     @relation("CitizenResponses", fields: [citizenId], references: [id])
+  officer             Officer?     @relation("OfficerFeedback", fields: [officerId], references: [id])
+  assignedTo          User?        @relation("AssignedTo", fields: [assignedToId], references: [id])
+  survey              Survey?      @relation(fields: [surveyId], references: [id])
+  taggedOfficers      Officer[]    @relation("TaggedOfficers")
 }
 
 model Contact {
-  id          String    @id @default(uuid())
-  responseId  String    @unique
-  response    Response  @relation(fields: [responseId], references: [id])
-  name        String?
-  phone       String
+  id         String   @id @default(uuid())
+  responseId String   @unique
+  name       String?
+  phone      String
+  response   Response @relation(fields: [responseId], references: [id])
 }
 
 model GeoPoint {
-  id          String    @id @default(uuid())
-  responseId  String    @unique
-  response    Response  @relation(fields: [responseId], references: [id])
-  lat         Float
-  lon         Float
+  id             String   @id @default(uuid())
+  responseId     String   @unique
+  lat            Float
+  lon            Float
   accuracyMeters Float?
-  source      String    
-  precisionMode String  @default("approx") 
-  createdAt   DateTime  @default(now())
+  source         String
+  precisionMode  String   @default("approx")
+  createdAt      DateTime @default(now())
+  response       Response @relation(fields: [responseId], references: [id])
 }
 
 model Attachment {
-  id          String    @id @default(uuid())
-  responseId  String? 
-  response    Response? @relation(fields: [responseId], references: [id])
-  storage     String    @default("local") 
-  mediaType   String    @default("photo") 
-  pathOrKey   String    
-  mime        String
-  sizeBytes   Int
-  hash        String
-  exifStripped Boolean  @default(true)
+  id           String             @id @default(uuid())
+  responseId   String?
+  storage      String             @default("local")
+  mediaType    String             @default("photo")
+  pathOrKey    String
+  mime         String
+  sizeBytes    Int
+  hash         String
+  exifStripped Boolean            @default(true)
   evaluationId String?
-  evaluation  OfficerEvaluation? @relation(fields: [evaluationId], references: [id])
-  createdAt   DateTime  @default(now())
+  createdAt    DateTime           @default(now())
+  evaluation   OfficerEvaluation? @relation(fields: [evaluationId], references: [id])
+  response     Response?          @relation(fields: [responseId], references: [id])
 }
 
 model AuditLog {
   id          String   @id @default(uuid())
   actorUserId String?
-  actorUser   User?    @relation(fields: [actorUserId], references: [id])
   action      String
   entityType  String?
   entityId    String?
-  metadata    String?  // Changed Json to String for SQLite simplicity
+  metadata    String?
   createdAt   DateTime @default(now())
+  actorUser   User?    @relation(fields: [actorUserId], references: [id])
 }
 
-// ========================================
-// Officer Evaluation System
-// ========================================
-
 model Officer {
-  id              String   @id @default(uuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Basic Info
-  badgeNumber     String   @unique
-  firstName       String
-  middleName      String?
-  lastName        String
-  rank            String?  // Патрульний, Сержант, Лейтенант, etc.
-  department      String?  // Відділення
-  
-  imageUrl        String?
-  phone           String?
-  
-  // Employment
-  hireDate        DateTime?
-  birthDate       DateTime?
-  email           String?
-  driversLicense  String?
-  status          String   @default("ACTIVE") // ACTIVE, ON_LEAVE, SUSPENDED, RETIRED
-  
-  // Denormalized Stats (for performance)
-  avgScore         Float   @default(0)
-  totalEvaluations Int     @default(0)
-  totalResponses   Int     @default(0)
-  
-  // Relations
-  evaluations     OfficerEvaluation[]
-  responses       Response[] @relation("OfficerFeedback")
-  taggedInResponses Response[] @relation("TaggedOfficers")
+  id                String              @id @default(uuid())
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  badgeNumber       String              @unique
+  firstName         String
+  middleName        String?
+  lastName          String
+  rank              String?
+  department        String?
+  imageUrl          String?
+  phone             String?
+  hireDate          DateTime?
+  birthDate         DateTime?
+  address           String?
+  education         String?
+  email             String?
+  driversLicense    String?
+  status            String              @default("ACTIVE")
+  avgScore          Float               @default(0)
+  totalEvaluations  Int                 @default(0)
+  totalResponses    Int                 @default(0)
+  evaluations       OfficerEvaluation[]
+  responses         Response[]          @relation("OfficerFeedback")
+  taggedInResponses Response[]          @relation("TaggedOfficers")
 
   @@index([lastName, firstName])
   @@index([badgeNumber])
@@ -246,113 +194,95 @@ model Officer {
 }
 
 model OfficerEvaluation {
-  id              String   @id @default(uuid())
-  createdAt       DateTime @default(now())
-  
-  officerId       String
-  officer         Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
-  
-  evaluatorId     String?
-  evaluator       User?    @relation("Evaluations", fields: [evaluatorId], references: [id])
-  
-  // Evaluation Type
-  type            String   // CITIZEN_FEEDBACK, INTERNAL_REVIEW, TRAINING, INCIDENT
-  sourceId        String?  // Response ID or other source reference
-  
-  // Scores (1-5 scale)
-  scoreKnowledge       Int?  // Знання законодавства
-  scoreTactics         Int?  // Тактика та процедури
-  scoreCommunication   Int?  // Комунікація
-  scoreProfessionalism Int?  // Професіоналізм
-  scorePhysical        Int?  // Фізична підготовка
-  
-  // Notes
-  strengths       String?
-  weaknesses      String?
-  recommendations String?
-  notes           String?
-  
-  // Per-category issues
-  issuesJson      String?  // JSON with custom descriptions per category
-  
-  attachments     Attachment[]
+  id                   String       @id @default(uuid())
+  createdAt            DateTime     @default(now())
+  officerId            String
+  evaluatorId          String?
+  type                 String
+  sourceId             String?
+  scoreKnowledge       Int?
+  scoreTactics         Int?
+  scoreCommunication   Int?
+  scoreProfessionalism Int?
+  scorePhysical        Int?
+  strengths            String?
+  weaknesses           String?
+  recommendations      String?
+  notes                String?
+  issuesJson           String?
+  isConfirmed          Boolean      @default(true)
+  attachments          Attachment[]
+  evaluator            User?        @relation("Evaluations", fields: [evaluatorId], references: [id])
+  officer              Officer      @relation(fields: [officerId], references: [id], onDelete: Cascade)
 }
 
 model AdminNotification {
-  id          String   @id @default(uuid())
-  type        String   // CRITICAL_RATING, STALE_REPORT, SYSTEM
-  priority    String   @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
-  title       String
-  message     String
-  link        String?  // Link to the report or entity
-  read        Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  
-  // Optional: target specific user or role
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id])
-
-  readBy      NotificationRead[]
+  id        String             @id @default(uuid())
+  type      String
+  priority  String             @default("NORMAL")
+  title     String
+  message   String
+  link      String?
+  read      Boolean            @default(false)
+  createdAt DateTime           @default(now())
+  userId    String?
+  user      User?              @relation(fields: [userId], references: [id])
+  readBy    NotificationRead[]
 }
 
 model NotificationRead {
   id             String            @id @default(uuid())
   notificationId String
-  notification   AdminNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
   userId         String
-  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   readAt         DateTime          @default(now())
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification   AdminNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 
   @@unique([notificationId, userId])
 }
 
 model Citizen {
-  id            String   @id @default(uuid())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  phone         String?  @unique // Keep primary phone for quick lookup
-  phones        CitizenPhone[]
-  ipHash        String?  
-  
+  id            String         @id @default(uuid())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  phone         String?        @unique
+  ipHash        String?
   fullName      String?
   internalNotes String?
-  isVip         Boolean  @default(false)
-  isSuspicious  Boolean  @default(false)
-  
-  responses     Response[] @relation("CitizenResponses")
+  isVip         Boolean        @default(false)
+  isSuspicious  Boolean        @default(false)
+  phones        CitizenPhone[]
+  responses     Response[]     @relation("CitizenResponses")
 
   @@index([ipHash])
 }
 
 model CitizenPhone {
-  id          String   @id @default(uuid())
-  citizenId   String
-  citizen     Citizen  @relation(fields: [citizenId], references: [id], onDelete: Cascade)
-  phone       String   @unique
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  citizenId String
+  phone     String   @unique
+  createdAt DateTime @default(now())
+  citizen   Citizen  @relation(fields: [citizenId], references: [id], onDelete: Cascade)
 }
 
 model UnifiedRecord {
-  id              String   @id @default(uuid())
-  eoNumber        String   @unique
-  eoDate          DateTime
-  district        String?
-  address         String?
-  description     String?
-  applicant       String?
-  category        String?
-  officerName     String?  // Keep for legacy/manual text entry
-  assignedUserId  String?
-  assignedUser    User?    @relation("AssignedUnifiedRecords", fields: [assignedUserId], references: [id])
-  resolution      String?
-  resolutionDate  DateTime?
-  
-  sourceFile      String?  // Name of the uploaded Excel file
-  importedAt      DateTime @default(now())
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String    @id @default(uuid())
+  eoNumber       String    @unique
+  eoDate         DateTime
+  district       String?
+  address        String?
+  description    String?
+  applicant      String?
+  category       String?
+  officerName    String?
+  assignedUserId String?
+  resolution     String?
+  resolutionDate DateTime?
+  sourceFile     String?
+  importedAt     DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  assignedUser   User?     @relation("AssignedUnifiedRecords", fields: [assignedUserId], references: [id])
 
   @@index([eoNumber])
   @@index([eoDate])

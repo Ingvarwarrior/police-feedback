@@ -51,6 +51,9 @@ export async function POST(req: Request) {
                             department: officer.department || existing.department,
                             phone: officer.phone || existing.phone,
                             birthDate: officer.birthDate ? new Date(officer.birthDate) : existing.birthDate,
+                            hireDate: officer.hireDate ? new Date(officer.hireDate) : existing.hireDate,
+                            address: officer.address || existing.address,
+                            education: officer.education || existing.education,
                             imageUrl: officer.imageUrl || existing.imageUrl,
                         }
                     })
@@ -68,9 +71,11 @@ export async function POST(req: Request) {
                         department: officer.department || null,
                         phone: officer.phone || null,
                         birthDate: officer.birthDate ? new Date(officer.birthDate) : null,
+                        hireDate: officer.hireDate ? new Date(officer.hireDate) : new Date(),
+                        address: officer.address || null,
+                        education: officer.education || null,
                         imageUrl: officer.imageUrl || null,
                         status: "ACTIVE",
-                        hireDate: new Date()
                     }
                 })
                 results.created++

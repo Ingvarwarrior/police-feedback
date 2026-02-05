@@ -17,6 +17,21 @@ if (!HTML_FILE) {
 const SOURCE_DIR = path.dirname(HTML_FILE)
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads')
 
+// Manual overrides for known badge collisions in Telegram data
+const BADGE_OVERRIDES: Record<string, string> = {
+    'Лукашук Олександр Миколайович': '0115799',
+    'Вейт Сергій Валерійович': '0011315',
+    'Коврига Юлія Михайлівна': '0215187', // User noted this one specifically
+    'Довбуш Олександр Сергійович': '0167795'
+}
+
+// Manual overrides for birth dates
+const BIRTH_DATE_OVERRIDES: Record<string, string> = {
+    'Кравець Руслан Володимирович': '1994-10-22',
+    'Безсмертний Володимир Васильович': '1999-07-23',
+    'Тарапата Богдан Ігорович': '1994-01-08'
+}
+
 async function main() {
     console.log(`🚀 Starting import from: ${HTML_FILE}`)
 
@@ -58,12 +73,17 @@ async function main() {
             const fullName = nameMatch[1].trim()
             const birthDateStr = nameMatch[2]
             const [bDay, bMonth, bYear] = birthDateStr.split('.')
-            const birthDate = new Date(`${bYear}-${bMonth}-${bDay}`)
-
             const nameParts = fullName.split(/\s+/)
             const lastName = nameParts[0] || 'Unknown'
             const firstName = nameParts[1] || 'Unknown'
             const middleName = nameParts.slice(2).join(' ') || null
+
+            const fullNameClean = `${lastName} ${firstName} ${middleName || ''}`.trim()
+
+            let birthDate = new Date(`${bYear}-${bMonth}-${bDay}`)
+            if (BIRTH_DATE_OVERRIDES[fullNameClean]) {
+                birthDate = new Date(BIRTH_DATE_OVERRIDES[fullNameClean])
+            }
 
             // 2. Rank (usually 3rd line or 2nd line starting with rank name)
             // Lines are: 0:Name, 1:Position, 2:Rank, 3:Education, 4:HireDate, 5:Badge, 6:Phone
@@ -82,11 +102,22 @@ async function main() {
             }
 
             // 4. Badge Number
+            let badgeNumber: string | null = null
             const badgeLine = lines.find(l => l.includes('Номер жетону'))
-            if (!badgeLine) continue
-            const badgeMatch = badgeLine.match(/(\d+)/)
-            if (!badgeMatch) continue
-            const badgeNumber = badgeMatch[1]
+            if (badgeLine) {
+                const badgeMatch = badgeLine.match(/(\d+)/)
+                if (badgeMatch) badgeNumber = badgeMatch[1]
+            }
+
+            // Apply manual overrides if ПІБ matches
+            if (BADGE_OVERRIDES[fullNameClean]) {
+                badgeNumber = BADGE_OVERRIDES[fullNameClean]
+            }
+
+            if (!badgeNumber) {
+                console.warn(`⚠️ Skipping message due to missing badge number for: ${fullNameClean}`)
+                continue
+            }
 
             // 5. Phone
             const phoneLine = lines.find(l => l.includes('Тел.'))
@@ -102,8 +133,9 @@ async function main() {
             if (photoLink) {
                 const sourcePhotoPath = path.join(SOURCE_DIR, photoLink)
                 if (fs.existsSync(sourcePhotoPath)) {
-                    const photoId = crypto.randomUUID()
-                    const filename = `${photoId}.webp`
+                    // Use deterministic filename based on name to avoid re-generating and broken links on re-import
+                    const hash = crypto.createHash('md5').update(fullNameClean).digest('hex')
+                    const filename = `officer-${hash}.webp`
                     const targetPath = path.join(UPLOAD_DIR, filename)
 
                     // Process with Sharp (standardize to webp)
@@ -116,10 +148,10 @@ async function main() {
 
                     // Register attachment for consistency
                     await prisma.attachment.upsert({
-                        where: { id: photoId },
+                        where: { id: hash },
                         update: {},
                         create: {
-                            id: photoId,
+                            id: hash,
                             storage: 'local',
                             pathOrKey: filename,
                             mime: 'image/webp',

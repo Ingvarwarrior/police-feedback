@@ -18,8 +18,8 @@ export function ImportOfficersDialog({ onSuccess }: ImportDialogProps) {
     const [loading, setLoading] = useState(false)
 
     const downloadTemplate = () => {
-        const headers = ["Відділення", "Звання", "Номер жетону", "Прізвище", "Ім'я", "По-батькові", "Дата народження", "Телефон"]
-        const example = ["ВРП", "Лейтенант", "00123", "Петренко", "Іван", "Іванович", "1990-05-15", "+380501234567"]
+        const headers = ["Відділення", "Звання", "Номер жетону", "Прізвище", "Ім'я", "По-батькові", "Дата народження", "Телефон", "Служба в ОВС", "Освіта", "Домашня адреса"]
+        const example = ["ВРП", "Лейтенант", "00123", "Петренко", "Іван", "Іванович", "1990-05-15", "+380501234567", "2015-12-04", "Вища", "м. Вінниця"]
         const csvContent = "data:text/csv;charset=utf-8,"
             + headers.join(",") + "\n"
             + example.join(",")
@@ -58,6 +58,9 @@ export function ImportOfficersDialog({ onSuccess }: ImportDialogProps) {
                     department: row["Відділення"] || row["Відділення / Підрозділ"] || row.department || row.Department || null,
                     birthDate: row["Дата народження"] || row.birthDate || row.BirthDate || null,
                     phone: row["Телефон"] || row.phone || row.Phone || null,
+                    hireDate: row["Служба в ОВС"] || row.hireDate || row.HireDate || null,
+                    education: row["Освіта"] || row.education || row.Education || null,
+                    address: row["Домашня адреса"] || row["Адреса"] || row.address || row.Address || null,
                     imageUrl: row["Фото"] || row.imageUrl || row.ImageUrl || null
                 }))
 
@@ -162,7 +165,10 @@ export function ImportOfficersDialog({ onSuccess }: ImportDialogProps) {
                                             <th className="pb-2">Офіцер</th>
                                             <th className="pb-2">Звання</th>
                                             <th className="pb-2">Телефон</th>
-                                            <th className="pb-2">ДН</th>
+                                            <th className="pb-2">Служба</th>
+                                            <th className="pb-2">Осв.</th>
+                                            <th className="pb-2">Адр.</th>
+                                            <th className="pb-2 text-right">Фото</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -170,9 +176,14 @@ export function ImportOfficersDialog({ onSuccess }: ImportDialogProps) {
                                             <tr key={i} className="border-b transition-colors hover:bg-slate-100">
                                                 <td className="py-1">{row.badgeNumber}</td>
                                                 <td className="py-1 font-bold">{row.lastName} {row.firstName}</td>
-                                                <td className="py-1">{row.rank || '-'}</td>
+                                                <td className="py-1 text-slate-500">{row.rank || '-'}</td>
                                                 <td className="py-1">{row.phone || '-'}</td>
-                                                <td className="py-1">{row.birthDate || '-'}</td>
+                                                <td className="py-1">{row.hireDate ? '✔' : '-'}</td>
+                                                <td className="py-1">{row.education ? '✔' : '-'}</td>
+                                                <td className="py-1">{row.address ? '✔' : '-'}</td>
+                                                <td className="py-1 text-right">
+                                                    {row.imageUrl ? '📸' : '👤'}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -201,6 +212,6 @@ export function ImportOfficersDialog({ onSuccess }: ImportDialogProps) {
                     </div>
                 </div>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     )
 }
