@@ -134,6 +134,30 @@ export default function UserEditForm({ user }: UserEditFormProps) {
                 permManageSettings: true,
                 permManageMailAlerts: true,
             })
+        } else if (newRole === 'OFFICER_VIEWER') {
+            setPermissions({
+                permViewReports: false,
+                permAssignReports: false,
+                permViewSensitiveData: false,
+                permBulkActionReports: false,
+                permEditNotes: false,
+                permChangeStatus: false,
+                permExportData: false,
+                permManageUsers: false,
+                permDeleteReports: false,
+                permCreateOfficers: false,
+                permEditOfficers: false,
+                permDeleteOfficers: false,
+                permViewOfficerStats: true,
+                permCreateEvaluations: false,
+                permManageOfficerStatus: false,
+                permEditCitizens: false,
+                permDeleteCitizens: false,
+                permMarkSuspicious: false,
+                permViewAudit: false,
+                permManageSettings: false,
+                permManageMailAlerts: false,
+            })
         } else {
             setPermissions({
                 permViewReports: true,
@@ -265,17 +289,36 @@ export default function UserEditForm({ user }: UserEditFormProps) {
 
             <div className="space-y-4">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Рівень доступу (пресет)</Label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                     <button
                         type="button"
                         onClick={() => setRolePresets('VIEWER')}
                         className={`p-6 rounded-[2rem] border-2 text-left transition-all ${role === 'VIEWER' ? 'border-primary bg-primary/5 ring-4 ring-primary/10' : 'border-slate-100 hover:border-slate-200'}`}
                     >
-                        <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-xl ${role === 'VIEWER' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        <div className="flex flex-col gap-3">
+                            <div className={`p-2 rounded-xl w-fit ${role === 'VIEWER' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'}`}>
                                 <Eye className="w-5 h-5" />
                             </div>
-                            <p className={`font-black uppercase tracking-tighter italic ${role === 'VIEWER' ? 'text-primary' : 'text-slate-400'}`}>Інспектор</p>
+                            <div>
+                                <p className={`font-black uppercase tracking-tighter italic ${role === 'VIEWER' ? 'text-primary' : 'text-slate-400'}`}>Інспектор</p>
+                                <p className="text-[10px] font-bold text-slate-400 mt-1">Опрацювання звітів</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setRolePresets('OFFICER_VIEWER')}
+                        className={`p-6 rounded-[2rem] border-2 text-left transition-all ${role === 'OFFICER_VIEWER' ? 'border-primary bg-primary/5 ring-4 ring-primary/10' : 'border-slate-100 hover:border-slate-200'}`}
+                    >
+                        <div className="flex flex-col gap-3">
+                            <div className={`p-2 rounded-xl w-fit ${role === 'OFFICER_VIEWER' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                <Shield className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className={`font-black uppercase tracking-tighter italic ${role === 'OFFICER_VIEWER' ? 'text-primary' : 'text-slate-400'}`}>Кадри</p>
+                                <p className="text-[10px] font-bold text-slate-400 mt-1">Особовий склад</p>
+                            </div>
                         </div>
                     </button>
 
@@ -284,11 +327,14 @@ export default function UserEditForm({ user }: UserEditFormProps) {
                         onClick={() => setRolePresets('ADMIN')}
                         className={`p-6 rounded-[2rem] border-2 text-left transition-all ${role === 'ADMIN' ? 'border-primary bg-primary/5 ring-4 ring-primary/10' : 'border-slate-100 hover:border-slate-200'}`}
                     >
-                        <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-xl ${role === 'ADMIN' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                <Shield className="w-5 h-5" />
+                        <div className="flex flex-col gap-3">
+                            <div className={`p-2 rounded-xl w-fit ${role === 'ADMIN' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                <UserCog className="w-5 h-5" />
                             </div>
-                            <p className={`font-black uppercase tracking-tighter italic ${role === 'ADMIN' ? 'text-primary' : 'text-slate-400'}`}>Адміністратор</p>
+                            <div>
+                                <p className={`font-black uppercase tracking-tighter italic ${role === 'ADMIN' ? 'text-primary' : 'text-slate-400'}`}>Адміністратор</p>
+                                <p className="text-[10px] font-bold text-slate-400 mt-1">Повний доступ</p>
+                            </div>
                         </div>
                     </button>
                 </div>
