@@ -57,7 +57,8 @@ export function ImportOfficersDialog({ onSuccess }: ImportDialogProps) {
                     rank: row["Звання"] || row.rank || row.Rank || null,
                     department: row["Відділення"] || row["Відділення / Підрозділ"] || row.department || row.Department || null,
                     birthDate: row["Дата народження"] || row.birthDate || row.BirthDate || null,
-                    phone: row["Телефон"] || row.phone || row.Phone || null
+                    phone: row["Телефон"] || row.phone || row.Phone || null,
+                    imageUrl: row["Фото"] || row.imageUrl || row.ImageUrl || null
                 }))
 
                 setData(mappedData)

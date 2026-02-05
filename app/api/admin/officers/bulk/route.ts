@@ -51,6 +51,7 @@ export async function POST(req: Request) {
                             department: officer.department || existing.department,
                             phone: officer.phone || existing.phone,
                             birthDate: officer.birthDate ? new Date(officer.birthDate) : existing.birthDate,
+                            imageUrl: officer.imageUrl || existing.imageUrl,
                         }
                     })
                     results.updated++
@@ -67,6 +68,7 @@ export async function POST(req: Request) {
                         department: officer.department || null,
                         phone: officer.phone || null,
                         birthDate: officer.birthDate ? new Date(officer.birthDate) : null,
+                        imageUrl: officer.imageUrl || null,
                         status: "ACTIVE",
                         hireDate: new Date()
                     }
