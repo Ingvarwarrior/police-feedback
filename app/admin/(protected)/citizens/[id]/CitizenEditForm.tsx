@@ -14,9 +14,10 @@ import { Save, Loader2, User, FileText, Star, AlertTriangle } from "lucide-react
 interface CitizenEditFormProps {
     citizen: any
     canEdit: boolean
+    canMarkSuspicious: boolean
 }
 
-export default function CitizenEditForm({ citizen, canEdit }: CitizenEditFormProps) {
+export default function CitizenEditForm({ citizen, canEdit, canMarkSuspicious }: CitizenEditFormProps) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
@@ -138,7 +139,7 @@ export default function CitizenEditForm({ citizen, canEdit }: CitizenEditFormPro
                             <Switch
                                 checked={formData.isSuspicious}
                                 onCheckedChange={(val) => setFormData({ ...formData, isSuspicious: val })}
-                                disabled={!canEdit}
+                                disabled={!canEdit || !canMarkSuspicious}
                             />
                         </div>
                     </div>

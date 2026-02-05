@@ -25,7 +25,9 @@ export default async function CitizensPage() {
                     role: true,
                     permDeleteCitizens: true,
                     permEditCitizens: true,
-                    permMarkSuspicious: true
+                    permMarkSuspicious: true,
+                    permViewSensitiveData: true
+
                 }
             })
         ])

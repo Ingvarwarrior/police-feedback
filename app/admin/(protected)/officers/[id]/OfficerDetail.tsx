@@ -41,6 +41,7 @@ interface OfficerDetailProps {
     canExport: boolean
     canEdit: boolean
     canEvaluate: boolean
+    canDelete: boolean
 }
 
 interface OfficerDetailData {
@@ -65,7 +66,7 @@ interface OfficerDetailData {
     }
 }
 
-export default function OfficerDetail({ officerId, userRole, canViewStats, canExport, canEdit, canEvaluate }: OfficerDetailProps) {
+export default function OfficerDetail({ officerId, userRole, canViewStats, canExport, canEdit, canEvaluate, canDelete }: OfficerDetailProps) {
     const router = useRouter()
     const [data, setData] = useState<OfficerDetailData | null>(null)
     const [loading, setLoading] = useState(true)
@@ -225,7 +226,7 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                     Експорт досьє
                                 </Button>
                             )}
-                            {isAdmin && (
+                            {canDelete && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="ghost" className="rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 text-rose-500 hover:bg-rose-50 hover:text-rose-600 px-6">

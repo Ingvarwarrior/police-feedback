@@ -29,6 +29,7 @@ export default async function CitizenDossierPage({
     const isAdmin = userPermissions.role === 'ADMIN'
     const canEdit = isAdmin || userPermissions.permEditCitizens
     const canDelete = isAdmin || userPermissions.permDeleteCitizens
+    const canMarkSuspicious = isAdmin || userPermissions.permMarkSuspicious
 
     let citizen: any = null
     let errorInfo: string | null = null
@@ -290,7 +291,7 @@ export default async function CitizenDossierPage({
                         </CardContent>
                     </Card>
 
-                    {isAdmin && <CitizenEditForm citizen={citizen} canEdit={canEdit} />}
+                    {isAdmin && <CitizenEditForm citizen={citizen} canEdit={canEdit} canMarkSuspicious={canMarkSuspicious} />}
                 </div>
 
                 {/* Right Column: Tabbed Content */}

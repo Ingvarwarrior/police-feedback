@@ -14,6 +14,7 @@ export default async function OfficerDetailPage({
     const canExport = user?.role === 'ADMIN' || !!user?.permExportData
     const canEdit = user?.role === 'ADMIN' || !!user?.permEditOfficers
     const canEvaluate = user?.role === 'ADMIN' || !!user?.permCreateEvaluations
+    const canDelete = user?.role === 'ADMIN' || !!user?.permDeleteOfficers
 
     return (
         <OfficerDetail
@@ -23,6 +24,7 @@ export default async function OfficerDetailPage({
             canExport={canExport}
             canEdit={canEdit}
             canEvaluate={canEvaluate}
+            canDelete={canDelete}
         />
     )
 }

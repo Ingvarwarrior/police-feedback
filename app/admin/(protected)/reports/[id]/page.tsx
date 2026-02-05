@@ -50,6 +50,12 @@ export default async function ReportDetailPage({
 
     const user = userFromUtils // Use the user from utils for the rest of the file
 
+    // Permissions
+    const canAssign = isAdmin || user?.permAssignReports
+    const canChangeStatus = isAdmin || user?.permChangeStatus
+    const canEditNotes = isAdmin || user?.permEditNotes
+    const canDelete = isAdmin || user?.permDeleteReports
+
     return (
         <div className="space-y-8">
             {/* Breadcrumbs */}
@@ -273,14 +279,14 @@ export default async function ReportDetailPage({
                             <AssignmentControl
                                 responseId={response.id}
                                 currentAssigneeId={response.assignedToId}
-                                canEdit={isAdmin}
+                                canEdit={canAssign}
                             />
 
                             <div className="border-t pt-8">
                                 <StatusControl
                                     id={response.id}
                                     currentStatus={response.status}
-                                    canEdit={isAdmin || response.assignedToId === user?.id}
+                                    canEdit={canChangeStatus}
                                 />
                             </div>
 
@@ -288,11 +294,11 @@ export default async function ReportDetailPage({
                                 <InternalNotes
                                     id={response.id}
                                     initialNotes={response.internalNotes}
-                                    canEdit={isAdmin || response.assignedToId === user?.id}
+                                    canEdit={canEditNotes}
                                 />
                             </div>
 
-                            {isAdmin && (
+                            {canDelete && (
                                 <div className="border-t pt-2">
                                     <DeleteReportButton id={response.id} />
                                 </div>
@@ -357,7 +363,7 @@ export default async function ReportDetailPage({
                                 initialIsConfirmed={response.isConfirmed}
                                 canEdit={
                                     response.status !== 'RESOLVED' &&
-                                    (isAdmin || response.assignedToId === user?.id)
+                                    (isAdmin || (response.assignedToId === user?.id && canChangeStatus))
                                 }
                             />
                         )

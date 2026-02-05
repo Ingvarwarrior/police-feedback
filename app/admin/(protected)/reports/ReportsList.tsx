@@ -68,6 +68,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
     const canDelete = isAdmin || currentUser?.permDeleteReports
     const canExport = isAdmin || currentUser?.permExportData
     const canViewSensitive = isAdmin || currentUser?.permViewSensitiveData
+    const canBulkAction = isAdmin || currentUser?.permBulkActionReports
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -794,7 +795,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
 
             {/* Floating Bulk Actions Bar */}
             {
-                selectedIds.length > 0 && (
+                selectedIds.length > 0 && canBulkAction && (
                     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-8 duration-500">
                         <div className="bg-slate-900 text-white rounded-[2.5rem] px-8 py-4 shadow-2xl shadow-blue-900/40 flex items-center gap-8 border border-white/10 ring-1 ring-white/5 backdrop-blur-xl">
                             <div className="flex items-center gap-4 pr-8 border-r border-white/10">

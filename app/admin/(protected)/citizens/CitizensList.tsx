@@ -42,6 +42,14 @@ export default function CitizensList({ citizens, currentUser }: { citizens: any[
         setSelectedIds(selectedIds.length === citizens.length ? [] : citizens.map(c => c.id))
     }
 
+    const canViewSensitive = currentUser?.role === 'ADMIN' || currentUser?.permViewSensitiveData
+
+    const maskPhone = (phone: string | null) => {
+        if (!phone) return null
+        if (canViewSensitive) return phone
+        return phone.slice(0, 4) + '... ' + phone.slice(-2)
+    }
+
     return (
         <>
             {/* Desktop Table */}
@@ -100,7 +108,7 @@ export default function CitizensList({ citizens, currentUser }: { citizens: any[
                                                             className="text-xs text-primary hover:underline flex items-center gap-1 font-bold"
                                                         >
                                                             <Phone className="w-3.5 h-3.5 stroke-[2.5px]" />
-                                                            {citizen.phone}
+                                                            {maskPhone(citizen.phone)}
                                                         </a>
                                                     ) : (
                                                         <p className="text-[10px] text-slate-400 font-black tracking-widest flex items-center gap-1">
@@ -167,7 +175,7 @@ export default function CitizensList({ citizens, currentUser }: { citizens: any[
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 <Phone className="w-3.5 h-3.5" />
-                                                {citizen.phone}
+                                                {maskPhone(citizen.phone)}
                                             </a>
                                         ) : (
                                             <p className="text-[10px] text-slate-400 font-black tracking-widest uppercase opacity-60">
