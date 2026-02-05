@@ -123,7 +123,6 @@ export async function POST(req: NextRequest) {
                     ipHash,
                     userAgent: headerPayload.get('user-agent'),
                     suspicious: isSuspicious,
-                    isConfirmed: !isSuspicious,
                     consent: data.hasConsent,
                     wantContact: data.wantContact,
                     districtOrCity: data.districtOrCity,
@@ -145,20 +144,6 @@ export async function POST(req: NextRequest) {
                 }
             })
 
-            // Auto-create evaluation if officer found
-            if (officerId) {
-                await (tx as any).officerEvaluation.create({
-                    data: {
-                        officerId,
-                        type: 'CITIZEN_FEEDBACK',
-                        sourceId: response.id,
-                        scoreCommunication: data.ratings.politeness,
-                        scoreProfessionalism: data.ratings.professionalism,
-                        notes: data.comment,
-                        isConfirmed: !isSuspicious
-                    }
-                })
-            }
 
             if (data.wantContact && data.contactPhone) {
                 await tx.contact.create({

@@ -44,22 +44,77 @@ export async function POST(req: Request) {
             include: { taggedOfficers: true }
         })
 
-        // Sync confirmation to linked evaluations
-        await prisma.officerEvaluation.updateMany({
-            where: { sourceId: responseId },
-            data: { isConfirmed: response.isConfirmed }
-        })
 
-        // Recalculate stats for all tagged officers
-        const officerIdsToUpdate = new Set<string>()
-        if (response.officerId) officerIdsToUpdate.add(response.officerId)
-        response.taggedOfficers.forEach((o: any) => officerIdsToUpdate.add(o.id))
+        // ------------------------------------------------------------------
+        // 1. Manage Officer Evaluations (Attestation Journal)
+        // ------------------------------------------------------------------
+        const shouldHaveEvaluation = (isConfirmed !== undefined ? isConfirmed : currentResponse.isConfirmed) === true
 
-        // Also update previous officers if they were removed
-        currentResponse.taggedOfficers.forEach((o: any) => officerIdsToUpdate.add(o.id))
+        // Calculate all involved officers (Current primary + Current tagged + Previous tagged + Previous primary)
+        // We need to update evaluations for CURRENT targets
+        // And refresh stats for ALL involved (current + previous)
+
+        const currentTargetIds = new Set<string>()
+        if (response.officerId) currentTargetIds.add(response.officerId)
+        response.taggedOfficers.forEach((o: any) => currentTargetIds.add(o.id))
+
+        if (shouldHaveEvaluation) {
+            // Ensure evaluation exists for each current target
+            for (const officerId of currentTargetIds) {
+                const existingEval = await prisma.officerEvaluation.findFirst({
+                    where: { officerId, sourceId: responseId, type: 'CITIZEN_FEEDBACK' }
+                })
+
+                if (existingEval) {
+                    await prisma.officerEvaluation.update({
+                        where: { id: existingEval.id },
+                        data: {
+                            scoreCommunication: response.ratePoliteness,
+                            scoreProfessionalism: response.rateProfessionalism,
+                            notes: resolutionNotes || response.comment
+                        }
+                    })
+                } else {
+                    await prisma.officerEvaluation.create({
+                        data: {
+                            officerId,
+                            type: 'CITIZEN_FEEDBACK',
+                            sourceId: responseId,
+                            scoreCommunication: response.ratePoliteness,
+                            scoreProfessionalism: response.rateProfessionalism,
+                            notes: response.comment
+                        }
+                    })
+                }
+            }
+
+            // Cleanup evaluations for officers REMOVED from the case
+            await prisma.officerEvaluation.deleteMany({
+                where: {
+                    sourceId: responseId,
+                    type: 'CITIZEN_FEEDBACK',
+                    officerId: { notIn: Array.from(currentTargetIds) }
+                }
+            })
+        } else {
+            // Case NOT confirmed: Remove ALL evaluations linked to this report
+            await prisma.officerEvaluation.deleteMany({
+                where: { sourceId: responseId, type: 'CITIZEN_FEEDBACK' }
+            })
+        }
+
+        // ------------------------------------------------------------------
+        // 2. Refresh Stats
+        // ------------------------------------------------------------------
+        // We must refresh stats for ANY officer touched by this report (past or present)
+        const allInvolvedOfficerIds = new Set<string>()
+        if (response.officerId) allInvolvedOfficerIds.add(response.officerId)
+        if (currentResponse.officerId) allInvolvedOfficerIds.add(currentResponse.officerId)
+        response.taggedOfficers.forEach((o: any) => allInvolvedOfficerIds.add(o.id))
+        currentResponse.taggedOfficers.forEach((o: any) => allInvolvedOfficerIds.add(o.id))
 
         const { refreshOfficerStats } = await import("@/lib/officer-stats")
-        for (const id of officerIdsToUpdate) {
+        for (const id of allInvolvedOfficerIds) {
             await refreshOfficerStats(id)
         }
 
