@@ -48,14 +48,14 @@ async function main() {
     // So we reimplement the logic briefly or use a raw SQL update if needed.
     // Ideally we would import it. Let's try to do a basic recalculation here.
 
-    for (const officerId of Array.from(impactedOfficerIds)) {
+    for (const officerId of Array.from(impactedOfficerIds) as string[]) {
         await refreshStats(officerId)
     }
 
     console.log('🎉 Done!')
 }
 
-async function refreshStats(officerId) {
+async function refreshStats(officerId: string) {
     // 1. Internal Evaluations
     const evals = await prisma.officerEvaluation.findMany({
         where: { officerId },
@@ -95,18 +95,18 @@ async function refreshStats(officerId) {
     let totalCount = 0
 
     // Evals
-    evals.forEach(e => {
+    evals.forEach((e: any) => {
         const scores = [e.scoreKnowledge, e.scoreTactics, e.scoreCommunication, e.scoreProfessionalism, e.scorePhysical]
-            .filter(s => typeof s === 'number' && s > 0)
+            .filter((s: any) => typeof s === 'number' && s > 0)
 
         if (scores.length > 0) {
-            totalPoints += scores.reduce((a, b) => a + b, 0) / scores.length
+            totalPoints += scores.reduce((a: any, b: any) => a + b, 0) / scores.length
             totalCount++
         }
     })
 
     // Feedback
-    citizenFeedback.forEach(f => {
+    citizenFeedback.forEach((f: any) => {
         if (f.rateOverall > 0) {
             totalPoints += f.rateOverall
             totalCount++
@@ -119,9 +119,7 @@ async function refreshStats(officerId) {
         where: { id: officerId },
         data: {
             avgScore: Number(avgScore.toFixed(2)),
-            totalEvaluations: evals.length, // Only internal evals count as "evaluations" usually? 
-            // Wait, previous code counted `evals.length` which equals `prisma.officerEvaluation.count`.
-            // So if I deleted some, this count goes down. Correct.
+            totalEvaluations: evals.length,
             totalResponses: totalResponsesCount
         }
     })
