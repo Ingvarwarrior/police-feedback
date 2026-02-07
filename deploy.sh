@@ -22,13 +22,17 @@ npx prisma generate
 echo "🏗️ Building application..."
 npm run build
 
-# 6. Restart Server (assuming PM2)
-echo "♻️ Restarting server..."
-if command -v pm2 &> /dev/null
-then
-    pm2 restart all
+# 6. Restart Server (Systemd)
+# CHANGE THIS to your actual service name if different
+SERVICE_NAME="police-feedback" 
+
+echo "♻️ Restarting systemd service: $SERVICE_NAME..."
+if sudo systemctl is-active --quiet $SERVICE_NAME; then
+    sudo systemctl restart $SERVICE_NAME
+    echo "✅ Service restarted."
 else
-    echo "⚠️ PM2 not found. Please restart your server manually."
+    echo "⚠️ Service '$SERVICE_NAME' not found or not active."
+    echo "   Please run: sudo systemctl restart <your-service-name>"
 fi
 
 echo "✅ Deployment complete!"
