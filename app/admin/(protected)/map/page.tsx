@@ -1,12 +1,7 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import dynamic from 'next/dynamic'
-
-const MapClient = dynamic(() => import("./MapClient"), {
-    ssr: false,
-    loading: () => <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-400 font-bold">Завантаження мапи...</div>
-})
+import MapWrapper from "./MapWrapper"
 
 export const metadata = {
     title: 'Мапа моніторингу | Адмін-панель',
@@ -55,7 +50,7 @@ export default async function MapPage() {
 
     return (
         <div className="h-[calc(100vh-8rem)] w-full relative rounded-[2.5rem] overflow-hidden border border-slate-200 shadow-sm">
-            <MapClient initialUsers={users} />
+            <MapWrapper initialUsers={users} />
         </div>
     )
 }
