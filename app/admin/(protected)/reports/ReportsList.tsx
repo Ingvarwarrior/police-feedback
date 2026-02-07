@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Download, Eye, Star, Search, ArrowUpDown, Calendar as LucideCalendar, MapPin, FileText, Trash2, CheckCircle2, Archive, UserPlus, Check, MoreHorizontal, X, Loader2, AlertTriangle } from "lucide-react"
+import { Download, Eye, Star, Search, ArrowUpDown, Calendar as LucideCalendar, MapPin, FileText, Trash2, CheckCircle2, Archive, UserPlus, Check, MoreHorizontal, X, Loader2, AlertTriangle, Volume2, VolumeX } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
@@ -95,6 +95,80 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
     // Bulk Selection State
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [isBulkLoading, setIsBulkLoading] = useState(false)
+
+    // Sound Notification State
+    const [soundEnabled, setSoundEnabled] = useState(false)
+    const lastCountRef = useRef<number | null>(null)
+
+    // Sound Effect (Web Audio API)
+    const playNotificationSound = () => {
+        if (!soundEnabled) return
+        try {
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext
+            if (!AudioContext) return
+
+            const ctx = new AudioContext()
+            const osc = ctx.createOscillator()
+            const gain = ctx.createGain()
+
+            osc.connect(gain)
+            gain.connect(ctx.destination)
+
+            osc.type = 'sine'
+            osc.frequency.setValueAtTime(500, ctx.currentTime)
+            osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1)
+
+            gain.gain.setValueAtTime(0.1, ctx.currentTime)
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5)
+
+            osc.start()
+            osc.stop(ctx.currentTime + 0.5)
+        } catch (e) {
+            console.error("Audio play failed", e)
+        }
+    }
+
+    // Polling for new reports
+    useEffect(() => {
+        if (!soundEnabled) return
+
+        const checkNewReports = async () => {
+            try {
+                const res = await fetch('/api/admin/reports/stats')
+                if (res.ok) {
+                    const data = await res.json()
+
+                    // Initial load
+                    if (lastCountRef.current === null) {
+                        lastCountRef.current = data.count
+                        return
+                    }
+
+                    // Check for increase
+                    if (data.count > lastCountRef.current) {
+                        playNotificationSound()
+                        toast.info("🔔 Новий звіт!", {
+                            description: "Список оновлено автоматично",
+                            action: {
+                                label: "Оновити",
+                                onClick: () => router.refresh()
+                            }
+                        })
+                        router.refresh()
+                    }
+
+                    lastCountRef.current = data.count
+                }
+            } catch (error) {
+                console.error("Polling error", error)
+            }
+        }
+
+        const interval = setInterval(checkNewReports, 30000) // Check every 30s
+        checkNewReports() // Immediate check
+
+        return () => clearInterval(interval)
+    }, [soundEnabled, router])
 
     const processedResponses = useMemo(() => {
         let result = [...initialResponses]
@@ -263,6 +337,18 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                 >
                     Опрацьовані
                 </button>
+            </div>
+
+            <div className="flex justify-center lg:justify-end -mt-4 mb-2 lg:mt-0 lg:mb-0">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    className={`rounded-full text-[10px] font-black uppercase tracking-wider gap-2 transition-all ${soundEnabled ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                    {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                    {soundEnabled ? 'Звук увімкнено' : 'Звук вимкнено'}
+                </Button>
             </div>
 
             <div className="flex flex-col gap-6">
