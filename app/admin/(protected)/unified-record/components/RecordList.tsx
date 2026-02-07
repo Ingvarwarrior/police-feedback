@@ -38,6 +38,12 @@ import {
 import { format } from "date-fns"
 import { uk } from "date-fns/locale"
 import { toast } from "sonner"
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs"
 
 import CreateRecordDialog from "./CreateRecordDialog"
 import {
@@ -81,6 +87,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const [records, setRecords] = useState(initialRecords)
     const [filterSearch, setFilterSearch] = useState("")
     const [filterCategory, setFilterCategory] = useState("ALL")
+    const [activeTab, setActiveTab] = useState("ALL")
     const [sortBy, setSortBy] = useState("newest")
     const [showOnlyMine, setShowOnlyMine] = useState(false)
 
@@ -95,6 +102,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
 
     const filteredRecords = useMemo(() => {
         let result = [...records]
+
+        // Apply Tab filter
+        if (activeTab !== 'ALL') {
+            result = result.filter(r => r.recordType === activeTab)
+        }
 
         // Apply search filter
         if (filterSearch) {
@@ -125,7 +137,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         })
 
         return result
-    }, [records, filterSearch, filterCategory, sortBy, showOnlyMine, currentUser.id])
+    }, [records, filterSearch, filterCategory, activeTab, sortBy, showOnlyMine, currentUser.id])
 
     const categories = useMemo(() => {
         const cats = new Set(initialRecords.map(r => r.category).filter(Boolean))
@@ -209,6 +221,38 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
 
     return (
         <div className="space-y-6">
+            {/* Tabs Navigation */}
+            <Tabs defaultValue="ALL" className="w-full" onValueChange={setActiveTab}>
+                <TabsList className="bg-white p-1 rounded-2xl border border-slate-100 shadow-sm h-14 mb-2">
+                    <TabsTrigger
+                        value="ALL"
+                        className="rounded-xl px-8 h-full font-black uppercase tracking-widest text-[10px] data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all gap-2"
+                    >
+                        Все записи
+                        <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md text-[9px]">
+                            {records.length}
+                        </span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="EO"
+                        className="rounded-xl px-8 h-full font-black uppercase tracking-widest text-[10px] data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all gap-2"
+                    >
+                        Єдиний облік
+                        <span className="bg-blue-50 text-blue-500 px-2 py-0.5 rounded-md text-[9px]">
+                            {records.filter(r => r.recordType === 'EO').length}
+                        </span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="ZVERN"
+                        className="rounded-xl px-8 h-full font-black uppercase tracking-widest text-[10px] data-[state=active]:bg-amber-500 data-[state=active]:text-white transition-all gap-2"
+                    >
+                        Звернення
+                        <span className="bg-amber-50 text-amber-500 px-2 py-0.5 rounded-md text-[9px]">
+                            {records.filter(r => r.recordType === 'ZVERN').length}
+                        </span>
+                    </TabsTrigger>
+                </TabsList>
+            </Tabs>
             {/* Filters Bar */}
             <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative w-full md:w-96 group">
@@ -403,6 +447,14 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         </AlertDialogContent>
                                                     </AlertDialog>
 
+                                                    {record.recordType && (
+                                                        <span className={cn(
+                                                            "px-3 py-1 text-[9px] font-black rounded-lg uppercase tracking-wider",
+                                                            record.recordType === 'EO' ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"
+                                                        )}>
+                                                            {record.recordType === 'EO' ? 'ЄО' : 'Звернення'}
+                                                        </span>
+                                                    )}
                                                     {record.category && (
                                                         <span className="px-3 py-1 bg-slate-900 text-white text-[9px] font-black rounded-lg uppercase tracking-wider">
                                                             {record.category}

@@ -15,6 +15,7 @@ const UnifiedRecordSchema = z.object({
     description: z.string().optional().nullable(),
     applicant: z.string().optional().nullable(),
     category: z.string().optional().nullable(),
+    recordType: z.string().default("EO"),
     officerName: z.string().optional().nullable(),
     assignedUserId: z.string().optional().nullable(),
     resolution: z.string().optional().nullable(),
@@ -24,6 +25,7 @@ const UnifiedRecordSchema = z.object({
 export async function getUnifiedRecords(params?: {
     search?: string
     category?: string
+    recordType?: string
     from?: string
     to?: string
 }) {
@@ -55,6 +57,10 @@ export async function getUnifiedRecords(params?: {
 
     if (params?.category && params.category !== 'ALL') {
         where.category = params.category
+    }
+
+    if (params?.recordType && params.recordType !== 'ALL') {
+        where.recordType = params.recordType
     }
 
     if (params?.from || params?.to) {
@@ -123,7 +129,7 @@ function parseExcelRow(row: any, fileName: string) {
     }
 }
 
-export async function parseUnifiedRecordsAction(formData: FormData) {
+export async function parseUnifiedRecordsAction(formData: FormData, recordType: string = "EO") {
     const session = await auth()
     if (!session) throw new Error("Unauthorized")
 
@@ -136,7 +142,13 @@ export async function parseUnifiedRecordsAction(formData: FormData) {
     const data = XLSX.utils.sheet_to_json(worksheet, { raw: false, dateNF: 'yyyy-mm-dd' })
 
     const parsed = (data as any[])
-        .map(row => parseExcelRow(row, file.name))
+        .map(row => {
+            const parsedRow = parseExcelRow(row, file.name)
+            if (parsedRow) {
+                return { ...parsedRow, recordType }
+            }
+            return null
+        })
         .filter(Boolean)
 
     return { success: true, records: parsed }

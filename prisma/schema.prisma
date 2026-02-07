@@ -278,6 +278,7 @@ model UnifiedRecord {
   description    String?
   applicant      String?
   category       String?
+  recordType     String    @default("EO") // EO or ZVERN
   officerName    String?
   assignedUserId String?
   resolution     String?

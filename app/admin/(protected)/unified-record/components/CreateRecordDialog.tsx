@@ -29,6 +29,7 @@ const formSchema = z.object({
     officerName: z.string().optional(),
     assignedUserId: z.string().optional().nullable(),
     category: z.string().optional(),
+    recordType: z.string().min(1),
     district: z.string().optional(),
     resolution: z.string().optional(),
     resolutionDate: z.date().optional().nullable(),
@@ -60,6 +61,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             officerName: initialData?.officerName || "",
             assignedUserId: initialData?.assignedUserId || null,
             category: initialData?.category || "Загальне",
+            recordType: initialData?.recordType || "EO",
             district: initialData?.district || "Хмільницький",
             resolution: initialData?.resolution || "",
             resolutionDate: initialData?.resolutionDate ? new Date(initialData.resolutionDate) : null,
@@ -157,6 +159,22 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 placeholder="ПІБ заявника"
                                 className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="recordType" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Тип запису</Label>
+                            <Select
+                                onValueChange={(val) => form.setValue("recordType", val)}
+                                defaultValue={form.getValues("recordType")}
+                            >
+                                <SelectTrigger className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold">
+                                    <SelectValue placeholder="Тип" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-none shadow-2xl">
+                                    <SelectItem value="EO">Єдиний облік (ЄО)</SelectItem>
+                                    <SelectItem value="ZVERN">Звернення</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="space-y-2">

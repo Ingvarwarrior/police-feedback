@@ -14,6 +14,8 @@ import { parseUnifiedRecordsAction, saveUnifiedRecordsAction } from "../actions/
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { uk } from "date-fns/locale"
+import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
 
 export default function ImportDialog() {
     const [isOpen, setIsOpen] = useState(false)
@@ -21,6 +23,7 @@ export default function ImportDialog() {
     const [file, setFile] = useState<File | null>(null)
     const [step, setStep] = useState<'upload' | 'preview'>('upload')
     const [previewRecords, setPreviewRecords] = useState<any[]>([])
+    const [recordType, setRecordType] = useState<'EO' | 'ZVERN'>('EO')
 
     const handleParse = async () => {
         if (!file) return
@@ -30,7 +33,7 @@ export default function ImportDialog() {
         formData.append('file', file)
 
         try {
-            const result = await parseUnifiedRecordsAction(formData)
+            const result = await parseUnifiedRecordsAction(formData, recordType)
             if (result.success) {
                 setPreviewRecords(result.records)
                 setStep('preview')
@@ -135,6 +138,34 @@ export default function ImportDialog() {
                                         />
                                     </div>
                                 )}
+                            </div>
+
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Тип даних для імпорту</Label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Button
+                                        type="button"
+                                        variant={recordType === 'EO' ? 'default' : 'outline'}
+                                        onClick={() => setRecordType('EO')}
+                                        className={cn(
+                                            "rounded-xl h-11 font-bold transition-all",
+                                            recordType === 'EO' ? "bg-blue-600 shadow-md shadow-blue-200" : "border-slate-200"
+                                        )}
+                                    >
+                                        Єдиний облік
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={recordType === 'ZVERN' ? 'default' : 'outline'}
+                                        onClick={() => setRecordType('ZVERN')}
+                                        className={cn(
+                                            "rounded-xl h-11 font-bold transition-all",
+                                            recordType === 'ZVERN' ? "bg-slate-900 shadow-md shadow-slate-200" : "border-slate-200"
+                                        )}
+                                    >
+                                        Звернення
+                                    </Button>
+                                </div>
                             </div>
 
                             <div className="bg-amber-50/50 border border-amber-100 p-5 rounded-[1.5rem] flex items-start gap-4 shadow-sm shadow-amber-100/20">
