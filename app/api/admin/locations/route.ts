@@ -9,7 +9,7 @@ export async function GET() {
     }
 
     const currentUser = await prisma.user.findUnique({
-        where: { email: session.user.email },
+        where: { username: session.user.email },
         select: { role: true }
     })
 

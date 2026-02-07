@@ -16,7 +16,7 @@ export async function POST(req: Request) {
         }
 
         await prisma.user.update({
-            where: { email: session.user.email },
+            where: { username: session.user.email },
             data: {
                 lastLat: lat,
                 lastLon: lon,
