@@ -9,6 +9,7 @@ import SignOutButton from "@/components/admin/SignOutButton"
 import MobileNav from "@/components/admin/MobileNav"
 import NotificationCenter from "@/components/admin/NotificationCenter"
 import BirthdayNotifications from "@/components/admin/BirthdayNotifications"
+import { UserLocationTracker } from "@/components/UserLocationTracker"
 
 export default async function AdminLayout({
     children,
@@ -177,6 +178,7 @@ export default async function AdminLayout({
             </main>
 
             <Toaster position="top-right" richColors />
+            <UserLocationTracker />
         </div>
     )
 }

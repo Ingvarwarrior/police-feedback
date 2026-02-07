@@ -40,6 +40,9 @@ model User {
   permManageMailAlerts    Boolean             @default(false)
   createdAt               DateTime            @default(now())
   phone                   String?
+  lastLat                 Float?
+  lastLon                 Float?
+  lastLocationAt          DateTime?
   notifications           AdminNotification[]
   auditLogs               AuditLog[]
   notificationReads       NotificationRead[]
