@@ -11,13 +11,15 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
+import { format, parseISO, isValid } from "date-fns"
 import { uk } from "date-fns/locale"
-import { CalendarIcon, Plus, Loader2, Edit2 } from "lucide-react"
+import { CalendarIcon, Plus, Loader2, Edit2, Sparkles, Image as ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { upsertUnifiedRecordAction } from "../actions/recordActions"
+import { analyzeRecordImageAction } from "../actions/aiActions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useRef } from "react"
 
 const formSchema = z.object({
     id: z.string().optional(),
@@ -46,6 +48,8 @@ interface CreateRecordDialogProps {
 export default function CreateRecordDialog({ initialData, users = [], trigger }: CreateRecordDialogProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [isAnalyzing, setIsAnalyzing] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     const isEdit = !!initialData?.id
 
@@ -70,6 +74,61 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
 
     const eoDate = form.watch("eoDate")
     const resolutionDate = form.watch("resolutionDate")
+
+    const onAiScan = () => {
+        fileInputRef.current?.click()
+    }
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        if (!file.type.startsWith('image/')) {
+            toast.error("Будь ласка, оберіть зображення")
+            return
+        }
+
+        setIsAnalyzing(true)
+        const toastId = toast.loading("ШІ аналізує фото...")
+
+        try {
+            const reader = new FileReader()
+            reader.onloadend = async () => {
+                const base64 = reader.result as string
+                const result = await analyzeRecordImageAction(base64)
+
+                if (result.success && result.data) {
+                    const data = result.data
+
+                    // Populate form fields
+                    if (data.eoNumber) form.setValue("eoNumber", data.eoNumber)
+                    if (data.description) form.setValue("description", data.description)
+                    if (data.applicant) form.setValue("applicant", data.applicant)
+                    if (data.address) form.setValue("address", data.address)
+                    if (data.category) form.setValue("category", data.category)
+
+                    if (data.eoDate) {
+                        const parsedDate = parseISO(data.eoDate)
+                        if (isValid(parsedDate)) {
+                            form.setValue("eoDate", parsedDate)
+                        }
+                    }
+
+                    toast.success("Дані успішно розпізнано!", { id: toastId })
+                } else {
+                    toast.error(result.error || "Не вдалося розпізнати дані", { id: toastId })
+                }
+                setIsAnalyzing(false)
+            }
+            reader.readAsDataURL(file)
+        } catch (error) {
+            toast.error("Помилка при обробці файлу", { id: toastId })
+            setIsAnalyzing(false)
+        }
+
+        // Reset input
+        e.target.value = ''
+    }
 
     const onSubmit = async (data: FormValues) => {
         setIsLoading(true)
@@ -98,10 +157,38 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                 )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px] bg-white rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
-                <DialogHeader className="p-8 bg-slate-900 text-white">
-                    <DialogTitle className="text-2xl font-black italic uppercase tracking-tight">
-                        {isEdit ? "Редагування картки" : "Нова картка ЄО"}
-                    </DialogTitle>
+                <DialogHeader className="p-8 bg-slate-900 text-white flex flex-row items-center justify-between">
+                    <div>
+                        <DialogTitle className="text-2xl font-black italic uppercase tracking-tight">
+                            {isEdit ? "Редагування картки" : "Нова картка ЄО"}
+                        </DialogTitle>
+                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Використовуйте ШІ для автозаповнення</p>
+                    </div>
+
+                    {!isEdit && (
+                        <>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleFileSelect}
+                            />
+                            <Button
+                                type="button"
+                                onClick={onAiScan}
+                                disabled={isAnalyzing}
+                                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 h-10 shadow-lg shadow-blue-500/20 gap-2 border-none font-bold text-xs"
+                            >
+                                {isAnalyzing ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-4 h-4" />
+                                )}
+                                {isAnalyzing ? "Аналіз..." : "Сканувати ШІ"}
+                            </Button>
+                        </>
+                    )}
                 </DialogHeader>
 
                 <form onSubmit={form.handleSubmit(onSubmit)} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
