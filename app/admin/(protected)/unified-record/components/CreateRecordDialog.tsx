@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -19,7 +19,6 @@ import { toast } from "sonner"
 import { upsertUnifiedRecordAction } from "../actions/recordActions"
 import { analyzeRecordImageAction } from "../actions/aiActions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useRef } from "react"
 
 const formSchema = z.object({
     id: z.string().optional(),
