@@ -109,15 +109,16 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
             },
             select: { createdAt: true, resolutionDate: true }
         }),
-        // New stats for Unified Records
+        // New stats for Unified Records - filtering by eoDate for accurate reporting
         (prisma as any).unifiedRecord.groupBy({
-            where: { createdAt: { gte: startDate, lte: endDate } },
+            where: { eoDate: { gte: startDate, lte: endDate } },
             by: ['recordType'],
             _count: true
         }),
         (prisma as any).unifiedRecord.findMany({
-            where: { createdAt: { gte: startDate, lte: endDate } },
+            where: { eoDate: { gte: startDate, lte: endDate } },
             select: {
+                id: true,
                 assignedUserId: true,
                 status: true,
                 assignedUser: {
@@ -162,16 +163,27 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
 
     unifiedRecordsByInspector.forEach((r: any) => {
         const targetId = r.assignedUserId || 'unassigned'
-        if (inspectorStatsMap[targetId]) {
-            inspectorStatsMap[targetId].assigned++
-            if (r.status === 'PROCESSED') {
-                inspectorStatsMap[targetId].processed++
-            } else {
-                inspectorStatsMap[targetId].pending++
+
+        // Dynamically add to map if not pre-populated (e.g. user role changed)
+        if (!inspectorStatsMap[targetId]) {
+            inspectorStatsMap[targetId] = {
+                id: targetId,
+                name: r.assignedUser ? `${r.assignedUser.lastName} ${r.assignedUser.firstName || ''}`.trim() : 'Невідомий',
+                assigned: 0,
+                processed: 0,
+                pending: 0
             }
+        }
+
+        inspectorStatsMap[targetId].assigned++
+        if (r.status === 'PROCESSED') {
+            inspectorStatsMap[targetId].processed++
+        } else {
+            inspectorStatsMap[targetId].pending++
         }
     })
 
+    // Filter to show only relevant rows + the mandatory "unassigned" one
     const inspectorPerformance = Object.values(inspectorStatsMap).filter(s => s.assigned > 0 || s.id === 'unassigned')
 
     // 1. Daily Trends
@@ -304,8 +316,8 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
             </div>
 
             <AnalyticsClient
-                startDate={startDate.toISOString().split('T')[0]}
-                endDate={endDate.toISOString().split('T')[0]}
+                startDate={fromParam || startDate.toISOString().split('T')[0]}
+                endDate={toParam || endDate.toISOString().split('T')[0]}
                 trendData={trendData}
                 ratingsData={ratingsData}
                 officers={officers}

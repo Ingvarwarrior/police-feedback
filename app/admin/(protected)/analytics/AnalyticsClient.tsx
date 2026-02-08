@@ -359,6 +359,27 @@ export default function AnalyticsClient({
                                                         </TableCell>
                                                     </TableRow>
                                                 ))}
+                                            {unifiedRecordStats.inspectorPerformance.length > 0 && (
+                                                <TableRow className="bg-slate-50/80 font-black border-t-2 border-slate-200">
+                                                    <TableCell className="px-8 py-6 uppercase tracking-wider text-[10px]">Всього за період</TableCell>
+                                                    <TableCell className="text-center py-6">
+                                                        {unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.assigned, 0)}
+                                                    </TableCell>
+                                                    <TableCell className="text-center text-emerald-600 py-6">
+                                                        {unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.processed, 0)}
+                                                    </TableCell>
+                                                    <TableCell className="text-center text-amber-600 py-6">
+                                                        {unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.pending, 0)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right px-8 py-6">
+                                                        {(() => {
+                                                            const total = unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.assigned, 0);
+                                                            const done = unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.processed, 0);
+                                                            return total > 0 ? Math.round((done / total) * 100) : 0;
+                                                        })()}%
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
                                             {unifiedRecordStats.inspectorPerformance.length === 0 && (
                                                 <TableRow>
                                                     <TableCell colSpan={5} className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
