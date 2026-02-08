@@ -276,6 +276,7 @@ model UnifiedRecord {
   district       String?
   address        String?
   description    String?
+  content        String?
   applicant      String?
   category       String?
   recordType     String    @default("EO") // EO or ZVERN
