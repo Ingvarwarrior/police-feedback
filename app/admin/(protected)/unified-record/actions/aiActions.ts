@@ -88,6 +88,49 @@ export async function analyzeRecordImageAction(base64Image: string) {
         errors.push("Gemini: Ключ відсутній")
     }
 
+    // --- Try SiliconFlow (Very cheap alternative) ---
+    const siliconKey = process.env.SILICONFLOW_API_KEY
+    if (siliconKey) {
+        try {
+            const sf = new OpenAI({
+                apiKey: siliconKey,
+                baseURL: "https://api.siliconflow.cn/v1"
+            })
+            const response = await sf.chat.completions.create({
+                model: "Qwen/Qwen2-VL-7B-Instruct", // Excellent and very cheap OCR
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: prompt },
+                            {
+                                type: "image_url",
+                                image_url: {
+                                    url: `data:image/jpeg;base64,${base64Data}`,
+                                },
+                            },
+                        ],
+                    },
+                ],
+                response_format: { type: "json_object" },
+            })
+
+            const content = response.choices[0].message.content
+            if (content) {
+                const parsedData = JSON.parse(content)
+                return {
+                    success: true,
+                    data: parsedData,
+                    usedProvider: "SiliconFlow",
+                    usedModel: "Qwen2-VL-7B"
+                }
+            }
+        } catch (e: any) {
+            console.warn("SiliconFlow failed:", e.message)
+            errors.push(`SiliconFlow: ${e.message.substring(0, 50)}...`)
+        }
+    }
+
     // --- Try OpenAI fallback ---
     if (openaiKey) {
         try {
