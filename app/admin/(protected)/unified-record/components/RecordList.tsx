@@ -754,19 +754,21 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <div className="h-px md:h-11 w-full md:w-px bg-white/10" />
 
                         <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
-                            <Select onValueChange={(val) => handleBulkAssign(val)}>
-                                <SelectTrigger className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-white/5 border-white/10 hover:bg-white/10 transition-all min-w-[140px] md:min-w-[200px] text-[10px] md:text-sm font-bold">
-                                    <UserPlus className="w-3 md:w-4 h-3 md:h-4 mr-1 md:mr-2 text-blue-400" />
-                                    <SelectValue placeholder="Призначити..." />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-none shadow-2xl">
-                                    {users.map(user => (
-                                        <SelectItem key={user.id} value={user.id}>
-                                            {user.lastName} {user.firstName || user.username}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            {currentUser.role === 'ADMIN' && (
+                                <Select onValueChange={(val) => handleBulkAssign(val)}>
+                                    <SelectTrigger className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-white/5 border-white/10 hover:bg-white/10 transition-all min-w-[140px] md:min-w-[200px] text-[10px] md:text-sm font-bold">
+                                        <UserPlus className="w-3 md:w-4 h-3 md:h-4 mr-1 md:mr-2 text-blue-400" />
+                                        <SelectValue placeholder="Призначити..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-none shadow-2xl">
+                                        {users.map(user => (
+                                            <SelectItem key={user.id} value={user.id}>
+                                                {user.lastName} {user.firstName || user.username}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
 
                             <Popover>
                                 <PopoverTrigger asChild>
@@ -793,31 +795,33 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                 </PopoverContent>
                             </Popover>
 
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm">
-                                        <Trash2 className="w-3 md:w-4 h-3 md:h-4" />
-                                        <span className="hidden sm:inline">Видалити</span>
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl w-[90%] md:w-full">
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle className="text-lg md:text-xl font-black uppercase italic tracking-tight">Масове видалення</AlertDialogTitle>
-                                        <AlertDialogDescription className="text-sm md:text-base text-slate-500 font-medium">
-                                            Ви впевнені, що хочете видалити {selectedIds.length} вибраних записів?
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter className="bg-slate-50 p-4 md:p-6 -m-4 md:-m-6 mt-4 md:mt-6 rounded-b-[2rem] flex-col md:flex-row gap-2">
-                                        <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500 mt-0">Скасувати</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={handleBulkDelete}
-                                            className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
-                                        >
-                                            Так, видалити все
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                            {currentUser.role === 'ADMIN' && (
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm">
+                                            <Trash2 className="w-3 md:w-4 h-3 md:h-4" />
+                                            <span className="hidden sm:inline">Видалити</span>
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl w-[90%] md:w-full">
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle className="text-lg md:text-xl font-black uppercase italic tracking-tight">Масове видалення</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-sm md:text-base text-slate-500 font-medium">
+                                                Ви впевнені, що хочете видалити {selectedIds.length} вибраних записів?
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter className="bg-slate-50 p-4 md:p-6 -m-4 md:-m-6 mt-4 md:mt-6 rounded-b-[2rem] flex-col md:flex-row gap-2">
+                                            <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500 mt-0">Скасувати</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={handleBulkDelete}
+                                                className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
+                                            >
+                                                Так, видалити все
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            )}
 
                             <Button
                                 variant="ghost"

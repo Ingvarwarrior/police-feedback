@@ -31,7 +31,10 @@ const UnifiedRecordSchema = z.object({
 
 export async function processUnifiedRecordAction(id: string, resolution: string) {
     const session = await auth()
-    if (!session) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    // Additional check could be added here to ensure user is assigned or admin
+    // For now, any authorized user can process a record they can see
 
     await prisma.unifiedRecord.update({
         where: { id },
@@ -49,7 +52,7 @@ export async function processUnifiedRecordAction(id: string, resolution: string)
 
 export async function requestExtensionAction(id: string, reason: string) {
     const session = await auth()
-    if (!session) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
 
     await prisma.unifiedRecord.update({
         where: { id },
@@ -65,7 +68,13 @@ export async function requestExtensionAction(id: string, reason: string) {
 
 export async function reviewExtensionAction(id: string, approved: boolean) {
     const session = await auth()
-    if (!session) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true }
+    })
+    if (user?.role !== 'ADMIN') throw new Error("Only admins can review extensions")
 
     const record = await prisma.unifiedRecord.findUnique({
         where: { id },
@@ -359,7 +368,13 @@ export async function getUsersForAssignment() {
 
 export async function deleteUnifiedRecordAction(id: string) {
     const session = await auth()
-    if (!session) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true }
+    })
+    if (user?.role !== 'ADMIN') throw new Error("Only admins can delete records")
 
     await prisma.unifiedRecord.delete({
         where: { id }
@@ -371,7 +386,13 @@ export async function deleteUnifiedRecordAction(id: string) {
 
 export async function bulkDeleteUnifiedRecordsAction(ids: string[]) {
     const session = await auth()
-    if (!session) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true }
+    })
+    if (user?.role !== 'ADMIN') throw new Error("Only admins can delete records")
 
     await prisma.unifiedRecord.deleteMany({
         where: { id: { in: ids } }
@@ -383,7 +404,13 @@ export async function bulkDeleteUnifiedRecordsAction(ids: string[]) {
 
 export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: string) {
     const session = await auth()
-    if (!session) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true }
+    })
+    if (user?.role !== 'ADMIN') throw new Error("Only admins can assign records")
 
     await prisma.unifiedRecord.updateMany({
         where: { id: { in: ids } },
@@ -422,7 +449,7 @@ export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: stri
 }
 export async function bulkUpdateResolutionAction(ids: string[], resolution: string, date: Date = new Date()) {
     const session = await auth()
-    if (!session) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
 
     await prisma.unifiedRecord.updateMany({
         where: { id: { in: ids } },
