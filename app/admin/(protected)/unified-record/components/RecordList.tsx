@@ -55,7 +55,8 @@ import {
     bulkUpdateResolutionAction,
     processUnifiedRecordAction,
     requestExtensionAction,
-    reviewExtensionAction
+    reviewExtensionAction,
+    returnForRevisionAction
 } from "../actions/recordActions"
 import {
     AlertDialog,
@@ -698,30 +699,72 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             </div>
                                                         )}
 
-                                                        {/* Admin Review for extensions */}
-                                                        {currentUser.role === 'ADMIN' && record.extensionStatus === 'PENDING' && (
-                                                            <div className="mt-3 p-3 bg-blue-50 rounded-2xl border border-blue-100 space-y-2">
-                                                                <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest flex items-center gap-1">
-                                                                    <Clock className="w-3 h-3" /> Запит на продовження
-                                                                </p>
-                                                                <p className="text-xs font-bold text-slate-700 italic">"{record.extensionReason}"</p>
-                                                                <div className="flex gap-2">
-                                                                    <Button
-                                                                        size="sm"
-                                                                        className="flex-1 bg-emerald-600 text-white rounded-lg font-bold h-8 text-[10px]"
-                                                                        onClick={() => handleReviewExtension(record.id, true)}
-                                                                    >
-                                                                        Погодити
-                                                                    </Button>
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                        className="flex-1 border-red-200 text-red-600 rounded-lg font-bold h-8 text-[10px]"
-                                                                        onClick={() => handleReviewExtension(record.id, false)}
-                                                                    >
-                                                                        Відхилити
-                                                                    </Button>
-                                                                </div>
+                                                        {/* Admin Review for extensions or Return for Revision */}
+                                                        {currentUser.role === 'ADMIN' && (
+                                                            <div className="mt-3 space-y-2">
+                                                                {record.extensionStatus === 'PENDING' && (
+                                                                    <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100 space-y-2">
+                                                                        <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest flex items-center gap-1">
+                                                                            <Clock className="w-3 h-3" /> Запит на продовження
+                                                                        </p>
+                                                                        <p className="text-xs font-bold text-slate-700 italic">"{record.extensionReason}"</p>
+                                                                        <div className="flex gap-2">
+                                                                            <Button
+                                                                                size="sm"
+                                                                                className="flex-1 bg-emerald-600 text-white rounded-lg font-bold h-8 text-[10px]"
+                                                                                onClick={() => handleReviewExtension(record.id, true)}
+                                                                            >
+                                                                                Погодити
+                                                                            </Button>
+                                                                            <Button
+                                                                                size="sm"
+                                                                                variant="outline"
+                                                                                className="flex-1 border-red-200 text-red-600 rounded-lg font-bold h-8 text-[10px]"
+                                                                                onClick={() => handleReviewExtension(record.id, false)}
+                                                                            >
+                                                                                Відхилити
+                                                                            </Button>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {record.status === 'PROCESSED' && (
+                                                                    <Popover>
+                                                                        <PopoverTrigger asChild>
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                className="w-full border-red-200 text-red-600 hover:bg-red-50 rounded-xl font-bold h-9 gap-2"
+                                                                            >
+                                                                                <ArrowUpDown className="w-4 h-4" />
+                                                                                Повернути на доопрацювання
+                                                                            </Button>
+                                                                        </PopoverTrigger>
+                                                                        <PopoverContent className="p-4 rounded-2xl w-80 shadow-2xl border-none space-y-3">
+                                                                            <h4 className="font-black uppercase text-xs tracking-widest text-red-600">Причина повернення:</h4>
+                                                                            <Textarea
+                                                                                placeholder="Вкажіть, що потрібно виправити..."
+                                                                                className="rounded-xl bg-slate-50 border-none min-h-[80px]"
+                                                                            />
+                                                                            <Button
+                                                                                className="w-full bg-red-600 text-white rounded-xl font-bold"
+                                                                                onClick={async (e) => {
+                                                                                    const textarea = e.currentTarget.previousElementSibling as HTMLTextAreaElement
+                                                                                    if (!textarea.value) return toast.error("Вкажіть причину")
+                                                                                    try {
+                                                                                        const res = await returnForRevisionAction(record.id, textarea.value)
+                                                                                        if (res.success) {
+                                                                                            toast.success("Запис повернуто на доопрацювання")
+                                                                                        }
+                                                                                    } catch (err: any) {
+                                                                                        toast.error(err.message)
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                Підтвердити повернення
+                                                                            </Button>
+                                                                        </PopoverContent>
+                                                                    </Popover>
+                                                                )}
                                                             </div>
                                                         )}
 

@@ -470,3 +470,45 @@ export async function bulkUpdateResolutionAction(ids: string[], resolution: stri
     revalidatePath('/admin/unified-record')
     return { success: true }
 }
+
+export async function returnForRevisionAction(id: string, comment: string) {
+    const session = await auth()
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true }
+    })
+    if (user?.role !== 'ADMIN') throw new Error("Тільки адміністратор може повертати на доопрацювання")
+
+    const record = await prisma.unifiedRecord.findUnique({
+        where: { id },
+        select: { assignedUserId: true, eoNumber: true }
+    })
+
+    if (!record) throw new Error("Запис не знайдено")
+
+    await prisma.unifiedRecord.update({
+        where: { id },
+        data: {
+            status: "IN_PROGRESS",
+            processedAt: null,
+        }
+    })
+
+    if (record.assignedUserId) {
+        await prisma.adminNotification.create({
+            data: {
+                title: "Запис повернуто на доопрацювання",
+                message: `Адмін повернув ЄО №${record.eoNumber} на доопрацювання. Коментар: ${comment}`,
+                type: "ALERT",
+                priority: "HIGH",
+                userId: record.assignedUserId,
+                link: `/admin/unified-record?search=${record.eoNumber}`
+            }
+        })
+    }
+
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
