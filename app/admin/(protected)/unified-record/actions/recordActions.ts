@@ -212,7 +212,13 @@ function parseExcelRow(row: any, fileName: string) {
 
 export async function parseUnifiedRecordsAction(formData: FormData, recordType: string = "EO") {
     const session = await auth()
-    if (!session) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true }
+    })
+    if (user?.role !== 'ADMIN') throw new Error("Only admins can parse records")
 
     const file = formData.get('file') as File
     if (!file) throw new Error("No file provided")
@@ -237,7 +243,13 @@ export async function parseUnifiedRecordsAction(formData: FormData, recordType: 
 
 export async function saveUnifiedRecordsAction(records: any[]) {
     const session = await auth()
-    if (!session) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true }
+    })
+    if (user?.role !== 'ADMIN') throw new Error("Only admins can save records")
 
     let count = 0
     for (const record of records) {
@@ -266,7 +278,16 @@ export async function saveUnifiedRecordsAction(records: any[]) {
 
 export async function upsertUnifiedRecordAction(data: any) {
     const session = await auth()
-    if (!session) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { id: true, role: true }
+    })
+    if (!user) throw new Error("User not found")
+
+    // Only admins can create or edit basic record details
+    if (user.role !== 'ADMIN') throw new Error("Only admins can upsert records")
 
     const validated = UnifiedRecordSchema.parse(data)
 

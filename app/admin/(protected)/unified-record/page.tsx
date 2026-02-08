@@ -45,10 +45,12 @@ export default async function UnifiedRecordPage() {
                     </p>
                 </div>
 
-                <div className="flex flex-wrap gap-4 relative z-10">
-                    <CreateRecordDialog users={users} />
-                    <ImportDialog />
-                </div>
+                {currentUser.role === 'ADMIN' && (
+                    <div className="flex flex-wrap gap-4 relative z-10">
+                        <CreateRecordDialog users={users} />
+                        <ImportDialog />
+                    </div>
+                )}
             </div>
 
             {/* Info Note */}
