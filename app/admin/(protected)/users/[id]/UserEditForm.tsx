@@ -12,29 +12,9 @@ import Link from 'next/link'
 import { updateUser } from '../actions/userActions'
 import { toast } from 'sonner'
 
-const PERMISSIONS = [
-    { id: 'permViewReports', label: 'Перегляд звітів', desc: 'Дозволяє бачити список та деталі відгуків.' },
-    { id: 'permAssignReports', label: 'Призначення звітів', desc: 'Дозволяє призначати інспекторів на розгляд звітів.' },
-    { id: 'permViewSensitiveData', label: 'Чутливі дані', desc: 'Дозволяє бачити повні контактні дані громадян.' },
-    { id: 'permBulkActionReports', label: 'Масові дії', desc: 'Дозволяє виконувати дії над групою звітів (архів, видалення).' },
-    { id: 'permEditNotes', label: 'Редагування нотаток', desc: 'Дозволяє залишати та змінювати внутрішні коментарі.' },
-    { id: 'permChangeStatus', label: 'Зміна статусів', desc: 'Дозволяє переводити звіти між робочими станами.' },
-    { id: 'permExportData', label: 'Експорт даних', desc: 'Дозволяє вивантажувати звіти у форматі Excel/CSV.' },
-    { id: 'permManageUsers', label: 'Керування персоналом', desc: 'Дозволяє створювати та редагувати інших користувачів.' },
-    { id: 'permDeleteReports', label: 'Видалення звітів', desc: 'Дозволяє безповоротно видаляти звіти з системи.' },
-    { id: 'permCreateOfficers', label: 'Створення офіцерів', desc: 'Дозволяє додавати нових офіцерів та імпортувати списки.' },
-    { id: 'permEditOfficers', label: 'Редагування офіцерів', desc: 'Дозволяє змінювати дані діючих офіцерів.' },
-    { id: 'permDeleteOfficers', label: 'Видалення офіцерів', desc: 'Дозволяє видаляти офіцерів з бази.' },
-    { id: 'permViewOfficerStats', label: 'Статистика офіцерів', desc: 'Дозволяє переглядати розширену аналітику по офіцеру.' },
-    { id: 'permCreateEvaluations', label: 'Оцінювання офіцерів', desc: 'Дозволяє створювати внутрішні оцінки та атестації.' },
-    { id: 'permManageOfficerStatus', label: 'Статус офіцера', desc: 'Дозволяє змінювати статус (відпустка, звільнений).' },
-    { id: 'permEditCitizens', label: 'Редагування громадян', desc: 'Дозволяє редагувати дані громадян (VIP, нотатки).' },
-    { id: 'permDeleteCitizens', label: 'Видалення громадян', desc: 'Дозволяє видаляти досьє громадян.' },
-    { id: 'permMarkSuspicious', label: 'Маркування громадян', desc: 'Дозволяє позначати громадян як підозрілих або VIP.' },
-    { id: 'permViewAudit', label: 'Перегляд аудиту', desc: 'Дозволяє переглядати історію дій всіх користувачів.' },
-    { id: 'permManageSettings', label: 'Налаштування системи', desc: 'Дозволяє змінювати глобальні налаштування.' },
-    { id: 'permManageMailAlerts', label: 'Поштові сповіщення', desc: 'Керування списком отримувачів сповіщень.' },
-]
+import { PERMISSIONS_CONFIG } from '@/lib/permissions-config'
+
+const PERMISSIONS = PERMISSIONS_CONFIG
 
 interface UserEditFormProps {
     user: {
@@ -45,27 +25,7 @@ interface UserEditFormProps {
         lastName: string | null
         badgeNumber: string | null
         role: string
-        permViewReports: boolean
-        permAssignReports: boolean
-        permViewSensitiveData: boolean
-        permBulkActionReports: boolean
-        permEditNotes: boolean
-        permChangeStatus: boolean
-        permExportData: boolean
-        permManageUsers: boolean
-        permDeleteReports: boolean
-        permCreateOfficers: boolean
-        permEditOfficers: boolean
-        permDeleteOfficers: boolean
-        permViewOfficerStats: boolean
-        permCreateEvaluations: boolean
-        permManageOfficerStatus: boolean
-        permEditCitizens: boolean
-        permDeleteCitizens: boolean
-        permMarkSuspicious: boolean
-        permViewAudit: boolean
-        permManageSettings: boolean
-        permManageMailAlerts: boolean
+        [key: string]: any
     }
 }
 
@@ -78,28 +38,12 @@ export default function UserEditForm({ user }: UserEditFormProps) {
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [role, setRole] = useState(user.role)
-    const [permissions, setPermissions] = useState<Record<string, boolean>>({
-        permViewReports: user.permViewReports,
-        permAssignReports: user.permAssignReports,
-        permViewSensitiveData: user.permViewSensitiveData,
-        permBulkActionReports: user.permBulkActionReports,
-        permEditNotes: user.permEditNotes,
-        permChangeStatus: user.permChangeStatus,
-        permExportData: user.permExportData,
-        permManageUsers: user.permManageUsers,
-        permDeleteReports: user.permDeleteReports,
-        permCreateOfficers: user.permCreateOfficers,
-        permEditOfficers: user.permEditOfficers,
-        permDeleteOfficers: user.permDeleteOfficers,
-        permViewOfficerStats: user.permViewOfficerStats,
-        permCreateEvaluations: user.permCreateEvaluations,
-        permManageOfficerStatus: user.permManageOfficerStatus,
-        permEditCitizens: user.permEditCitizens,
-        permDeleteCitizens: user.permDeleteCitizens,
-        permMarkSuspicious: user.permMarkSuspicious,
-        permViewAudit: user.permViewAudit,
-        permManageSettings: user.permManageSettings,
-        permManageMailAlerts: user.permManageMailAlerts,
+    const [permissions, setPermissions] = useState<Record<string, boolean>>(() => {
+        const initial: Record<string, boolean> = {}
+        PERMISSIONS_CONFIG.forEach(p => {
+            initial[p.id] = !!(user as any)[p.id]
+        })
+        return initial
     })
     const [loading, setLoading] = useState(false)
     const router = useRouter()
@@ -111,77 +55,23 @@ export default function UserEditForm({ user }: UserEditFormProps) {
     const setRolePresets = (newRole: string) => {
         setRole(newRole)
         if (newRole === 'ADMIN') {
-            setPermissions({
-                permViewReports: true,
-                permAssignReports: true,
-                permViewSensitiveData: true,
-                permBulkActionReports: true,
-                permEditNotes: true,
-                permChangeStatus: true,
-                permExportData: true,
-                permManageUsers: true,
-                permDeleteReports: true,
-                permCreateOfficers: true,
-                permEditOfficers: true,
-                permDeleteOfficers: true,
-                permViewOfficerStats: true,
-                permCreateEvaluations: true,
-                permManageOfficerStatus: true,
-                permEditCitizens: true,
-                permDeleteCitizens: true,
-                permMarkSuspicious: true,
-                permViewAudit: true,
-                permManageSettings: true,
-                permManageMailAlerts: true,
-            })
+            const allTrue: Record<string, boolean> = {}
+            PERMISSIONS_CONFIG.forEach(p => allTrue[p.id] = true)
+            setPermissions(allTrue)
         } else if (newRole === 'OFFICER_VIEWER') {
-            setPermissions({
-                permViewReports: false,
-                permAssignReports: false,
-                permViewSensitiveData: false,
-                permBulkActionReports: false,
-                permEditNotes: false,
-                permChangeStatus: false,
-                permExportData: false,
-                permManageUsers: false,
-                permDeleteReports: false,
-                permCreateOfficers: false,
-                permEditOfficers: false,
-                permDeleteOfficers: false,
-                permViewOfficerStats: true,
-                permCreateEvaluations: false,
-                permManageOfficerStatus: false,
-                permEditCitizens: false,
-                permDeleteCitizens: false,
-                permMarkSuspicious: false,
-                permViewAudit: false,
-                permManageSettings: false,
-                permManageMailAlerts: false,
-            })
+            const officerViewer: Record<string, boolean> = {}
+            PERMISSIONS_CONFIG.forEach(p => officerViewer[p.id] = false)
+            officerViewer.permViewOfficerStats = true
+            officerViewer.permViewUnifiedRecords = true
+            setPermissions(officerViewer)
         } else {
-            setPermissions({
-                permViewReports: true,
-                permAssignReports: false,
-                permViewSensitiveData: false,
-                permBulkActionReports: false,
-                permEditNotes: true,
-                permChangeStatus: true,
-                permExportData: false,
-                permManageUsers: false,
-                permDeleteReports: false,
-                permCreateOfficers: false,
-                permEditOfficers: false,
-                permDeleteOfficers: false,
-                permViewOfficerStats: false,
-                permCreateEvaluations: false,
-                permManageOfficerStatus: false,
-                permEditCitizens: false,
-                permDeleteCitizens: false,
-                permMarkSuspicious: false,
-                permViewAudit: false,
-                permManageSettings: false,
-                permManageMailAlerts: false,
-            })
+            const viewer: Record<string, boolean> = {}
+            PERMISSIONS_CONFIG.forEach(p => viewer[p.id] = false)
+            viewer.permViewReports = true
+            viewer.permEditNotes = true
+            viewer.permChangeStatus = true
+            viewer.permViewUnifiedRecords = true
+            setPermissions(viewer)
         }
     }
 

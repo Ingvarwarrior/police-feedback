@@ -72,9 +72,9 @@ export async function reviewExtensionAction(id: string, approved: boolean) {
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { role: true }
+        select: { role: true, permManageExtensions: true }
     })
-    if (user?.role !== 'ADMIN') throw new Error("Only admins can review extensions")
+    if (user?.role !== 'ADMIN' && !user?.permManageExtensions) throw new Error("У вас немає прав для керування термінами")
 
     const record = await prisma.unifiedRecord.findUnique({
         where: { id },
@@ -225,9 +225,9 @@ export async function parseUnifiedRecordsAction(formData: FormData, recordType: 
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { role: true }
+        select: { role: true, permManageUnifiedRecords: true }
     })
-    if (user?.role !== 'ADMIN') throw new Error("Only admins can parse records")
+    if (user?.role !== 'ADMIN' && !user?.permManageUnifiedRecords) throw new Error("У вас немає прав для імпорту записів ЄО")
 
     const file = formData.get('file') as File
     if (!file) throw new Error("No file provided")
@@ -256,9 +256,9 @@ export async function saveUnifiedRecordsAction(records: any[]) {
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { role: true }
+        select: { role: true, permManageUnifiedRecords: true }
     })
-    if (user?.role !== 'ADMIN') throw new Error("Only admins can save records")
+    if (user?.role !== 'ADMIN' && !user?.permManageUnifiedRecords) throw new Error("У вас немає прав для збереження записів ЄО")
 
     let count = 0
     for (const record of records) {
@@ -291,12 +291,12 @@ export async function upsertUnifiedRecordAction(data: any) {
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { id: true, role: true }
+        select: { id: true, role: true, permManageUnifiedRecords: true }
     })
     if (!user) throw new Error("User not found")
 
-    // Only admins can create or edit basic record details
-    if (user.role !== 'ADMIN') throw new Error("Only admins can upsert records")
+    // Only admins or users with permManageUnifiedRecords can create or edit basic record details
+    if (user.role !== 'ADMIN' && !user.permManageUnifiedRecords) throw new Error("У вас немає прав для створення чи редагування записів ЄО")
 
     const validated = UnifiedRecordSchema.parse(data)
 
@@ -408,9 +408,9 @@ export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: stri
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { role: true }
+        select: { role: true, permAssignUnifiedRecords: true }
     })
-    if (user?.role !== 'ADMIN') throw new Error("Only admins can assign records")
+    if (user?.role !== 'ADMIN' && !user?.permAssignUnifiedRecords) throw new Error("У вас немає прав для призначення записів ЄО")
 
     await prisma.unifiedRecord.updateMany({
         where: { id: { in: ids } },
@@ -450,6 +450,12 @@ export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: stri
 export async function bulkUpdateResolutionAction(ids: string[], resolution: string, date: Date = new Date()) {
     const session = await auth()
     if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true, permProcessUnifiedRecords: true }
+    })
+    if (user?.role !== 'ADMIN' && !user?.permProcessUnifiedRecords) throw new Error("У вас немає прав для масового опрацювання")
 
     await prisma.unifiedRecord.updateMany({
         where: { id: { in: ids } },

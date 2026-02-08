@@ -12,29 +12,9 @@ import Link from 'next/link'
 import { createUser } from '../actions/userActions'
 import { toast } from 'sonner'
 
-const PERMISSIONS = [
-    { id: 'permViewReports', label: 'Перегляд звітів', desc: 'Дозволяє бачити список та деталі відгуків.' },
-    { id: 'permAssignReports', label: 'Призначення звітів', desc: 'Дозволяє призначати інспекторів на розгляд звітів.' },
-    { id: 'permViewSensitiveData', label: 'Чутливі дані', desc: 'Дозволяє бачити повні контактні дані громадян.' },
-    { id: 'permBulkActionReports', label: 'Масові дії', desc: 'Дозволяє виконувати дії над групою звітів (архів, видалення).' },
-    { id: 'permEditNotes', label: 'Редагування нотаток', desc: 'Дозволяє залишати та змінювати внутрішні коментарі.' },
-    { id: 'permChangeStatus', label: 'Зміна статусів', desc: 'Дозволяє переводити звіти між робочими станами.' },
-    { id: 'permExportData', label: 'Експорт даних', desc: 'Дозволяє вивантажувати звіти у форматі Excel/CSV.' },
-    { id: 'permManageUsers', label: 'Керування персоналом', desc: 'Дозволяє створювати та редагувати інших користувачів.' },
-    { id: 'permDeleteReports', label: 'Видалення звітів', desc: 'Дозволяє безповоротно видаляти звіти з системи.' },
-    { id: 'permCreateOfficers', label: 'Створення офіцерів', desc: 'Дозволяє додавати нових офіцерів та імпортувати списки.' },
-    { id: 'permEditOfficers', label: 'Редагування офіцерів', desc: 'Дозволяє змінювати дані діючих офіцерів.' },
-    { id: 'permDeleteOfficers', label: 'Видалення офіцерів', desc: 'Дозволяє видаляти офіцерів з бази.' },
-    { id: 'permViewOfficerStats', label: 'Статистика офіцерів', desc: 'Дозволяє переглядати розширену аналітику по офіцеру.' },
-    { id: 'permCreateEvaluations', label: 'Оцінювання офіцерів', desc: 'Дозволяє створювати внутрішні оцінки та атестації.' },
-    { id: 'permManageOfficerStatus', label: 'Статус офіцера', desc: 'Дозволяє змінювати статус (відпустка, звільнений).' },
-    { id: 'permEditCitizens', label: 'Редагування громадян', desc: 'Дозволяє редагувати дані громадян (VIP, нотатки).' },
-    { id: 'permDeleteCitizens', label: 'Видалення громадян', desc: 'Дозволяє видаляти досьє громадян.' },
-    { id: 'permMarkSuspicious', label: 'Маркування громадян', desc: 'Дозволяє позначати громадян як підозрілих або VIP.' },
-    { id: 'permViewAudit', label: 'Перегляд аудиту', desc: 'Дозволяє переглядати історію дій всіх користувачів.' },
-    { id: 'permManageSettings', label: 'Налаштування системи', desc: 'Дозволяє змінювати глобальні налаштування.' },
-    { id: 'permManageMailAlerts', label: 'Поштові сповіщення', desc: 'Керування списком отримувачів сповіщень.' },
-]
+import { PERMISSIONS_CONFIG } from '@/lib/permissions-config'
+
+const PERMISSIONS = PERMISSIONS_CONFIG
 
 export default function NewUserForm() {
     const router = useRouter()
@@ -46,28 +26,14 @@ export default function NewUserForm() {
     const [lastName, setLastName] = useState('')
     const [badgeNumber, setBadgeNumber] = useState('')
     const [role, setRole] = useState('VIEWER')
-    const [permissions, setPermissions] = useState<Record<string, boolean>>({
-        permViewReports: true,
-        permAssignReports: false,
-        permViewSensitiveData: false,
-        permBulkActionReports: false,
-        permEditNotes: true,
-        permChangeStatus: true,
-        permExportData: false,
-        permManageUsers: false,
-        permDeleteReports: false,
-        permCreateOfficers: false,
-        permEditOfficers: false,
-        permDeleteOfficers: false,
-        permViewOfficerStats: false,
-        permCreateEvaluations: false,
-        permManageOfficerStatus: false,
-        permEditCitizens: false,
-        permDeleteCitizens: false,
-        permMarkSuspicious: false,
-        permViewAudit: false,
-        permManageSettings: false,
-        permManageMailAlerts: false,
+    const [permissions, setPermissions] = useState<Record<string, boolean>>(() => {
+        const initial: Record<string, boolean> = {}
+        PERMISSIONS_CONFIG.forEach(p => initial[p.id] = false)
+        initial.permViewReports = true
+        initial.permEditNotes = true
+        initial.permChangeStatus = true
+        initial.permViewUnifiedRecords = true
+        return initial
     })
     const [isPending, setIsPending] = useState(false)
 
@@ -88,27 +54,7 @@ export default function NewUserForm() {
                 lastName,
                 badgeNumber,
                 role,
-                permViewReports: permissions.permViewReports,
-                permAssignReports: permissions.permAssignReports,
-                permViewSensitiveData: permissions.permViewSensitiveData,
-                permBulkActionReports: permissions.permBulkActionReports,
-                permManageUsers: permissions.permManageUsers,
-                permEditNotes: permissions.permEditNotes,
-                permChangeStatus: permissions.permChangeStatus,
-                permExportData: permissions.permExportData,
-                permDeleteReports: permissions.permDeleteReports,
-                permCreateOfficers: permissions.permCreateOfficers,
-                permEditOfficers: permissions.permEditOfficers,
-                permDeleteOfficers: permissions.permDeleteOfficers,
-                permViewOfficerStats: permissions.permViewOfficerStats,
-                permCreateEvaluations: permissions.permCreateEvaluations,
-                permManageOfficerStatus: permissions.permManageOfficerStatus,
-                permEditCitizens: permissions.permEditCitizens,
-                permDeleteCitizens: permissions.permDeleteCitizens,
-                permMarkSuspicious: permissions.permMarkSuspicious,
-                permViewAudit: permissions.permViewAudit,
-                permManageSettings: permissions.permManageSettings,
-                permManageMailAlerts: permissions.permManageMailAlerts,
+                ...permissions
             })
             toast.success('Користувача успішно створено')
             router.push('/admin/users')

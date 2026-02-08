@@ -1,11 +1,24 @@
 import { prisma } from "@/lib/prisma"
-import { checkPermission } from "@/lib/auth-utils"
+import { auth } from "@/auth"
+import { Shield } from "lucide-react"
 import AnalyticsClient from "./AnalyticsClient"
 import { subDays, startOfDay, endOfDay } from "date-fns"
 import { getHourlyDistribution, detectBurnout, getDayOfWeekDistribution } from "@/lib/time-analytics"
 
 export default async function AnalyticsPage() {
-    await checkPermission("permViewReports", true)
+    const session = await auth()
+    const userPerms = session?.user as any
+    if (userPerms?.role !== 'ADMIN' && !userPerms?.permViewAnalytics) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+                <div className="p-4 bg-red-50 rounded-full text-red-500">
+                    <Shield className="w-12 h-12" />
+                </div>
+                <h1 className="text-2xl font-black uppercase italic tracking-tighter">Доступ обмежено</h1>
+                <p className="text-slate-500 max-w-xs text-center">У вас немає прав для перегляду аналітичного центру. Зверніться до адміністратора.</p>
+            </div>
+        )
+    }
 
     // Fetch data for the last 30 days
     const thirtyDaysAgo = subDays(new Date(), 30)

@@ -54,11 +54,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         permViewOfficerStats: user.permViewOfficerStats,
                         permCreateEvaluations: user.permCreateEvaluations,
                         permManageOfficerStatus: user.permManageOfficerStatus,
+                        // Unified Records
+                        permManageUnifiedRecords: user.permManageUnifiedRecords,
+                        permViewUnifiedRecords: user.permViewUnifiedRecords,
+                        permProcessUnifiedRecords: user.permProcessUnifiedRecords,
+                        permAssignUnifiedRecords: user.permAssignUnifiedRecords,
+                        permManageExtensions: user.permManageExtensions,
                         // Citizens
                         permEditCitizens: user.permEditCitizens,
                         permDeleteCitizens: user.permDeleteCitizens,
                         permMarkSuspicious: user.permMarkSuspicious,
                         // System
+                        permViewAnalytics: user.permViewAnalytics,
+                        permViewMap: user.permViewMap,
                         permViewAudit: user.permViewAudit,
                         permManageSettings: user.permManageSettings,
                         permManageMailAlerts: user.permManageMailAlerts,

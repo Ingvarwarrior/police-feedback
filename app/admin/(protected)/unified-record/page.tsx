@@ -2,13 +2,26 @@ import { getUnifiedRecords, getUsersForAssignment } from "./actions/recordAction
 import RecordList from "./components/RecordList"
 import ImportDialog from "./components/ImportDialog"
 import CreateRecordDialog from "./components/CreateRecordDialog"
-import { ClipboardList, Info } from "lucide-react"
+import { ClipboardList, Info, Shield } from "lucide-react"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 
 export default async function UnifiedRecordPage() {
     const session = await auth()
     if (!session?.user?.email) return null
+
+    const userPerms = session.user as any
+    if (userPerms.role !== 'ADMIN' && !userPerms.permViewUnifiedRecords) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+                <div className="p-4 bg-red-50 rounded-full text-red-500">
+                    <Shield className="w-12 h-12" />
+                </div>
+                <h1 className="text-2xl font-black uppercase italic tracking-tighter">Доступ обмежено</h1>
+                <p className="text-slate-500 max-w-xs text-center">У вас немає прав для перегляду реєстру ЄО. Зверніться до адміністратора.</p>
+            </div>
+        )
+    }
 
     const [records, users, currentUser] = await Promise.all([
         getUnifiedRecords(),
