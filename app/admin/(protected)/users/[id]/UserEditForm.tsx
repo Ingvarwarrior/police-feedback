@@ -68,9 +68,16 @@ export default function UserEditForm({ user }: UserEditFormProps) {
             const viewer: Record<string, boolean> = {}
             PERMISSIONS_CONFIG.forEach(p => viewer[p.id] = false)
             viewer.permViewReports = true
+            viewer.permViewSensitiveData = true
             viewer.permEditNotes = true
             viewer.permChangeStatus = true
+            viewer.permEditOfficers = true
+            viewer.permViewOfficerStats = true
+            viewer.permCreateEvaluations = true
             viewer.permViewUnifiedRecords = true
+            viewer.permProcessUnifiedRecords = true
+            viewer.permEditCitizens = true
+            viewer.permMarkSuspicious = true
             setPermissions(viewer)
         }
     }
