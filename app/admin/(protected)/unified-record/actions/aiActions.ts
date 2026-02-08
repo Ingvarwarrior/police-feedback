@@ -3,12 +3,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import OpenAI from "openai"
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "")
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || "",
-})
-
+// Don't initialize outside to ensure we pick up the latest process.env
 export async function analyzeRecordImageAction(base64Image: string) {
+    const googleKey = process.env.GOOGLE_AI_API_KEY
+    const openaiKey = process.env.OPENAI_API_KEY
+
     const prompt = `
     Ти — висококваліфікований помічник поліцейського, спеціаліст з OCR та аналізу документів. 
     Перед тобою сторінка "РАПОРТ" або витяг з системи ІПНП (Фабула ЄО).
@@ -39,9 +38,11 @@ export async function analyzeRecordImageAction(base64Image: string) {
     `
 
     const base64Data = base64Image.split(",")[1] || base64Image
+    let errors: string[] = []
 
-    // --- Try Google Gemini First ---
-    if (process.env.GOOGLE_AI_API_KEY) {
+    // --- Try Google Gemini ---
+    if (googleKey) {
+        const genAI = new GoogleGenerativeAI(googleKey)
         const modelNames = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-1.5-flash-latest"]
 
         for (const modelName of modelNames) {
@@ -71,13 +72,17 @@ export async function analyzeRecordImageAction(base64Image: string) {
                 }
             } catch (e: any) {
                 console.warn(`Gemini (${modelName}) failed:`, e.message)
+                errors.push(`Gemini (${modelName}): ${e.message}`)
             }
         }
+    } else {
+        errors.push("Google API Key відсутній")
     }
 
-    // --- Try OpenAI if Gemini failed or is not configured ---
-    if (process.env.OPENAI_API_KEY) {
+    // --- Try OpenAI fallback ---
+    if (openaiKey) {
         try {
+            const openai = new OpenAI({ apiKey: openaiKey })
             const response = await openai.chat.completions.create({
                 model: "gpt-4o-mini",
                 messages: [
@@ -109,11 +114,14 @@ export async function analyzeRecordImageAction(base64Image: string) {
             }
         } catch (e: any) {
             console.error("OpenAI failed:", e.message)
+            errors.push(`OpenAI: ${e.message}`)
         }
+    } else {
+        errors.push("OpenAI API Key відсутній")
     }
 
     return {
         success: false,
-        error: "Не вдалося розпізнати дані. Перевірте API ключі (Gemini або OpenAI) у файлі .env"
+        error: `Помилка розпізнавання: ${errors.join(" | ")}`
     }
 }
