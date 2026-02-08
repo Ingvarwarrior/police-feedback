@@ -33,6 +33,7 @@ export default function RecordProcessPopover({ recordId, onProcess }: RecordProc
     const [officerSearchQuery, setOfficerSearchQuery] = useState("")
     const [officerSearchResults, setOfficerSearchResults] = useState<any[]>([])
     const [isSearchingOfficers, setIsSearchingOfficers] = useState(false)
+    const [isProcessing, setIsProcessing] = useState(false)
     const [customResolution, setCustomResolution] = useState("")
 
     useEffect(() => {
@@ -60,9 +61,13 @@ export default function RecordProcessPopover({ recordId, onProcess }: RecordProc
     }, [officerSearchQuery, taggedOfficers])
 
     const handleProcessClick = async (resolution: string) => {
-        const officerIds = taggedOfficers.map(o => o.id)
-        await onProcess(recordId, resolution, officerIds, concernsBpp)
-        // State will be cleaned up as the popover closes/parent refreshes
+        if (isProcessing) return
+        setIsProcessing(true)
+        try {
+            await onProcess(recordId, resolution, taggedOfficers, concernsBpp)
+        } finally {
+            setIsProcessing(false)
+        }
     }
 
     return (
@@ -180,6 +185,7 @@ export default function RecordProcessPopover({ recordId, onProcess }: RecordProc
                         <div className="grid gap-2">
                             <Button
                                 variant="ghost"
+                                disabled={isProcessing}
                                 className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 transition-all"
                                 onClick={() => handleProcessClick("Списано до справи")}
                             >
@@ -188,6 +194,7 @@ export default function RecordProcessPopover({ recordId, onProcess }: RecordProc
                             </Button>
                             <Button
                                 variant="ghost"
+                                disabled={isProcessing}
                                 className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-blue-50 hover:text-blue-700 transition-all"
                                 onClick={() => handleProcessClick("Надано письмову відповідь")}
                             >
@@ -196,6 +203,7 @@ export default function RecordProcessPopover({ recordId, onProcess }: RecordProc
                             </Button>
                             <Button
                                 variant="ghost"
+                                disabled={isProcessing}
                                 className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-amber-50 hover:text-amber-700 transition-all"
                                 onClick={() => handleProcessClick("Надіслано до іншого органу/підрозділу")}
                             >
@@ -209,19 +217,22 @@ export default function RecordProcessPopover({ recordId, onProcess }: RecordProc
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">Свій варіант:</p>
                         <Textarea
                             placeholder="Вкажіть рішення..."
+                            disabled={isProcessing}
                             className="rounded-xl bg-slate-50 border-none min-h-[100px] font-medium"
                             value={customResolution}
                             onChange={(e) => setCustomResolution(e.target.value)}
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter' && e.ctrlKey) {
+                                if (e.key === 'Enter' && e.ctrlKey && !isProcessing) {
                                     handleProcessClick(customResolution)
                                 }
                             }}
                         />
                         <Button
-                            className="w-full bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-xs h-10"
+                            disabled={isProcessing || !customResolution.trim()}
+                            className="w-full bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-xs h-10 gap-2"
                             onClick={() => handleProcessClick(customResolution)}
                         >
+                            {isProcessing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                             Зберегти свій варіант
                         </Button>
                     </div>

@@ -31,9 +31,11 @@ const UnifiedRecordSchema = z.object({
     concernsBpp: z.boolean().default(true),
 })
 
-export async function processUnifiedRecordAction(id: string, resolution: string, officerIds?: string[], concernsBpp: boolean = true) {
+export async function processUnifiedRecordAction(id: string, resolution: string, officerIds?: string[], concernsBpp: boolean = true): Promise<{ success?: boolean, error?: string }> {
     const session = await auth()
-    if (!session?.user?.email) throw new Error("Unauthorized")
+    if (!session?.user?.email) return { error: "Unauthorized" }
+
+    console.log(`Processing unified record ${id}: resolution="${resolution}", officers=${officerIds}, concernsBpp=${concernsBpp}`)
 
     try {
         await prisma.unifiedRecord.update({
@@ -54,7 +56,7 @@ export async function processUnifiedRecordAction(id: string, resolution: string,
         return { success: true }
     } catch (error: any) {
         console.error("Error processing unified record:", error)
-        throw new Error(error.message || "Failed to process record")
+        return { error: error.message || "Failed to process record" }
     }
 }
 

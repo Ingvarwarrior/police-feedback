@@ -223,26 +223,37 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         }
     }
 
-    const handleProcess = async (id: string, resolution: string, officerIds: string[], concernsBpp: boolean) => {
+    const handleProcess = async (id: string, resolution: string, officers: any[], concernsBpp: boolean) => {
         try {
-            await processUnifiedRecordAction(id, resolution, officerIds, concernsBpp)
-            toast.success("Запис опрацьовано")
+            const officerIds = officers.map(o => o.id)
+            const result: any = await processUnifiedRecordAction(id, resolution, officerIds, concernsBpp)
 
-            setRecords(records.map(r =>
-                r.id === id
-                    ? {
-                        ...r,
-                        status: 'PROCESSED',
-                        resolution,
-                        processedAt: new Date().toISOString(),
-                        concernsBpp,
-                        officers: [] // Ideally we'd fetch the actual officers back, but for now we'll rely on the revalidation or manual update
-                    }
-                    : r
-            ))
+            if (result?.error) {
+                toast.error(result.error)
+                return
+            }
+
+            if (result?.success) {
+                toast.success("Запис опрацьовано")
+
+                setRecords(records.map(r =>
+                    r.id === id
+                        ? {
+                            ...r,
+                            status: 'PROCESSED',
+                            resolution,
+                            processedAt: new Date().toISOString(),
+                            concernsBpp,
+                            officers: officers
+                        }
+                        : r
+                ))
+            } else {
+                toast.error("Невідома помилка при опрацюванні")
+            }
         } catch (error: any) {
-            console.error(error)
-            toast.error(error.message || "Помилка при опрацюванні")
+            console.error("handleProcess error:", error)
+            toast.error("Помилка при опрацюванні запису")
         }
     }
 
