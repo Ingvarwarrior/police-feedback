@@ -114,7 +114,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             result = result.filter(r =>
                 r.eoNumber.toLowerCase().includes(lowerSearch) ||
                 (r.description?.toLowerCase().includes(lowerSearch)) ||
-                (r.content?.toLowerCase().includes(lowerSearch)) ||
                 (r.address?.toLowerCase().includes(lowerSearch)) ||
                 (r.applicant?.toLowerCase().includes(lowerSearch))
             )
@@ -405,13 +404,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         </div>
                                                     </div>
                                                     <h3 className="text-base md:text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight leading-tight mt-2 break-words">
-                                                        {record.description || 'Без заголовку'}
+                                                        {record.description || 'Без опису'}
                                                     </h3>
-                                                    {record.content && (
-                                                        <p className="text-xs md:text-sm text-slate-500 mt-2 line-clamp-3 font-medium leading-relaxed">
-                                                            {record.content}
-                                                        </p>
-                                                    )}
                                                 </div>
 
                                                 <div className="flex flex-row md:flex-wrap gap-1 md:gap-2">

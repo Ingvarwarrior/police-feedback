@@ -25,8 +25,7 @@ const formSchema = z.object({
     id: z.string().optional(),
     eoNumber: z.string().min(1, "Номер ЄО обов'язковий"),
     eoDate: z.date(),
-    description: z.string().optional(),
-    content: z.string().optional(),
+    description: z.string().min(1, "Опис події обов'язковий"),
     applicant: z.string().optional(),
     address: z.string().optional(),
     officerName: z.string().optional(),
@@ -61,7 +60,6 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             eoNumber: initialData?.eoNumber || "",
             eoDate: initialData?.eoDate ? new Date(initialData.eoDate) : new Date(),
             description: initialData?.description || "",
-            content: initialData?.content || "",
             applicant: initialData?.applicant || "",
             address: initialData?.address || "",
             officerName: initialData?.officerName || "",
@@ -138,7 +136,6 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     // Populate form fields
                     if (data.eoNumber) form.setValue("eoNumber", data.eoNumber)
                     if (data.description) form.setValue("description", data.description)
-                    if (data.content) form.setValue("content", data.content)
                     if (data.applicant) form.setValue("applicant", data.applicant)
                     if (data.address) form.setValue("address", data.address)
                     if (data.category) form.setValue("category", data.category)
@@ -321,23 +318,16 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Подія (Заголовок)</Label>
-                        <Input
+                        <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Подія (Зміст)</Label>
+                        <Textarea
                             id="description"
                             {...form.register("description")}
-                            placeholder="Короткий заголовок події..."
-                            className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold uppercase"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="content" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Зміст події (Деталі)</Label>
-                        <Textarea
-                            id="content"
-                            {...form.register("content")}
-                            placeholder="Детальний опис події..."
+                            placeholder="Повний опис події..."
                             className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all min-h-[120px]"
                         />
+                        {form.formState.errors.description && (
+                            <p className="text-[10px] text-red-500 font-bold">{form.formState.errors.description.message}</p>
+                        )}
                     </div>
 
                     <div className="space-y-2">
