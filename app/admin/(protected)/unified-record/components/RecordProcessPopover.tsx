@@ -25,16 +25,27 @@ import { cn } from "@/lib/utils"
 interface RecordProcessPopoverProps {
     recordId: string
     onProcess: (id: string, resolution: string, officerIds: string[], concernsBpp: boolean) => Promise<void>
+    initialResolution?: string
+    initialOfficers?: any[]
+    initialConcernsBpp?: boolean
+    trigger?: React.ReactNode
 }
 
-export default function RecordProcessPopover({ recordId, onProcess }: RecordProcessPopoverProps) {
-    const [concernsBpp, setConcernsBpp] = useState(true)
-    const [taggedOfficers, setTaggedOfficers] = useState<any[]>([])
+export default function RecordProcessPopover({
+    recordId,
+    onProcess,
+    initialResolution = "",
+    initialOfficers = [],
+    initialConcernsBpp = true,
+    trigger
+}: RecordProcessPopoverProps) {
+    const [concernsBpp, setConcernsBpp] = useState(initialConcernsBpp)
+    const [taggedOfficers, setTaggedOfficers] = useState<any[]>(initialOfficers)
     const [officerSearchQuery, setOfficerSearchQuery] = useState("")
     const [officerSearchResults, setOfficerSearchResults] = useState<any[]>([])
     const [isSearchingOfficers, setIsSearchingOfficers] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
-    const [customResolution, setCustomResolution] = useState("")
+    const [customResolution, setCustomResolution] = useState(initialResolution)
 
     useEffect(() => {
         if (!officerSearchQuery.trim() || officerSearchQuery.length < 2) {
@@ -73,10 +84,12 @@ export default function RecordProcessPopover({ recordId, onProcess }: RecordProc
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest h-12 gap-2 shadow-lg shadow-emerald-900/10 transition-all hover:scale-[1.02]">
-                    <CheckSquare className="w-5 h-5" />
-                    ВИКОНАНО
-                </Button>
+                {trigger || (
+                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest h-12 gap-2 shadow-lg shadow-emerald-900/10 transition-all hover:scale-[1.02]">
+                        <CheckSquare className="w-5 h-5" />
+                        ВИКОНАНО
+                    </Button>
+                )}
             </PopoverTrigger>
             <PopoverContent className="p-4 rounded-[2rem] w-80 shadow-2xl border-none space-y-4 bg-white" align="end">
                 <div className="space-y-4">

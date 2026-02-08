@@ -646,6 +646,24 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             </SelectContent>
                                                         </Select>
 
+                                                        {record.status === 'PROCESSED' && (
+                                                            <div className="mt-4">
+                                                                <RecordProcessPopover
+                                                                    recordId={record.id}
+                                                                    onProcess={handleProcess}
+                                                                    initialResolution={record.resolution || ""}
+                                                                    initialOfficers={record.officers || []}
+                                                                    initialConcernsBpp={record.concernsBpp}
+                                                                    trigger={
+                                                                        <Button variant="outline" className="w-full border-slate-200 text-slate-600 rounded-xl font-bold h-9 gap-2 hover:bg-slate-50 transition-all">
+                                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                                            Коригувати дані
+                                                                        </Button>
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        )}
+
                                                         {/* Single "DONE" Button for assigned user */}
                                                         {record.assignedUserId === currentUser.id && record.status !== 'PROCESSED' && (
                                                             <div className="flex flex-col gap-2 mt-4">
