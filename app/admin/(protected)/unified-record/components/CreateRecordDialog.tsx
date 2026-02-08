@@ -87,8 +87,8 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             img.src = base64Str
             img.onload = () => {
                 const canvas = document.createElement('canvas')
-                const MAX_WIDTH = 2048
-                const MAX_HEIGHT = 2048
+                const MAX_WIDTH = 1024
+                const MAX_HEIGHT = 1024
                 let width = img.width
                 let height = img.height
 
