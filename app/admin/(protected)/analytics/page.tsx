@@ -5,7 +5,7 @@ import AnalyticsClient from "./AnalyticsClient"
 import { subDays, startOfDay, endOfDay } from "date-fns"
 import { getHourlyDistribution, detectBurnout, getDayOfWeekDistribution } from "@/lib/time-analytics"
 
-export default async function AnalyticsPage(props: { searchParams: Promise<{ period?: string }> }) {
+export default async function AnalyticsPage(props: { searchParams: Promise<{ period?: string, from?: string, to?: string }> }) {
     const searchParams = await props.searchParams
     const session = await auth()
     const userPerms = session?.user as any
@@ -21,9 +21,25 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
         )
     }
 
-    const period = searchParams.period || '30'
-    const days = parseInt(period) || 30
-    const startDate = subDays(new Date(), days)
+    const fromParam = searchParams.from
+    const toParam = searchParams.to
+
+    let startDate: Date
+    let endDate: Date = new Date()
+
+    if (fromParam) {
+        startDate = startOfDay(new Date(fromParam))
+        if (toParam) {
+            endDate = endOfDay(new Date(toParam))
+        } else {
+            endDate = endOfDay(new Date())
+        }
+    } else {
+        const period = searchParams.period || '30'
+        const days = parseInt(period) || 30
+        startDate = startOfDay(subDays(new Date(), days))
+        endDate = endOfDay(new Date())
+    }
 
     const [
         responses,
@@ -35,7 +51,7 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
         unifiedRecordsByInspector
     ] = await Promise.all([
         prisma.response.findMany({
-            where: { createdAt: { gte: startDate } },
+            where: { createdAt: { gte: startDate, lte: endDate } },
             select: {
                 createdAt: true,
                 rateOverall: true,
@@ -78,7 +94,7 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
             }
         }),
         prisma.response.groupBy({
-            where: { rateOverall: { gt: 0 }, createdAt: { gte: startDate } },
+            where: { rateOverall: { gt: 0 }, createdAt: { gte: startDate, lte: endDate } },
             by: ['incidentType'],
             _count: true,
             _avg: {
@@ -89,18 +105,18 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
             where: {
                 status: 'RESOLVED',
                 resolutionDate: { not: null },
-                createdAt: { gte: startDate }
+                createdAt: { gte: startDate, lte: endDate }
             },
             select: { createdAt: true, resolutionDate: true }
         }),
         // New stats for Unified Records
         (prisma as any).unifiedRecord.groupBy({
-            where: { createdAt: { gte: startDate } },
+            where: { createdAt: { gte: startDate, lte: endDate } },
             by: ['recordType'],
             _count: true
         }),
         (prisma as any).unifiedRecord.findMany({
-            where: { createdAt: { gte: startDate } },
+            where: { createdAt: { gte: startDate, lte: endDate } },
             select: {
                 assignedUserId: true,
                 status: true,
@@ -118,7 +134,15 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
         assigned: number,
         processed: number,
         pending: number
-    }> = {}
+    }> = {
+        'unassigned': {
+            id: 'unassigned',
+            name: 'Не призначено',
+            assigned: 0,
+            processed: 0,
+            pending: 0
+        }
+    }
 
     // Include all officers who are users as potential inspectors
     const users = await prisma.user.findMany({
@@ -137,22 +161,26 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
     })
 
     unifiedRecordsByInspector.forEach((r: any) => {
-        if (r.assignedUserId && inspectorStatsMap[r.assignedUserId]) {
-            inspectorStatsMap[r.assignedUserId].assigned++
+        const targetId = r.assignedUserId || 'unassigned'
+        if (inspectorStatsMap[targetId]) {
+            inspectorStatsMap[targetId].assigned++
             if (r.status === 'PROCESSED') {
-                inspectorStatsMap[r.assignedUserId].processed++
+                inspectorStatsMap[targetId].processed++
             } else {
-                inspectorStatsMap[r.assignedUserId].pending++
+                inspectorStatsMap[targetId].pending++
             }
         }
     })
 
-    const inspectorPerformance = Object.values(inspectorStatsMap).filter(s => s.assigned > 0)
+    const inspectorPerformance = Object.values(inspectorStatsMap).filter(s => s.assigned > 0 || s.id === 'unassigned')
 
     // 1. Daily Trends
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
     const dailyTrends: Record<string, { date: string, count: number, avg: number }> = {}
-    for (let i = 0; i < days; i++) {
-        const d = subDays(new Date(), i)
+    for (let i = 0; i <= diffDays; i++) {
+        const d = subDays(endDate, i)
         const dateStr = d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' })
         dailyTrends[dateStr] = { date: dateStr, count: 0, avg: 0 }
     }
@@ -264,15 +292,20 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
             return levelOrder[b!.alertLevel] - levelOrder[a!.alertLevel]
         })
 
+    const displayPeriod = fromParam && toParam
+        ? `${new Date(fromParam).toLocaleDateString('uk-UA')} - ${new Date(toParam).toLocaleDateString('uk-UA')}`
+        : `останні ${searchParams.period || '30'} днів`
+
     return (
         <div className="space-y-8 pb-10">
             <div>
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Аналітичний центр</h1>
-                <p className="text-slate-500 font-medium">Моніторинг показників та ефективності за останні {days} днів</p>
+                <p className="text-slate-500 font-medium">Моніторинг показників та ефективності за {displayPeriod}</p>
             </div>
 
             <AnalyticsClient
-                period={period}
+                startDate={startDate.toISOString().split('T')[0]}
+                endDate={endDate.toISOString().split('T')[0]}
                 trendData={trendData}
                 ratingsData={ratingsData}
                 officers={officers}

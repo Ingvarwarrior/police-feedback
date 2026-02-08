@@ -34,7 +34,8 @@ import { cn } from "@/lib/utils"
 
 
 interface AnalyticsClientProps {
-    period: string
+    startDate: string
+    endDate: string
     trendData: any[]
     ratingsData: any[]
     officers: any[]
@@ -72,7 +73,8 @@ const COLORS = ['#0f172a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444']
 const PIE_COLORS = ['#fbbf24', '#3b82f6', '#10b981', '#f87171']
 
 export default function AnalyticsClient({
-    period,
+    startDate,
+    endDate,
     trendData,
     ratingsData,
     officers,
@@ -106,8 +108,12 @@ export default function AnalyticsClient({
         { id: 'predictions', label: 'Прогнози', icon: Zap },
     ]
 
-    const handlePeriodChange = (val: string) => {
-        router.push(`/admin/analytics?period=${val}`)
+    const handleDateChange = (type: 'from' | 'to', value: string) => {
+        const params = new URLSearchParams(window.location.search)
+        params.set(type, value)
+        // Remove period if it exists to avoid confusion
+        params.delete('period')
+        router.push(`/admin/analytics?${params.toString()}`)
     }
 
     const selectedInspector = unifiedRecordStats.inspectorPerformance.find(i => i.id === selectedInspectorId)
@@ -158,26 +164,33 @@ export default function AnalyticsClient({
                     ))}
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <Select value={period} onValueChange={handlePeriodChange}>
-                        <SelectTrigger className="w-full sm:w-40 h-11 rounded-2xl bg-white border-slate-200 font-bold text-xs px-5 shadow-sm">
-                            <SelectValue placeholder="Період" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
-                            <SelectItem value="7" className="font-bold text-xs py-3">Останні 7 днів</SelectItem>
-                            <SelectItem value="30" className="font-bold text-xs py-3">Останні 30 днів</SelectItem>
-                            <SelectItem value="90" className="font-bold text-xs py-3">Останні 90 днів</SelectItem>
-                            <SelectItem value="365" className="font-bold text-xs py-3">За рік</SelectItem>
-                        </SelectContent>
-                    </Select>
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">З:</span>
+                        <input
+                            type="date"
+                            className="text-xs font-bold border-0 p-0 focus:ring-0 w-28"
+                            value={startDate}
+                            onChange={(e) => handleDateChange('from', e.target.value)}
+                        />
+                    </div>
+                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">По:</span>
+                        <input
+                            type="date"
+                            className="text-xs font-bold border-0 p-0 focus:ring-0 w-28"
+                            value={endDate}
+                            onChange={(e) => handleDateChange('to', e.target.value)}
+                        />
+                    </div>
 
                     <Button
-                        variant="outline"
-                        className="w-full sm:w-auto rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 px-6 shadow-sm bg-white"
+                        variant="plain"
+                        className="w-full sm:w-auto rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 px-6 shadow-sm bg-white border border-slate-200"
                         onClick={() => window.print()}
                     >
                         <Printer className="w-4 h-4" />
-                        Друк звіту
+                        Друк
                     </Button>
                 </div>
             </div>
@@ -239,27 +252,32 @@ export default function AnalyticsClient({
                         <Card className="border-0 shadow-xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden">
                             <CardHeader className="p-8 bg-slate-50/50 border-b border-slate-100">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                                        <ListTodo className="w-5 h-5 text-blue-500" /> Статистика за виконавцем
-                                    </CardTitle>
+                                    <div className="space-y-1">
+                                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                            <ListTodo className="w-5 h-5 text-blue-500" /> Статистика виконання
+                                        </CardTitle>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest pl-7">Показники за конкретним виконавцем</p>
+                                    </div>
                                     <Select value={selectedInspectorId} onValueChange={setSelectedInspectorId}>
                                         <SelectTrigger className="w-full sm:w-64 h-11 rounded-xl bg-white border-slate-200 font-bold text-xs px-5 shadow-sm">
-                                            <SelectValue placeholder="Оберіть інспектора..." />
+                                            <SelectValue placeholder="Оберіть виконавця..." />
                                         </SelectTrigger>
                                         <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
-                                            <SelectItem value="all" className="font-bold text-xs py-3">Усі інспектори (середнє)</SelectItem>
-                                            {unifiedRecordStats.inspectorPerformance.map(i => (
-                                                <SelectItem key={i.id} value={i.id} className="font-bold text-xs py-3">
-                                                    {i.name}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectItem value="all" className="font-bold text-xs py-3">Усі інспектори (разом)</SelectItem>
+                                            {unifiedRecordStats.inspectorPerformance
+                                                .sort((a, b) => b.assigned - a.assigned)
+                                                .map(i => (
+                                                    <SelectItem key={i.id} value={i.id} className="font-bold text-xs py-3">
+                                                        {i.name} {i.assigned > 0 ? `(${i.assigned})` : ''}
+                                                    </SelectItem>
+                                                ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-8">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    <div className="space-y-2 text-center p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50">
+                                    <div className="space-y-2 text-center p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50 transition-all hover:scale-105">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Призначено</p>
                                         <h4 className="text-5xl font-black text-blue-600">
                                             {selectedInspectorId === 'all'
@@ -268,7 +286,7 @@ export default function AnalyticsClient({
                                             }
                                         </h4>
                                     </div>
-                                    <div className="space-y-2 text-center p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50">
+                                    <div className="space-y-2 text-center p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50 transition-all hover:scale-105">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Розглянуто</p>
                                         <h4 className="text-5xl font-black text-emerald-600">
                                             {selectedInspectorId === 'all'
@@ -277,7 +295,7 @@ export default function AnalyticsClient({
                                             }
                                         </h4>
                                     </div>
-                                    <div className="space-y-2 text-center p-6 bg-amber-50/50 rounded-3xl border border-amber-100/50">
+                                    <div className="space-y-2 text-center p-6 bg-amber-50/50 rounded-3xl border border-amber-100/50 transition-all hover:scale-105">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Залишилося</p>
                                         <h4 className="text-5xl font-black text-amber-600">
                                             {selectedInspectorId === 'all'
@@ -294,44 +312,63 @@ export default function AnalyticsClient({
                         <Card className="border-0 shadow-xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden">
                             <CardHeader className="p-8 bg-white border-b border-slate-50">
                                 <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                                    <TableHead className="p-0 h-auto font-black text-slate-900 border-none">Зведена таблиця виконавців</TableHead>
+                                    <BarChart3 className="w-5 h-5 text-slate-400" /> Зведена таблиця виконавців
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <Table>
-                                    <TableHeader className="bg-slate-50/50">
-                                        <TableRow className="border-slate-50 hover:bg-transparent">
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest px-8">Виконавець</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-center">Призначено</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-center">Розглянуто</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-center">В роботі</TableHead>
-                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-right px-8">Прогрес</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {unifiedRecordStats.inspectorPerformance.sort((a, b) => b.assigned - a.assigned).map((item) => (
-                                            <TableRow key={item.id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                                                <TableCell className="font-bold text-slate-900 px-8 py-4">{item.name}</TableCell>
-                                                <TableCell className="text-center font-bold text-slate-600">{item.assigned}</TableCell>
-                                                <TableCell className="text-center font-bold text-emerald-600">{item.processed}</TableCell>
-                                                <TableCell className="text-center font-bold text-amber-600">{item.pending}</TableCell>
-                                                <TableCell className="text-right px-8 py-4">
-                                                    <div className="flex items-center justify-end gap-3 font-black text-xs">
-                                                        <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                            <div
-                                                                className="h-full bg-emerald-500 rounded-full"
-                                                                style={{ width: `${item.assigned > 0 ? (item.processed / item.assigned) * 100 : 0}%` }}
-                                                            />
-                                                        </div>
-                                                        <span className="w-10">
-                                                            {item.assigned > 0 ? Math.round((item.processed / item.assigned) * 100) : 0}%
-                                                        </span>
-                                                    </div>
-                                                </TableCell>
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader className="bg-slate-50/50">
+                                            <TableRow className="border-slate-50 hover:bg-transparent">
+                                                <TableHead className="font-black uppercase text-[10px] tracking-widest px-8 py-5">Виконавець</TableHead>
+                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-center py-5">Призначено</TableHead>
+                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-center py-5">Розглянуто</TableHead>
+                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-center py-5">В роботі</TableHead>
+                                                <TableHead className="font-black uppercase text-[10px] tracking-widest text-right px-8 py-5">Прогрес</TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {[...unifiedRecordStats.inspectorPerformance]
+                                                .sort((a, b) => {
+                                                    if (a.id === 'unassigned') return -1;
+                                                    if (b.id === 'unassigned') return 1;
+                                                    return b.assigned - a.assigned;
+                                                })
+                                                .map((item) => (
+                                                    <TableRow key={item.id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
+                                                        <TableCell className="font-bold text-slate-900 px-8 py-6">
+                                                            {item.id === 'unassigned' ? (
+                                                                <span className="text-amber-600 italic">Не призначено</span>
+                                                            ) : item.name}
+                                                        </TableCell>
+                                                        <TableCell className="text-center font-bold text-slate-600 py-6">{item.assigned}</TableCell>
+                                                        <TableCell className="text-center font-bold text-emerald-600 py-6">{item.processed}</TableCell>
+                                                        <TableCell className="text-center font-bold text-amber-600 py-6">{item.pending}</TableCell>
+                                                        <TableCell className="text-right px-8 py-6">
+                                                            <div className="flex items-center justify-end gap-3 font-black text-xs">
+                                                                <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-emerald-500 rounded-full"
+                                                                        style={{ width: `${item.assigned > 0 ? (item.processed / item.assigned) * 100 : 0}%` }}
+                                                                    />
+                                                                </div>
+                                                                <span className="w-10 tabular-nums">
+                                                                    {item.assigned > 0 ? Math.round((item.processed / item.assigned) * 100) : 0}%
+                                                                </span>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            {unifiedRecordStats.inspectorPerformance.length === 0 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={5} className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+                                                        Дані за обраний період відсутні
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
