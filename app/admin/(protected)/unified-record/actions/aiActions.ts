@@ -1,30 +1,29 @@
 "use server"
 
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import OpenAI from "openai"
 
 // Don't initialize outside to ensure we pick up the latest process.env
 export async function analyzeRecordImageAction(base64Image: string) {
     const googleKey = process.env.GOOGLE_AI_API_KEY
-    const openaiKey = process.env.OPENAI_API_KEY
 
     const prompt = `
-    Ти — висококваліфікований помічник поліцейського, спеціаліст з OCR та аналізу документів. 
+    Ти — висококваліфікований помічник поліцейського, спеціаліст з OCR та аналізу українських службових документів. 
     Перед тобою сторінка "РАПОРТ" або витяг з системи ІПНП (Фабула ЄО).
-    Твоє завдання — витягнути дані з конкретних розділів документа та повернути їх у форматі JSON.
+    Твоє завдання — максимально точно витягнути дані та повернути їх у форматі JSON.
 
     ІНСТРУКЦІЇ З ЕКСТРАКЦІЇ:
-    1. eoNumber: Шукай номер ЄО. Він зазвичай у розділі "Документ" (напр. "ЄО №236") або у кутовому штампі "ЗАРЕЄСТРОВАНО... №236". Витягни ТІЛЬКИ число.
-    2. eoDate: Шукай дату реєстрації ЄО поруч із номером. Формат у документі зазвичай "23.01.2026". Перетвори її в ISO 8601 (YYYY-MM-DD).
-    3. description: Короткий заголовок події. Шукай його в розділі "Подія 102" або "Фабула ЄО" одразу під номером події. Зазвичай це текст ВЕЛИКИМИ ЛІТЕРАМИ (напр. "ІНШІ СКАРГИ НА ПОЛІЦЕЙСЬКИХ"). БЕЗ ДЕТАЛЬНОГО ОПИСУ.
-    4. applicant: Шукай у розділі "Заявник". Витягни ПІБ повністю (напр. "ГЕРАСИМЧУК ЄВГЕН АНАТОЛІЙОВИЧ") та номер телефону, якщо він є.
-    5. address: Шукай у розділі "Місце скоєння" або "адреса проживання" у блоці заявника. Витягни фактичну адресу події.
-    6. category: Визнач коротку категорію на основі опису.
+    1. eoNumber: Номер ЄО. Шукай у блоці "ЗАРЕЄСТРОВАНО... №" або у верхній частині документа. Витягни ТІЛЬКИ цифри.
+    2. eoDate: Дата реєстрації поруч із номером. Формат: YYYY-MM-DD.
+    3. description: Короткий заголовок події. Шукай текст ВЕЛИКИМИ ЛІТЕРАМИ у розділі "Подія 102" або "Фабула". (Напр. "ІНШІ СКАРГИ НА ПОЛІЦЕЙСЬКИХ"). БЕЗ ДЕТАЛЬНОГО ОПИСУ.
+    4. applicant: Шукай у розділі "Заявник". Витягни ПІБ повністю та номер телефону (якщо є).
+    5. address: Місце події або адреса проживання заявника. 
+    6. category: Визнач коротку логічну категорію (Скарги, ДТП, Крадіжка тощо).
 
-    ДОДАТКОВІ ПРАВИЛА:
-    - Якщо текст розмитий або нечіткий, спробуй розпізнати контекстуально.
-    - Якщо поле відсутнє, залиш порожній рядок.
-    - Поверни ТІЛЬКИ чистий JSON.
+    КРИТИЧНІ ПРАВИЛА:
+    - Мова документа: УКРАЇНСЬКА. Звертай особливу увагу на літери "і", "ї", "є", "ґ".
+    - Якщо текст розмитий, роби логічне припущення, але не вигадуй дані.
+    - Поверни ТІЛЬКИ чистий JSON без жодних додаткових пояснень.
+    - Якщо поле абсолютно неможливо знайти, залиш його порожнім.
 
     JSON STRUCTURE:
     {
@@ -43,11 +42,18 @@ export async function analyzeRecordImageAction(base64Image: string) {
     // --- Try Google Gemini ---
     if (googleKey) {
         const genAI = new GoogleGenerativeAI(googleKey)
-        const modelNames = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest"]
+        // Order: Flash for speed/cost, Pro if available for better quality
+        const modelNames = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
 
         for (const modelName of modelNames) {
             try {
-                const model = genAI.getGenerativeModel({ model: modelName })
+                const model = genAI.getGenerativeModel({
+                    model: modelName,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                    }
+                })
+
                 const result = await model.generateContent([
                     prompt,
                     {
@@ -74,100 +80,16 @@ export async function analyzeRecordImageAction(base64Image: string) {
                 const msg = e.message || "Unknown error"
                 console.warn(`Gemini (${modelName}) failed:`, msg)
 
-                // If quota exceeded, don't bother with other Gemini models
+                // If quota exceeded or specific error that makes retry useless
                 if (msg.includes("429") || msg.includes("quota")) {
-                    errors.push(`Gemini: Перевищено ліміт запитів (Quota Exceeded)`)
+                    errors.push(`Gemini: Перевищено ліміт запитів (Quota Exceeded). Будь ласка, зачекайте хвилину.`)
                     break
                 }
-                errors.push(`Gemini (${modelName}): ${msg.substring(0, 50)}...`)
+                errors.push(`${modelName}: ${msg.substring(0, 50)}...`)
             }
         }
     } else {
-        errors.push("Gemini: Ключ відсутній")
-    }
-
-    // --- Try SiliconFlow (Very cheap alternative) ---
-    const siliconKey = process.env.SILICONFLOW_API_KEY
-    if (siliconKey) {
-        try {
-            const sf = new OpenAI({
-                apiKey: siliconKey,
-                baseURL: "https://api.siliconflow.cn/v1"
-            })
-            const response = await sf.chat.completions.create({
-                model: "Qwen/Qwen2-VL-7B-Instruct", // Excellent and very cheap OCR
-                messages: [
-                    {
-                        role: "user",
-                        content: [
-                            { type: "text", text: prompt },
-                            {
-                                type: "image_url",
-                                image_url: {
-                                    url: `data:image/jpeg;base64,${base64Data}`,
-                                },
-                            },
-                        ],
-                    },
-                ],
-                response_format: { type: "json_object" },
-            })
-
-            const content = response.choices[0].message.content
-            if (content) {
-                const parsedData = JSON.parse(content)
-                return {
-                    success: true,
-                    data: parsedData,
-                    usedProvider: "SiliconFlow",
-                    usedModel: "Qwen2-VL-7B"
-                }
-            }
-        } catch (e: any) {
-            console.warn("SiliconFlow failed:", e.message)
-            errors.push(`SiliconFlow: ${e.message.substring(0, 50)}...`)
-        }
-    }
-
-    // --- Try OpenAI fallback ---
-    if (openaiKey) {
-        try {
-            const openai = new OpenAI({ apiKey: openaiKey })
-            const response = await openai.chat.completions.create({
-                model: "gpt-4o-mini",
-                messages: [
-                    {
-                        role: "user",
-                        content: [
-                            { type: "text", text: prompt },
-                            {
-                                type: "image_url",
-                                image_url: {
-                                    url: `data:image/jpeg;base64,${base64Data}`,
-                                },
-                            },
-                        ],
-                    },
-                ],
-                response_format: { type: "json_object" },
-            })
-
-            const content = response.choices[0].message.content
-            if (content) {
-                const parsedData = JSON.parse(content)
-                return {
-                    success: true,
-                    data: parsedData,
-                    usedProvider: "OpenAI",
-                    usedModel: "gpt-4o-mini"
-                }
-            }
-        } catch (e: any) {
-            console.error("OpenAI failed:", e.message)
-            errors.push(`OpenAI: ${e.message.includes("insufficient_quota") ? "Недостатньо коштів на балансі" : e.message.substring(0, 100)}`)
-        }
-    } else {
-        errors.push("OpenAI: Ключ відсутній")
+        errors.push("Gemini: Ключ відсутній (GOOGLE_AI_API_KEY)")
     }
 
     return {
