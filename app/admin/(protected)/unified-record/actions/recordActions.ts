@@ -35,22 +35,27 @@ export async function processUnifiedRecordAction(id: string, resolution: string,
     const session = await auth()
     if (!session?.user?.email) throw new Error("Unauthorized")
 
-    await prisma.unifiedRecord.update({
-        where: { id },
-        data: {
-            resolution,
-            resolutionDate: new Date(),
-            status: "PROCESSED",
-            processedAt: new Date(),
-            concernsBpp,
-            officers: officerIds && officerIds.length > 0 ? {
-                set: officerIds.map(oid => ({ id: oid }))
-            } : { set: [] }
-        }
-    })
+    try {
+        await prisma.unifiedRecord.update({
+            where: { id },
+            data: {
+                resolution,
+                resolutionDate: new Date(),
+                status: "PROCESSED",
+                processedAt: new Date(),
+                concernsBpp,
+                officers: officerIds && officerIds.length > 0 ? {
+                    set: officerIds.map(oid => ({ id: oid }))
+                } : { set: [] }
+            }
+        })
 
-    revalidatePath('/admin/unified-record')
-    return { success: true }
+        revalidatePath('/admin/unified-record')
+        return { success: true }
+    } catch (error: any) {
+        console.error("Error processing unified record:", error)
+        throw new Error(error.message || "Failed to process record")
+    }
 }
 
 export async function requestExtensionAction(id: string, reason: string) {
