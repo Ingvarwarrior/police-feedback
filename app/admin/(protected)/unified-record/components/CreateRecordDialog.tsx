@@ -318,12 +318,12 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Подія (Зміст)</Label>
-                        <Textarea
+                        <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Подія</Label>
+                        <Input
                             id="description"
                             {...form.register("description")}
-                            placeholder="Повний опис події..."
-                            className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all min-h-[120px]"
+                            placeholder="Напр. ІНШІ СКАРГИ..."
+                            className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold uppercase"
                         />
                         {form.formState.errors.description && (
                             <p className="text-[10px] text-red-500 font-bold">{form.formState.errors.description.message}</p>
