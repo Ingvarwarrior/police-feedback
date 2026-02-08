@@ -125,6 +125,43 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                         </div>
                     </div>
 
+                    {/* Linked Officers Section for Processed Records */}
+                    {record.status === 'PROCESSED' && (
+                        <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Shield className="w-4 h-4 text-blue-600" />
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-900">Поліцейські (учасники)</h3>
+                                </div>
+                                {!record.concernsBpp && (
+                                    <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-amber-100 italic">
+                                        Не стосується БПП
+                                    </span>
+                                )}
+                            </div>
+
+                            {record.concernsBpp ? (
+                                record.officers && record.officers.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {record.officers.map((officer: any) => (
+                                            <div key={officer.id} className="bg-white p-3 rounded-xl border border-slate-100 flex items-center justify-between shadow-sm">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-slate-900">{officer.lastName} {officer.firstName}</span>
+                                                    <span className="text-[10px] text-slate-400 font-medium">Жетон: #{officer.badgeNumber}</span>
+                                                </div>
+                                                <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                                                    <Shield className="w-3.5 h-3.5" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs font-bold text-slate-400 italic px-2">Поліцейських не зазначено</p>
+                                )
+                            ) : null}
+                        </div>
+                    )}
+
                     {/* Full Description */}
                     <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-3">
                         <div className="flex items-center gap-2">

@@ -198,6 +198,7 @@ model Officer {
   evaluations       OfficerEvaluation[]
   responses         Response[]          @relation("OfficerFeedback")
   taggedInResponses Response[]          @relation("TaggedOfficers")
+  unifiedRecords    UnifiedRecord[]     @relation("UnifiedRecordOfficers")
 
   @@index([lastName, firstName])
   @@index([badgeNumber])
@@ -301,6 +302,8 @@ model UnifiedRecord {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   assignedUser      User?     @relation("AssignedUnifiedRecords", fields: [assignedUserId], references: [id])
+  officers          Officer[]  @relation("UnifiedRecordOfficers")
+  concernsBpp       Boolean   @default(true)
 
   @@index([eoNumber])
   @@index([eoDate])

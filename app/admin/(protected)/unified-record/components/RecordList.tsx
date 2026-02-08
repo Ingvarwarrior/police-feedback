@@ -80,6 +80,7 @@ import { Calendar } from "@/components/ui/calendar"
 interface RecordListProps {
     initialRecords: any[]
     users: { id: string, firstName: string | null, lastName: string | null, username: string }[]
+    officers: { id: string, firstName: string, lastName: string, badgeNumber: string }[]
     currentUser: {
         id: string
         role: string
@@ -89,7 +90,7 @@ interface RecordListProps {
     }
 }
 
-export default function RecordList({ initialRecords, users = [], currentUser }: RecordListProps) {
+export default function RecordList({ initialRecords, users = [], officers = [], currentUser }: RecordListProps) {
     const [records, setRecords] = useState(initialRecords)
     const [filterSearch, setFilterSearch] = useState("")
     const [filterCategory, setFilterCategory] = useState("ALL")
@@ -105,6 +106,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [isDeleting, setIsDeleting] = useState(false)
     const [isAssigning, setIsAssigning] = useState(false)
+
+    // Processing state
+    const [selectedOfficerIds, setSelectedOfficerIds] = useState<string[]>([])
+    const [concernsBpp, setConcernsBpp] = useState(true)
 
     useEffect(() => {
         setRecords(initialRecords)
@@ -222,9 +227,18 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
 
     const handleProcess = async (id: string, resolution: string) => {
         try {
-            await processUnifiedRecordAction(id, resolution)
+            await processUnifiedRecordAction(id, resolution, selectedOfficerIds, concernsBpp)
             toast.success("Картку опрацьовано")
-            setRecords(prev => prev.map(r => r.id === id ? { ...r, status: "PROCESSED", resolution, processedAt: new Date().toISOString() } : r))
+            setRecords(prev => prev.map(r => r.id === id ? {
+                ...r,
+                status: "PROCESSED",
+                resolution,
+                processedAt: new Date().toISOString(),
+                concernsBpp,
+                officers: officers.filter(o => selectedOfficerIds.includes(o.id))
+            } : r))
+            setSelectedOfficerIds([])
+            setConcernsBpp(true)
         } catch (error) {
             toast.error("Помилка опрацювання")
         }
@@ -612,7 +626,65 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                         </Button>
                                                                     </PopoverTrigger>
                                                                     <PopoverContent className="p-4 rounded-[2rem] w-80 shadow-2xl border-none space-y-4 bg-white">
-                                                                        <div className="space-y-3">
+                                                                        <div className="pt-2 border-t border-slate-100 space-y-4">
+                                                                            <div className="flex items-center justify-between px-2">
+                                                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Стосується поліцейських БПП:</p>
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        setConcernsBpp(!concernsBpp);
+                                                                                        if (concernsBpp) setSelectedOfficerIds([]); // Clear if switching to "Not concerns"
+                                                                                    }}
+                                                                                    className={cn(
+                                                                                        "w-10 h-6 rounded-full transition-all relative border",
+                                                                                        concernsBpp ? "bg-blue-600 border-blue-700" : "bg-slate-200 border-slate-300"
+                                                                                    )}
+                                                                                >
+                                                                                    <div className={cn(
+                                                                                        "w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all shadow-sm",
+                                                                                        concernsBpp ? "right-0.5" : "left-0.5"
+                                                                                    )} />
+                                                                                </button>
+                                                                            </div>
+
+                                                                            {concernsBpp && (
+                                                                                <div className="space-y-3">
+                                                                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">Виберіть поліцейських:</p>
+                                                                                    <div className="max-h-[200px] overflow-y-auto pr-2 custom-scrollbar space-y-1">
+                                                                                        {officers.map(officer => {
+                                                                                            const isSelected = selectedOfficerIds.includes(officer.id);
+                                                                                            return (
+                                                                                                <button
+                                                                                                    key={officer.id}
+                                                                                                    onClick={() => {
+                                                                                                        setSelectedOfficerIds(prev =>
+                                                                                                            isSelected ? prev.filter(id => id !== officer.id) : [...prev, officer.id]
+                                                                                                        )
+                                                                                                    }}
+                                                                                                    className={cn(
+                                                                                                        "w-full flex items-center justify-between p-2 rounded-xl text-xs font-bold transition-all",
+                                                                                                        isSelected ? "bg-blue-50 text-blue-700 border border-blue-100" : "bg-white text-slate-600 hover:bg-slate-50 border border-transparent"
+                                                                                                    )}
+                                                                                                >
+                                                                                                    <span className="truncate">{officer.lastName} {officer.firstName}</span>
+                                                                                                    {isSelected ? <CheckCircle2 className="w-3 h-3 shrink-0" /> : <div className="w-3 h-3 rounded-full border border-slate-200" />}
+                                                                                                </button>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                    {!concernsBpp && (
+                                                                                        <p className="text-center text-[10px] font-bold text-slate-400 py-4 italic">Не стосується БПП</p>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+
+                                                                            {!concernsBpp && (
+                                                                                <div className="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center">
+                                                                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Статус: Не стосується БПП</p>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+
+                                                                        <div className="pt-2 border-t border-slate-100 space-y-3">
                                                                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">Виберіть результат:</p>
                                                                             <div className="grid gap-2">
                                                                                 <Button

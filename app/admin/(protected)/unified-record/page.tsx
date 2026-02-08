@@ -23,9 +23,14 @@ export default async function UnifiedRecordPage() {
         )
     }
 
-    const [records, users, currentUser] = await Promise.all([
+    const [records, users, officers, currentUser] = await Promise.all([
         getUnifiedRecords(),
         getUsersForAssignment(),
+        prisma.officer.findMany({
+            where: { status: 'ACTIVE' },
+            select: { id: true, firstName: true, lastName: true, badgeNumber: true },
+            orderBy: { lastName: 'asc' }
+        }),
         prisma.user.findUnique({
             where: { username: session.user.email },
             select: { id: true, role: true, firstName: true, lastName: true, username: true }
@@ -77,7 +82,7 @@ export default async function UnifiedRecordPage() {
             </div>
 
             {/* Content Section */}
-            <RecordList initialRecords={records} users={users} currentUser={currentUser} />
+            <RecordList initialRecords={records} users={users} officers={officers} currentUser={currentUser} />
         </div>
     )
 }

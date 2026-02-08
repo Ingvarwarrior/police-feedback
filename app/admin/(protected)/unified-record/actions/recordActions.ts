@@ -27,14 +27,13 @@ const UnifiedRecordSchema = z.object({
     extensionDeadline: z.date().optional().nullable(),
     resolution: z.string().optional().nullable(),
     resolutionDate: z.date().optional().nullable(),
+    officerIds: z.array(z.string()).optional(),
+    concernsBpp: z.boolean().default(true),
 })
 
-export async function processUnifiedRecordAction(id: string, resolution: string) {
+export async function processUnifiedRecordAction(id: string, resolution: string, officerIds?: string[], concernsBpp: boolean = true) {
     const session = await auth()
     if (!session?.user?.email) throw new Error("Unauthorized")
-
-    // Additional check could be added here to ensure user is assigned or admin
-    // For now, any authorized user can process a record they can see
 
     await prisma.unifiedRecord.update({
         where: { id },
@@ -42,7 +41,11 @@ export async function processUnifiedRecordAction(id: string, resolution: string)
             resolution,
             resolutionDate: new Date(),
             status: "PROCESSED",
-            processedAt: new Date()
+            processedAt: new Date(),
+            concernsBpp,
+            officers: officerIds && officerIds.length > 0 ? {
+                set: officerIds.map(oid => ({ id: oid }))
+            } : { set: [] }
         }
     })
 
@@ -168,6 +171,14 @@ export async function getUnifiedRecords(params?: {
                     firstName: true,
                     lastName: true,
                     username: true
+                }
+            },
+            officers: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    badgeNumber: true
                 }
             }
         },
