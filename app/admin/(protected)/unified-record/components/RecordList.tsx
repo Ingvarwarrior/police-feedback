@@ -129,7 +129,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 r.eoNumber.toLowerCase().includes(lowerSearch) ||
                 (r.description?.toLowerCase().includes(lowerSearch)) ||
                 (r.address?.toLowerCase().includes(lowerSearch)) ||
-                (r.applicant?.toLowerCase().includes(lowerSearch))
+                (r.applicant?.toLowerCase().includes(lowerSearch)) ||
+                (r.officers?.some((o: any) =>
+                    o.lastName?.toLowerCase().includes(lowerSearch) ||
+                    o.firstName?.toLowerCase().includes(lowerSearch)
+                ))
             )
         }
 
@@ -336,7 +340,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 <div className="relative w-full md:w-96 group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                     <Input
-                        placeholder="Пошук за номером, адресою чи змістом..."
+                        placeholder="Пошук за номером, подією або прізвищем поліцейського..."
                         className="pl-12 bg-slate-50 border-0 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20"
                         value={filterSearch}
                         onChange={(e) => setFilterSearch(e.target.value)}
@@ -415,7 +419,9 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <ClipboardList className="w-16 h-16 text-blue-600" />
                     </div>
                     <CardContent className="p-6">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Всього записів</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">
+                            {filterSearch || filterCategory !== 'ALL' || activeTab !== 'ALL' || showOnlyMine ? "Знайдено записів" : "Всього записів"}
+                        </p>
                         <h3 className="text-3xl font-black text-slate-900">{filteredRecords.length}</h3>
                     </CardContent>
                 </Card>
