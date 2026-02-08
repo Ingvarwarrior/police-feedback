@@ -55,6 +55,19 @@ export async function GET(
                     } as any,
                     orderBy: { createdAt: 'desc' },
                     take: 10
+                },
+                unifiedRecords: {
+                    select: {
+                        id: true,
+                        eoNumber: true,
+                        eoDate: true,
+                        resolution: true,
+                        resolutionDate: true,
+                        status: true
+                    },
+                    orderBy: {
+                        resolutionDate: 'desc'
+                    }
                 }
             }
         })
@@ -154,6 +167,7 @@ export async function GET(
                 recentEvaluations: officer.evaluations.slice(0, 5),
                 recentFeedback: officer.responses,
                 taggedFeedback: ((officer as any).taggedInResponses || []).filter((tf: any) => !officer.responses.some((rf: any) => rf.id === tf.id)),
+                unifiedRecords: (officer as any).unifiedRecords || [],
                 qrUrl: surveyUrl
             }
         })

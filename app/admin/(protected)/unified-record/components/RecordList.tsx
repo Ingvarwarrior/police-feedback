@@ -26,7 +26,8 @@ import {
     XCircle,
     Loader2,
     CalendarCheck2,
-    Eye
+    Eye,
+    Shield
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -591,6 +592,23 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         )}
                                                     </div>
                                                 </div>
+
+                                                {/* Tagged Officers */}
+                                                {record.concernsBpp && record.officers && record.officers.length > 0 && (
+                                                    <div className="space-y-3 col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-1">
+                                                        <div className="flex items-center gap-2 text-slate-400">
+                                                            <Shield className="w-4 h-4 shrink-0" />
+                                                            <span className="text-xs font-bold uppercase tracking-widest">Прив'язані поліцейські</span>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {record.officers.map((officer: any) => (
+                                                                <div key={officer.id} className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-tight italic">
+                                                                    {officer.lastName} {officer.firstName?.charAt(0)}.
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-slate-400">
