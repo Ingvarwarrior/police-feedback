@@ -1,0 +1,218 @@
+"use client"
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { format } from "date-fns"
+import { uk } from "date-fns/locale"
+import {
+    Calendar,
+    MapPin,
+    User,
+    ClipboardList,
+    FileText,
+    Shield,
+    Clock,
+    CheckCircle2,
+    AlertCircle,
+    Building2,
+    Info,
+    History
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+
+interface ViewRecordDialogProps {
+    record: any
+    isOpen: boolean
+    onOpenChange: (open: boolean) => void
+}
+
+export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewRecordDialogProps) {
+    if (!record) return null
+
+    const statusMap: Record<string, { label: string, color: string, icon: any }> = {
+        "PENDING": { label: "Очікує", color: "text-amber-600 bg-amber-50 border-amber-100", icon: Clock },
+        "IN_PROGRESS": { label: "В роботі", color: "text-blue-600 bg-blue-50 border-blue-100", icon: Clock },
+        "PROCESSED": { label: "Виконано", color: "text-emerald-600 bg-emerald-50 border-emerald-100", icon: CheckCircle2 },
+    }
+
+    const currentStatus = statusMap[record.status] || { label: record.status, color: "text-slate-600 bg-slate-50", icon: Info }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="w-[95%] sm:w-full sm:max-w-[700px] bg-white rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
+                <DialogHeader className="p-8 md:p-10 bg-slate-900 text-white relative">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12">
+                        <FileText className="w-40 h-40" />
+                    </div>
+
+                    <div className="relative z-10 space-y-4">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className={cn("flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border", currentStatus.color)}>
+                                <currentStatus.icon className="w-3 h-3" />
+                                {currentStatus.label}
+                            </div>
+                            <div className="px-3 py-1 rounded-full bg-white/10 text-white/60 text-[10px] font-black uppercase tracking-widest border border-white/5">
+                                {record.recordType === 'EO' ? 'Єдиний облік' : 'Звернення'}
+                            </div>
+                        </div>
+
+                        <div>
+                            <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Картка реєстру</p>
+                            <DialogTitle className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter leading-none">
+                                №{record.eoNumber}
+                            </DialogTitle>
+                        </div>
+                    </div>
+                </DialogHeader>
+
+                <div className="p-8 md:p-10 space-y-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    {/* Basic Info Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                            <div className="flex gap-4">
+                                <div className="p-3 bg-slate-50 rounded-2xl text-slate-400">
+                                    <Calendar className="w-5 h-5" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Дата реєстрації</p>
+                                    <p className="font-bold text-slate-900">
+                                        {format(new Date(record.eoDate), "PPP", { locale: uk })}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <div className="p-3 bg-slate-50 rounded-2xl text-slate-400">
+                                    <User className="w-5 h-5" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Заявник</p>
+                                    <p className="font-bold text-slate-900">{record.applicant || "Не вказано"}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="flex gap-4">
+                                <div className="p-3 bg-slate-50 rounded-2xl text-slate-400">
+                                    <MapPin className="w-5 h-5" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Місце події (Адреса)</p>
+                                    <p className="font-bold text-slate-900">{record.address || "Не вказано"}</p>
+                                    {record.district && (
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter italic">{record.district} район</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <div className="p-3 bg-slate-50 rounded-2xl text-slate-400">
+                                    <Shield className="w-5 h-5" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Відповідальний виконавець</p>
+                                    {record.assignedUser ? (
+                                        <p className="font-bold text-slate-900">
+                                            {record.assignedUser.lastName} {record.assignedUser.firstName}
+                                            <span className="ml-2 text-[10px] font-medium text-slate-400 lowercase">(@{record.assignedUser.username})</span>
+                                        </p>
+                                    ) : (
+                                        <p className="font-bold text-slate-400 italic">Не призначено</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Full Description */}
+                    <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-3">
+                        <div className="flex items-center gap-2">
+                            <ClipboardList className="w-4 h-4 text-slate-400" />
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-900">Фабула / Опис події</h3>
+                        </div>
+                        <p className="text-sm font-bold text-slate-700 leading-relaxed uppercase italic">
+                            {record.description}
+                        </p>
+                    </div>
+
+                    {/* Resolution Section */}
+                    {record.status === 'PROCESSED' && (
+                        <div className="p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                <h3 className="text-xs font-black uppercase tracking-widest text-emerald-900">Результат розгляду (Рішення)</h3>
+                            </div>
+                            <p className="text-sm font-bold text-emerald-800 leading-relaxed">
+                                {record.resolution}
+                            </p>
+                            <div className="flex justify-between items-center pt-2">
+                                <p className="text-[10px] font-black uppercase tracking-tighter text-emerald-600 italic">Списано в справу</p>
+                                {record.resolutionDate && (
+                                    <p className="text-[10px] font-bold text-emerald-600">
+                                        {format(new Date(record.resolutionDate), "dd.MM.yyyy HH:mm")}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Deadline & Extensions */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="p-6 border border-slate-100 rounded-3xl space-y-3">
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-slate-400" />
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Термін виконання</h4>
+                            </div>
+                            <div className="flex items-end justify-between">
+                                <p className={cn("text-xl font-black italic",
+                                    record.status !== 'PROCESSED' && new Date(record.deadline) < new Date() ? "text-red-500" : "text-slate-900"
+                                )}>
+                                    {record.deadline ? format(new Date(record.deadline), "dd MMMM yyyy", { locale: uk }) : "—"}
+                                </p>
+                                {record.extensionStatus === 'APPROVED' && (
+                                    <div className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[9px] font-bold uppercase tracking-tight">
+                                        Продовжено
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {record.extensionStatus === 'PENDING' && (
+                            <div className="p-6 bg-amber-50 border border-amber-100 rounded-3xl space-y-3 animate-pulse">
+                                <div className="flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-600">Запит на продовження</h4>
+                                </div>
+                                <p className="text-xs font-bold text-amber-800 italic">"{record.extensionReason}"</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* History / Meta */}
+                    <div className="pt-4 border-t border-slate-100 flex flex-wrap gap-6 items-center">
+                        <div className="flex items-center gap-2 text-slate-400">
+                            <History className="w-3.5 h-3.5" />
+                            <span className="text-[10px] font-bold">Створено: {format(new Date(record.createdAt), "dd.MM.yyyy HH:mm")}</span>
+                        </div>
+                        {record.importedAt && (
+                            <div className="flex items-center gap-2 text-slate-400">
+                                <Building2 className="w-3.5 h-3.5" />
+                                <span className="text-[10px] font-bold">Імпортовано: {format(new Date(record.createdAt), "dd.MM.yyyy HH:mm")}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <DialogFooter className="p-8 bg-slate-50 border-t border-slate-100">
+                    <Button
+                        onClick={() => onOpenChange(false)}
+                        className="w-full h-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 transition-all hover:scale-[1.01]"
+                    >
+                        Закрити
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}

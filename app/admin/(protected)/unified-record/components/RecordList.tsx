@@ -25,7 +25,8 @@ import {
     UserPlus,
     XCircle,
     Loader2,
-    CalendarCheck2
+    CalendarCheck2,
+    Eye
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -46,6 +47,7 @@ import {
 } from "@/components/ui/tabs"
 
 import CreateRecordDialog from "./CreateRecordDialog"
+import ViewRecordDialog from "./ViewRecordDialog"
 import {
     deleteUnifiedRecordAction,
     bulkDeleteUnifiedRecordsAction,
@@ -93,6 +95,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const [activeTab, setActiveTab] = useState("ALL")
     const [sortBy, setSortBy] = useState("newest")
     const [showOnlyMine, setShowOnlyMine] = useState(false)
+
+    // View state
+    const [viewRecord, setViewRecord] = useState<any>(null)
+    const [isViewOpen, setIsViewOpen] = useState(false)
 
     // Selection state
     const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -446,12 +452,31 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <h3 className="text-base md:text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight leading-tight mt-2 break-words">
+                                                    <h3
+                                                        onClick={() => {
+                                                            setViewRecord(record)
+                                                            setIsViewOpen(true)
+                                                        }}
+                                                        className="text-base md:text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight leading-tight mt-2 break-words cursor-pointer"
+                                                    >
                                                         {record.description || 'Без опису'}
                                                     </h3>
                                                 </div>
 
                                                 <div className="flex flex-row md:flex-wrap gap-1 md:gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-9 md:h-8 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all flex-1 md:flex-none"
+                                                        onClick={() => {
+                                                            setViewRecord(record)
+                                                            setIsViewOpen(true)
+                                                        }}
+                                                    >
+                                                        <Eye className="w-3.5 h-3.5 md:mr-1.5" />
+                                                        <span className="hidden md:inline">Переглянути</span>
+                                                    </Button>
+
                                                     {currentUser.role === 'ADMIN' && (
                                                         <>
                                                             <CreateRecordDialog
@@ -834,6 +859,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     </div>
                 </div>
             )}
+            <ViewRecordDialog
+                record={viewRecord}
+                isOpen={isViewOpen}
+                onOpenChange={setIsViewOpen}
+            />
         </div>
     )
 }
