@@ -102,17 +102,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 token.permManageMailAlerts = u.permManageMailAlerts;
             }
 
-            // High security: check if user is still active in DB on every request or token refresh
-            // This ensures "kicking out" deactivated users immediately
+            // High security & Real-time Permissions: 
+            // Check if user is still active and refresh permissions from DB on every request/token refresh.
+            // This ensures permissions take effect immediately without logout/login.
             if (token.id) {
                 const dbUser = await prisma.user.findUnique({
-                    where: { id: token.id as string },
-                    select: { active: true }
+                    where: { id: token.id as string }
                 })
+
                 if (!dbUser || !dbUser.active) {
-                    // Force invalidation by returning empty token or null (depending on NextAuth version behavior)
+                    // Force invalidation by returning null
                     return null as any
                 }
+
+                // Hot-reload role and all permissions from database
+                token.role = dbUser.role
+
+                const dbUserAny = dbUser as any
+                Object.keys(dbUserAny).forEach(key => {
+                    if (key.startsWith('perm')) {
+                        token[key] = dbUserAny[key]
+                    }
+                })
             }
 
             return token
