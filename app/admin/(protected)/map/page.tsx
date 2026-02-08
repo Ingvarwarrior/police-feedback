@@ -18,7 +18,7 @@ export default async function MapPage() {
         select: { role: true, permViewMap: true }
     })
 
-    const canViewMap = currentUser?.role === 'ADMIN' || !!currentUser?.permViewMap
+    const canViewMap = currentUser?.role === 'ADMIN' || currentUser?.role === 'INSPECTOR' || !!currentUser?.permViewMap
 
     if (!canViewMap) {
         return (
