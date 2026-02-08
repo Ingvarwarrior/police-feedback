@@ -180,7 +180,10 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     }
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => {
+            setIsOpen(open)
+            if (!open) form.reset()
+        }}>
             <DialogTrigger asChild>
                 {trigger || (
                     <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-6 h-12 shadow-lg shadow-blue-500/20 group transition-all">
@@ -189,13 +192,13 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] bg-white rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
-                <DialogHeader className="p-8 bg-slate-900 text-white flex flex-row items-center justify-between">
+            <DialogContent className="w-[95%] sm:w-full sm:max-w-[600px] bg-white rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
+                <DialogHeader className="p-6 md:p-8 bg-slate-900 text-white flex flex-row items-center justify-between">
                     <div>
-                        <DialogTitle className="text-2xl font-black italic uppercase tracking-tight">
+                        <DialogTitle className="text-xl md:text-2xl font-black italic uppercase tracking-tight">
                             {isEdit ? "Редагування картки" : "Нова картка ЄО"}
                         </DialogTitle>
-                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Використовуйте ШІ для автозаповнення</p>
+                        <p className="text-slate-400 text-[9px] md:text-[10px] font-bold uppercase tracking-widest mt-1">Використовуйте ШІ для автозаповнення</p>
                     </div>
 
                     {!isEdit && (
@@ -211,21 +214,22 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 type="button"
                                 onClick={onAiScan}
                                 disabled={isAnalyzing}
-                                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 h-10 shadow-lg shadow-blue-500/20 gap-2 border-none font-bold text-xs"
+                                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-3 md:px-4 h-9 md:h-10 shadow-lg shadow-blue-500/20 gap-2 border-none font-bold text-[10px] md:text-xs"
                             >
                                 {isAnalyzing ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                 ) : (
-                                    <Sparkles className="w-4 h-4" />
+                                    <Sparkles className="w-3.5 h-3.5" />
                                 )}
-                                {isAnalyzing ? "Аналіз..." : "Сканувати ШІ"}
+                                <span className="hidden xs:inline">{isAnalyzing ? "Аналіз..." : "Сканувати ШІ"}</span>
+                                <span className="xs:hidden">{isAnalyzing ? "..." : "ШІ"}</span>
                             </Button>
                         </>
                     )}
                 </DialogHeader>
 
-                <form onSubmit={form.handleSubmit(onSubmit)} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 md:p-8 space-y-5 md:space-y-6 max-h-[50vh] md:max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="eoNumber" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Номер ЄО</Label>
                             <Input
@@ -287,7 +291,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 onValueChange={(val) => form.setValue("recordType", val)}
                                 defaultValue={form.getValues("recordType")}
                             >
-                                <SelectTrigger className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold">
+                                <SelectTrigger className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-xs md:text-sm">
                                     <SelectValue placeholder="Тип" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -303,7 +307,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 onValueChange={(val) => form.setValue("assignedUserId", val)}
                                 defaultValue={form.getValues("assignedUserId") || undefined}
                             >
-                                <SelectTrigger className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                                <SelectTrigger className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs md:text-sm">
                                     <SelectValue placeholder="Оберіть інспектора" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -341,30 +345,30 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     </div>
                 </form>
 
-                <DialogFooter className="p-6 md:p-8 bg-slate-50 border-t border-slate-100 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+                <DialogFooter className="p-4 md:p-8 bg-slate-50 border-t border-slate-100 flex flex-row gap-2 md:gap-4 items-center justify-between">
                     <Button
                         type="button"
                         variant="ghost"
                         onClick={() => {
                             setIsOpen(false)
-                            form.reset()
                         }}
-                        className="rounded-xl font-bold text-slate-500 hover:text-slate-900 order-2 md:order-1"
+                        className="rounded-xl font-bold text-slate-500 hover:text-slate-900 flex-1 md:flex-none"
                     >
                         Скасувати
                     </Button>
                     <Button
                         onClick={form.handleSubmit(onSubmit)}
                         disabled={isLoading}
-                        className="bg-slate-900 hover:bg-black text-white rounded-xl px-8 h-12 md:h-10 shadow-lg shadow-slate-900/20 transition-all order-1 md:order-2"
+                        className="bg-slate-900 hover:bg-black text-white rounded-xl px-4 md:px-8 h-10 shadow-lg shadow-slate-900/20 transition-all flex-1 md:flex-none"
                     >
                         {isLoading ? (
                             <>
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Зберігаємо...
+                                <span className="hidden xs:inline">Зберігаємо...</span>
+                                <span className="xs:hidden">...</span>
                             </>
                         ) : (
-                            isEdit ? "Оновити картку" : "Зберегти запис"
+                            isEdit ? "Оновити" : "Зберегти"
                         )}
                     </Button>
                 </DialogFooter>
