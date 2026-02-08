@@ -548,68 +548,20 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         <span className="text-xs font-bold uppercase tracking-widest">Результат</span>
                                                     </div>
 
-                                                    <Popover>
-                                                        <PopoverTrigger asChild>
-                                                            <div className="space-y-1 cursor-pointer group/res">
-                                                                <button className={cn(
-                                                                    "text-sm font-bold italic text-left group-hover/res:underline decoration-dotted underline-offset-4 transition-all w-full",
-                                                                    record.resolution ? "text-emerald-700" : (record.assignedUser || record.officerName ? "text-blue-600" : "text-amber-600")
-                                                                )}>
-                                                                    {record.resolution || (record.assignedUser || record.officerName ? 'В процесі розгляду...' : 'Не призначено')}
-                                                                </button>
-                                                                {record.resolutionDate && (
-                                                                    <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium italic">
-                                                                        <CalendarIcon className="w-3 h-3" />
-                                                                        Виконано: {format(new Date(record.resolutionDate), "dd.MM.yyyy", { locale: uk })}
-                                                                    </div>
-                                                                )}
+                                                    <div className="space-y-1">
+                                                        <div className={cn(
+                                                            "text-sm font-bold italic",
+                                                            record.resolution ? "text-emerald-700" : (record.assignedUser || record.officerName ? "text-blue-600" : "text-amber-600")
+                                                        )}>
+                                                            {record.resolution || (record.assignedUser || record.officerName ? 'В процесі розгляду...' : 'Не призначено')}
+                                                        </div>
+                                                        {record.resolutionDate && (
+                                                            <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium italic">
+                                                                <CalendarIcon className="w-3 h-3" />
+                                                                Виконано: {format(new Date(record.resolutionDate), "dd.MM.yyyy", { locale: uk })}
                                                             </div>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-80 p-6 rounded-[2rem] border-none shadow-2xl space-y-4">
-                                                            <div className="space-y-2">
-                                                                <h4 className="text-sm font-black uppercase tracking-tight italic">Впишіть рішення:</h4>
-                                                                <Textarea
-                                                                    placeholder="Текст рішення..."
-                                                                    defaultValue={record.resolution || ""}
-                                                                    className="min-h-[100px] rounded-2xl bg-slate-50 border-none focus-visible:ring-blue-500 font-medium"
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter' && e.ctrlKey) {
-                                                                            handleUpdateResolution([record.id], e.currentTarget.value, record.resolutionDate ? new Date(record.resolutionDate) : new Date())
-                                                                        }
-                                                                    }}
-                                                                    onBlur={(e) => {
-                                                                        if (e.target.value !== (record.resolution || "")) {
-                                                                            handleUpdateResolution([record.id], e.target.value, record.resolutionDate ? new Date(record.resolutionDate) : new Date())
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Або виберіть готове:</p>
-                                                                <div className="flex flex-wrap gap-2">
-                                                                    {resolutionPresets.map(preset => (
-                                                                        <button
-                                                                            key={preset}
-                                                                            onClick={() => handleUpdateResolution([record.id], preset, record.resolutionDate ? new Date(record.resolutionDate) : new Date())}
-                                                                            className="px-3 py-1.5 bg-slate-100 hover:bg-blue-600 hover:text-white rounded-xl text-[10px] font-bold transition-all"
-                                                                        >
-                                                                            {preset}
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Дата рішення:</p>
-                                                                <Calendar
-                                                                    mode="single"
-                                                                    selected={record.resolutionDate ? new Date(record.resolutionDate) : undefined}
-                                                                    onSelect={(date) => handleUpdateResolution([record.id], record.resolution || "", date || new Date())}
-                                                                    initialFocus
-                                                                    className="rounded-2xl border bg-slate-50"
-                                                                />
-                                                            </div>
-                                                        </PopoverContent>
-                                                    </Popover>
+                                                        )}
+                                                    </div>
                                                 </div>
 
                                                 <div className="space-y-3">
@@ -648,36 +600,68 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             </SelectContent>
                                                         </Select>
 
-                                                        {/* Extension and Process Buttons for assigned user */}
+                                                        {/* Single "DONE" Button for assigned user */}
                                                         {record.assignedUserId === currentUser.id && record.status !== 'PROCESSED' && (
-                                                            <div className="flex flex-col gap-2 mt-3">
+                                                            <div className="flex flex-col gap-2 mt-4">
                                                                 <Popover>
                                                                     <PopoverTrigger asChild>
-                                                                        <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold h-9 gap-2">
-                                                                            <CheckSquare className="w-4 h-4" />
-                                                                            Опрацювати
+                                                                        <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-widest h-12 gap-2 shadow-lg shadow-emerald-900/10 transition-all hover:scale-[1.02]">
+                                                                            <CheckSquare className="w-5 h-5" />
+                                                                            ВИКОНАНО
                                                                         </Button>
                                                                     </PopoverTrigger>
-                                                                    <PopoverContent className="p-4 rounded-2xl w-80 shadow-2xl border-none space-y-3">
-                                                                        <h4 className="font-black uppercase text-xs tracking-widest">Вкажіть результат:</h4>
-                                                                        <Textarea
-                                                                            placeholder="Що було зроблено..."
-                                                                            className="rounded-xl bg-slate-50 border-none min-h-[100px]"
-                                                                            onKeyDown={(e) => {
-                                                                                if (e.key === 'Enter' && e.ctrlKey) {
-                                                                                    handleProcess(record.id, e.currentTarget.value)
-                                                                                }
-                                                                            }}
-                                                                        />
-                                                                        <Button
-                                                                            className="w-full bg-slate-900 text-white rounded-xl font-bold"
-                                                                            onClick={(e) => {
-                                                                                const textarea = e.currentTarget.previousElementSibling as HTMLTextAreaElement
-                                                                                handleProcess(record.id, textarea.value)
-                                                                            }}
-                                                                        >
-                                                                            Зберегти результат
-                                                                        </Button>
+                                                                    <PopoverContent className="p-4 rounded-[2rem] w-80 shadow-2xl border-none space-y-4 bg-white">
+                                                                        <div className="space-y-3">
+                                                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">Виберіть результат:</p>
+                                                                            <div className="grid gap-2">
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 transition-all"
+                                                                                    onClick={() => handleProcess(record.id, "Списано до справи")}
+                                                                                >
+                                                                                    <CheckCircle2 className="w-4 h-4 mr-2 shrink-0" />
+                                                                                    Списано до справи
+                                                                                </Button>
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-blue-50 hover:text-blue-700 transition-all"
+                                                                                    onClick={() => handleProcess(record.id, "Надано письмову відповідь")}
+                                                                                >
+                                                                                    <FileText className="w-4 h-4 mr-2 shrink-0" />
+                                                                                    Надано письмову відповідь
+                                                                                </Button>
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-amber-50 hover:text-amber-700 transition-all"
+                                                                                    onClick={() => handleProcess(record.id, "Надіслано до іншого органу/підрозділу")}
+                                                                                >
+                                                                                    <MoreVertical className="w-4 h-4 mr-2 shrink-0" />
+                                                                                    Надіслано до іншого органу
+                                                                                </Button>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="pt-2 border-t border-slate-100 space-y-3">
+                                                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">Свій варіант:</p>
+                                                                            <Textarea
+                                                                                placeholder="Вкажіть рішення..."
+                                                                                className="rounded-xl bg-slate-50 border-none min-h-[100px] font-medium"
+                                                                                onKeyDown={(e) => {
+                                                                                    if (e.key === 'Enter' && e.ctrlKey) {
+                                                                                        handleProcess(record.id, e.currentTarget.value)
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                            <Button
+                                                                                className="w-full bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-xs h-10"
+                                                                                onClick={(e) => {
+                                                                                    const textarea = e.currentTarget.previousElementSibling as HTMLTextAreaElement
+                                                                                    handleProcess(record.id, textarea.value)
+                                                                                }}
+                                                                            >
+                                                                                Зберегти свій варіант
+                                                                            </Button>
+                                                                        </div>
                                                                     </PopoverContent>
                                                                 </Popover>
 
