@@ -43,7 +43,7 @@ export async function analyzeRecordImageAction(base64Image: string) {
     // --- Try Google Gemini ---
     if (googleKey) {
         const genAI = new GoogleGenerativeAI(googleKey)
-        const modelNames = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-1.5-flash-latest"]
+        const modelNames = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest"]
 
         for (const modelName of modelNames) {
             try {
@@ -71,12 +71,19 @@ export async function analyzeRecordImageAction(base64Image: string) {
                     usedModel: modelName
                 }
             } catch (e: any) {
-                console.warn(`Gemini (${modelName}) failed:`, e.message)
-                errors.push(`Gemini (${modelName}): ${e.message}`)
+                const msg = e.message || "Unknown error"
+                console.warn(`Gemini (${modelName}) failed:`, msg)
+
+                // If quota exceeded, don't bother with other Gemini models
+                if (msg.includes("429") || msg.includes("quota")) {
+                    errors.push(`Gemini: Перевищено ліміт запитів (Quota Exceeded)`)
+                    break
+                }
+                errors.push(`Gemini (${modelName}): ${msg.substring(0, 50)}...`)
             }
         }
     } else {
-        errors.push("Google API Key відсутній")
+        errors.push("Gemini: Ключ відсутній")
     }
 
     // --- Try OpenAI fallback ---
@@ -114,14 +121,14 @@ export async function analyzeRecordImageAction(base64Image: string) {
             }
         } catch (e: any) {
             console.error("OpenAI failed:", e.message)
-            errors.push(`OpenAI: ${e.message}`)
+            errors.push(`OpenAI: ${e.message.includes("insufficient_quota") ? "Недостатньо коштів на балансі" : e.message.substring(0, 100)}`)
         }
     } else {
-        errors.push("OpenAI API Key відсутній")
+        errors.push("OpenAI: Ключ відсутній")
     }
 
     return {
         success: false,
-        error: `Помилка розпізнавання: ${errors.join(" | ")}`
+        error: errors.join(" | ")
     }
 }
