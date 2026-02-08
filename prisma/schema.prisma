@@ -280,14 +280,20 @@ model UnifiedRecord {
   category       String?
   recordType     String    @default("EO") // EO or ZVERN
   officerName    String?
-  assignedUserId String?
-  resolution     String?
-  resolutionDate DateTime?
-  sourceFile     String?
-  importedAt     DateTime  @default(now())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  assignedUser   User?     @relation("AssignedUnifiedRecords", fields: [assignedUserId], references: [id])
+  assignedUserId    String?
+  status            String    @default("PENDING") // PENDING, IN_PROGRESS, PROCESSED
+  deadline          DateTime?
+  processedAt       DateTime?
+  extensionStatus   String?   // PENDING, APPROVED, REJECTED
+  extensionReason   String?
+  extensionDeadline DateTime?
+  resolution        String?
+  resolutionDate    DateTime?
+  sourceFile        String?
+  importedAt        DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  assignedUser      User?     @relation("AssignedUnifiedRecords", fields: [assignedUserId], references: [id])
 
   @@index([eoNumber])
   @@index([eoDate])

@@ -116,3 +116,92 @@ ${process.env.NEXT_PUBLIC_APP_URL}/admin/reports/${report.id}
         return false;
     }
 }
+export async function sendUnifiedAssignmentEmail(assignee: any, record: any) {
+    if (!assignee.email) return false;
+
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '465'),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        },
+    });
+
+    const subject = `Призначено ЄО №${record.eoNumber}`;
+    const text = `
+Шановний(-а) ${assignee.firstName || ''} ${assignee.lastName || ''}!
+
+Вам призначено для опрацювання новий запис ЄО №${record.eoNumber}.
+
+Деталі:
+- Подія: ${record.description || 'Не вказано'}
+- Дата реєстрації: ${record.eoDate.toLocaleDateString('uk-UA')}
+- Строк опрацювання: ${record.deadline?.toLocaleDateString('uk-UA') || 'не встановлено'}
+
+Будь ласка, опрацюйте цей запис:
+${process.env.NEXT_PUBLIC_APP_URL}/admin/unified-record?search=${record.eoNumber}
+
+---
+Система оперативного моніторингу
+`.trim();
+
+    try {
+        await transporter.sendMail({
+            from: process.env.SMTP_FROM || `"Police Feedback" <${process.env.SMTP_USER}>`,
+            to: assignee.email,
+            subject,
+            text,
+        });
+        return true;
+    } catch (error) {
+        console.error('[MAIL] Error sending unified assignment email:', error);
+        return false;
+    }
+}
+
+export async function sendUnifiedRecordReminderEmail(assignee: any, record: any, daysLeft: number) {
+    if (!assignee.email) return false;
+
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '465'),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        },
+    });
+
+    const timingText = daysLeft === 0 ? "сьогодні" : `завтра (${daysLeft} день)`;
+    const subject = `Нагадування: Строк ЄО №${record.eoNumber} спливає ${timingText}`;
+    const text = `
+Шановний(-а) ${assignee.firstName || ''} ${assignee.lastName || ''}!
+
+Нагадуємо, що строк опрацювання ЄО №${record.eoNumber} спливає ${timingText}.
+
+Деталі:
+- Подія: ${record.description || 'Не вказано'}
+- Кінцевий строк: ${record.deadline.toLocaleDateString('uk-UA')}
+
+Будь ласка, завершiть опрацювання або надішліть запит на продовження:
+${process.env.NEXT_PUBLIC_APP_URL}/admin/unified-record?search=${record.eoNumber}
+
+---
+Система оперативного моніторингу
+`.trim();
+
+    try {
+        await transporter.sendMail({
+            from: process.env.SMTP_FROM || `"Police Feedback" <${process.env.SMTP_USER}>`,
+            to: assignee.email,
+            subject,
+            text,
+        });
+        return true;
+    } catch (error) {
+        console.error('[MAIL] Error sending reminder email:', error);
+        return false;
+    }
+}

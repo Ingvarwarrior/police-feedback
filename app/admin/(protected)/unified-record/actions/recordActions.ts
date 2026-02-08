@@ -5,6 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import * as XLSX from 'xlsx'
 import { z } from "zod"
+import { sendUnifiedAssignmentEmail } from "@/lib/mail"
 
 const UnifiedRecordSchema = z.object({
     id: z.string().optional(),
@@ -18,9 +19,89 @@ const UnifiedRecordSchema = z.object({
     recordType: z.string().default("EO"),
     officerName: z.string().optional().nullable(),
     assignedUserId: z.string().optional().nullable(),
+    status: z.string().optional().default("PENDING"),
+    deadline: z.date().optional().nullable(),
+    processedAt: z.date().optional().nullable(),
+    extensionStatus: z.string().optional().nullable(),
+    extensionReason: z.string().optional().nullable(),
+    extensionDeadline: z.date().optional().nullable(),
     resolution: z.string().optional().nullable(),
     resolutionDate: z.date().optional().nullable(),
 })
+
+export async function processUnifiedRecordAction(id: string, resolution: string) {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    await prisma.unifiedRecord.update({
+        where: { id },
+        data: {
+            resolution,
+            resolutionDate: new Date(),
+            status: "PROCESSED",
+            processedAt: new Date()
+        }
+    })
+
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
+
+export async function requestExtensionAction(id: string, reason: string) {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    await prisma.unifiedRecord.update({
+        where: { id },
+        data: {
+            extensionStatus: "PENDING",
+            extensionReason: reason
+        }
+    })
+
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
+
+export async function reviewExtensionAction(id: string, approved: boolean) {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    const record = await prisma.unifiedRecord.findUnique({
+        where: { id },
+        select: { deadline: true, eoNumber: true, assignedUserId: true }
+    })
+
+    if (!record) throw new Error("Record not found")
+
+    const newDeadline = approved && record.deadline
+        ? new Date(record.deadline.getTime() + 15 * 24 * 60 * 60 * 1000)
+        : record.deadline
+
+    await prisma.unifiedRecord.update({
+        where: { id },
+        data: {
+            extensionStatus: approved ? "APPROVED" : "REJECTED",
+            deadline: newDeadline
+        }
+    })
+
+    if (record.assignedUserId) {
+        await prisma.adminNotification.create({
+            data: {
+                title: approved ? "Продовження строку погоджено" : "Продовження строку відхилено",
+                message: `Ваш запит на продовження по ЄО №${record.eoNumber} було ${approved ? 'погоджено' : 'відхилено'}. Новий строк: ${newDeadline?.toLocaleDateString('uk-UA') || 'без змін'}.`,
+                type: "SYSTEM",
+                priority: approved ? "NORMAL" : "HIGH",
+                userId: record.assignedUserId,
+                link: `/admin/unified-record?search=${record.eoNumber}`
+            }
+        })
+    }
+
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
 
 export async function getUnifiedRecords(params?: {
     search?: string
@@ -197,14 +278,19 @@ export async function upsertUnifiedRecordAction(data: any) {
         })
     }
 
+    // Calculate deadline if not provided (15 days from eoDate)
+    const deadline = validated.deadline || (validated.eoDate ? new Date(new Date(validated.eoDate).getTime() + 15 * 24 * 60 * 60 * 1000) : null)
+
     const record = await prisma.unifiedRecord.upsert({
         where: { eoNumber: validated.eoNumber },
         update: {
             ...validated,
+            deadline: deadline,
             updatedAt: new Date()
         },
         create: {
-            ...validated
+            ...validated,
+            deadline: deadline
         }
     })
 
@@ -220,6 +306,15 @@ export async function upsertUnifiedRecordAction(data: any) {
                 link: `/admin/unified-record?search=${validated.eoNumber}`
             }
         })
+
+        // Send Email Notification
+        const assignee = await prisma.user.findUnique({
+            where: { id: validated.assignedUserId },
+            select: { email: true, firstName: true, lastName: true }
+        })
+        if (assignee?.email) {
+            await sendUnifiedAssignmentEmail(assignee, record)
+        }
     }
 
     revalidatePath('/admin/unified-record')
@@ -286,6 +381,21 @@ export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: stri
         }
     })
 
+    // Send individual emails for bulk assignment
+    const assignee = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, firstName: true, lastName: true }
+    })
+
+    if (assignee?.email) {
+        const records = await prisma.unifiedRecord.findMany({
+            where: { id: { in: ids } }
+        })
+        for (const record of records) {
+            await sendUnifiedAssignmentEmail(assignee, record)
+        }
+    }
+
     revalidatePath('/admin/unified-record')
     return { success: true }
 }
@@ -297,7 +407,9 @@ export async function bulkUpdateResolutionAction(ids: string[], resolution: stri
         where: { id: { in: ids } },
         data: {
             resolution,
-            resolutionDate: date
+            resolutionDate: date,
+            status: "PROCESSED",
+            processedAt: date
         }
     })
 
