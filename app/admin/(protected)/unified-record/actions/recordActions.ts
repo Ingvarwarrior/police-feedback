@@ -493,6 +493,7 @@ export async function returnForRevisionAction(id: string, comment: string) {
         data: {
             status: "IN_PROGRESS",
             processedAt: null,
+            resolutionDate: null,
         }
     })
 

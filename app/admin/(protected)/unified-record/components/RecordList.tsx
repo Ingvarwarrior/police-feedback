@@ -437,7 +437,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                         </button>
 
                                         {/* Status Sidebar */}
-                                        <div className={`w-full lg:w-2 ${record.resolution ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                        <div className={`w-full lg:w-2 ${record.status === 'PROCESSED' ? 'bg-emerald-500' : (record.assignedUser || record.officerName ? 'bg-blue-500' : 'bg-amber-500')}`} />
 
                                         <div className="flex-1 p-5 md:p-8">
                                             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
@@ -552,9 +552,9 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                     <div className="space-y-1">
                                                         <div className={cn(
                                                             "text-sm font-bold italic",
-                                                            record.resolution ? "text-emerald-700" : (record.assignedUser || record.officerName ? "text-blue-600" : "text-amber-600")
+                                                            record.status === 'PROCESSED' ? "text-emerald-700" : (record.assignedUserId ? "text-blue-600" : "text-amber-600")
                                                         )}>
-                                                            {record.resolution || (record.assignedUser || record.officerName ? 'В процесі розгляду...' : 'Не призначено')}
+                                                            {record.status === 'PROCESSED' ? (record.resolution || 'Виконано') : (record.assignedUserId ? (record.resolution ? 'Потребує доопрацювання/В процесі...' : 'В процесі розгляду...') : 'Не призначено')}
                                                         </div>
                                                         {record.resolutionDate && (
                                                             <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium italic">
@@ -786,111 +786,113 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             </div>
 
             {/* Bulk Actions Floating Toolbar */}
-            {selectedIds.length > 0 && (
-                <div className="fixed bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-5 w-[95%] md:w-auto">
-                    <div className="bg-slate-900 text-white px-4 md:px-8 py-3 md:py-4 rounded-2xl md:rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col md:flex-row items-center gap-4 md:gap-8 border border-white/10 backdrop-blur-xl max-h-[80vh] overflow-y-auto md:overflow-visible">
-                        <div className="flex items-center justify-between w-full md:w-auto gap-4">
-                            <div className="flex flex-col">
-                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none">Вибрано</span>
-                                <span className="text-sm md:text-xl font-black italic">{selectedIds.length} записів</span>
+            {
+                selectedIds.length > 0 && (
+                    <div className="fixed bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-5 w-[95%] md:w-auto">
+                        <div className="bg-slate-900 text-white px-4 md:px-8 py-3 md:py-4 rounded-2xl md:rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col md:flex-row items-center gap-4 md:gap-8 border border-white/10 backdrop-blur-xl max-h-[80vh] overflow-y-auto md:overflow-visible">
+                            <div className="flex items-center justify-between w-full md:w-auto gap-4">
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none">Вибрано</span>
+                                    <span className="text-sm md:text-xl font-black italic">{selectedIds.length} записів</span>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    className="h-8 w-8 rounded-lg hover:bg-white/10 text-slate-400 p-0 md:hidden"
+                                    onClick={() => setSelectedIds([])}
+                                >
+                                    <XCircle className="w-5 h-5" />
+                                </Button>
                             </div>
-                            <Button
-                                variant="ghost"
-                                className="h-8 w-8 rounded-lg hover:bg-white/10 text-slate-400 p-0 md:hidden"
-                                onClick={() => setSelectedIds([])}
-                            >
-                                <XCircle className="w-5 h-5" />
-                            </Button>
-                        </div>
 
-                        <div className="h-px md:h-11 w-full md:w-px bg-white/10" />
+                            <div className="h-px md:h-11 w-full md:w-px bg-white/10" />
 
-                        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
-                            {currentUser.role === 'ADMIN' && (
-                                <Select onValueChange={(val) => handleBulkAssign(val)}>
-                                    <SelectTrigger className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-white/5 border-white/10 hover:bg-white/10 transition-all min-w-[140px] md:min-w-[200px] text-[10px] md:text-sm font-bold">
-                                        <UserPlus className="w-3 md:w-4 h-3 md:h-4 mr-1 md:mr-2 text-blue-400" />
-                                        <SelectValue placeholder="Призначити..." />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-none shadow-2xl">
-                                        {users.map(user => (
-                                            <SelectItem key={user.id} value={user.id}>
-                                                {user.lastName} {user.firstName || user.username}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/20 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm">
-                                        <CheckCircle2 className="w-3 md:w-4 h-3 md:h-4" />
-                                        Рішення
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-72 md:w-80 p-6 rounded-[2rem] border-none shadow-2xl space-y-4 mb-4">
-                                    <div className="space-y-2">
-                                        <h4 className="text-sm font-black uppercase tracking-tight italic">Рішення для {selectedIds.length} записів:</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {resolutionPresets.map(preset => (
-                                                <button
-                                                    key={preset}
-                                                    onClick={() => handleUpdateResolution(selectedIds, preset)}
-                                                    className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-600 hover:text-white rounded-xl text-[10px] font-bold transition-all w-full text-left"
-                                                >
-                                                    {preset}
-                                                </button>
+                            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+                                {currentUser.role === 'ADMIN' && (
+                                    <Select onValueChange={(val) => handleBulkAssign(val)}>
+                                        <SelectTrigger className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-white/5 border-white/10 hover:bg-white/10 transition-all min-w-[140px] md:min-w-[200px] text-[10px] md:text-sm font-bold">
+                                            <UserPlus className="w-3 md:w-4 h-3 md:h-4 mr-1 md:mr-2 text-blue-400" />
+                                            <SelectValue placeholder="Призначити..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-none shadow-2xl">
+                                            {users.map(user => (
+                                                <SelectItem key={user.id} value={user.id}>
+                                                    {user.lastName} {user.firstName || user.username}
+                                                </SelectItem>
                                             ))}
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
+                                        </SelectContent>
+                                    </Select>
+                                )}
 
-                            {currentUser.role === 'ADMIN' && (
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm">
-                                            <Trash2 className="w-3 md:w-4 h-3 md:h-4" />
-                                            <span className="hidden sm:inline">Видалити</span>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/20 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm">
+                                            <CheckCircle2 className="w-3 md:w-4 h-3 md:h-4" />
+                                            Рішення
                                         </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl w-[90%] md:w-full">
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle className="text-lg md:text-xl font-black uppercase italic tracking-tight">Масове видалення</AlertDialogTitle>
-                                            <AlertDialogDescription className="text-sm md:text-base text-slate-500 font-medium">
-                                                Ви впевнені, що хочете видалити {selectedIds.length} вибраних записів?
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter className="bg-slate-50 p-4 md:p-6 -m-4 md:-m-6 mt-4 md:mt-6 rounded-b-[2rem] flex-col md:flex-row gap-2">
-                                            <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500 mt-0">Скасувати</AlertDialogCancel>
-                                            <AlertDialogAction
-                                                onClick={handleBulkDelete}
-                                                className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
-                                            >
-                                                Так, видалити все
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            )}
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-72 md:w-80 p-6 rounded-[2rem] border-none shadow-2xl space-y-4 mb-4">
+                                        <div className="space-y-2">
+                                            <h4 className="text-sm font-black uppercase tracking-tight italic">Рішення для {selectedIds.length} записів:</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {resolutionPresets.map(preset => (
+                                                    <button
+                                                        key={preset}
+                                                        onClick={() => handleUpdateResolution(selectedIds, preset)}
+                                                        className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-600 hover:text-white rounded-xl text-[10px] font-bold transition-all w-full text-left"
+                                                    >
+                                                        {preset}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
 
-                            <Button
-                                variant="ghost"
-                                className="h-10 md:h-12 w-10 md:w-12 rounded-xl md:rounded-2xl hover:bg-white/10 text-slate-400 p-0 hidden md:flex"
-                                onClick={() => setSelectedIds([])}
-                            >
-                                <XCircle className="w-5 md:w-6 h-5 md:h-6" />
-                            </Button>
+                                {currentUser.role === 'ADMIN' && (
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm">
+                                                <Trash2 className="w-3 md:w-4 h-3 md:h-4" />
+                                                <span className="hidden sm:inline">Видалити</span>
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl w-[90%] md:w-full">
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle className="text-lg md:text-xl font-black uppercase italic tracking-tight">Масове видалення</AlertDialogTitle>
+                                                <AlertDialogDescription className="text-sm md:text-base text-slate-500 font-medium">
+                                                    Ви впевнені, що хочете видалити {selectedIds.length} вибраних записів?
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter className="bg-slate-50 p-4 md:p-6 -m-4 md:-m-6 mt-4 md:mt-6 rounded-b-[2rem] flex-col md:flex-row gap-2">
+                                                <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500 mt-0">Скасувати</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={handleBulkDelete}
+                                                    className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
+                                                >
+                                                    Так, видалити все
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                )}
+
+                                <Button
+                                    variant="ghost"
+                                    className="h-10 md:h-12 w-10 md:w-12 rounded-xl md:rounded-2xl hover:bg-white/10 text-slate-400 p-0 hidden md:flex"
+                                    onClick={() => setSelectedIds([])}
+                                >
+                                    <XCircle className="w-5 md:w-6 h-5 md:h-6" />
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
             <ViewRecordDialog
                 record={viewRecord}
                 isOpen={isViewOpen}
                 onOpenChange={setIsViewOpen}
             />
-        </div>
+        </div >
     )
 }
