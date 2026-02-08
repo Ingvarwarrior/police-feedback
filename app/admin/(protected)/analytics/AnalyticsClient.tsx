@@ -7,11 +7,12 @@ import {
     Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell,
     AreaChart, Area
 } from 'recharts'
+import { useRouter } from 'next/navigation'
 import {
     Users, MessageSquare, Star, TrendingUp, AlertTriangle,
     Shield, ArrowUpRight, Award, Printer, Clock, Lock,
     UserCheck, BarChart3, PieChart as PieIcon, Brain, Clock3,
-    MapPin, Zap
+    MapPin, Zap, ClipboardList, ListTodo, CheckCircle
 } from "lucide-react"
 import {
     Select,
@@ -20,11 +21,20 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 
 interface AnalyticsClientProps {
+    period: string
     trendData: any[]
     ratingsData: any[]
     officers: any[]
@@ -46,12 +56,23 @@ interface AnalyticsClientProps {
         dayOfWeekData: any[]
         burnoutAlerts: any[]
     }
+    unifiedRecordStats: {
+        totalByType: { recordType: string, _count: number }[]
+        inspectorPerformance: {
+            id: string,
+            name: string,
+            assigned: number,
+            processed: number,
+            pending: number
+        }[]
+    }
 }
 
 const COLORS = ['#0f172a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444']
 const PIE_COLORS = ['#fbbf24', '#3b82f6', '#10b981', '#f87171']
 
 export default function AnalyticsClient({
+    period,
     trendData,
     ratingsData,
     officers,
@@ -62,8 +83,11 @@ export default function AnalyticsClient({
     trust,
     correlationData,
     timePatterns,
+    unifiedRecordStats,
 }: AnalyticsClientProps) {
-    const [activeTab, setActiveTab] = useState<'feedback' | 'personnel' | 'citizens' | 'efficiency' | 'time' | 'geo' | 'predictions'>('feedback')
+    const router = useRouter()
+    const [activeTab, setActiveTab] = useState<'feedback' | 'personnel' | 'citizens' | 'efficiency' | 'time' | 'geo' | 'predictions' | 'unified'>('feedback')
+    const [selectedInspectorId, setSelectedInspectorId] = useState<string | 'all'>('all')
 
     const avgRating = ratingsData.reduce((acc, curr, idx) => acc + (curr.value * (idx + 1)), 0) / (totalReports || 1)
 
@@ -74,13 +98,19 @@ export default function AnalyticsClient({
 
     const tabs = [
         { id: 'feedback', label: 'Відгуки', icon: MessageSquare },
+        { id: 'unified', label: 'ЄО та Звернення', icon: ClipboardList },
         { id: 'personnel', label: 'Особовий склад', icon: Shield },
         { id: 'citizens', label: 'Громадяни', icon: Users },
         { id: 'efficiency', label: 'Ефективність', icon: TrendingUp },
         { id: 'time', label: 'Час', icon: Clock3 },
-
         { id: 'predictions', label: 'Прогнози', icon: Zap },
     ]
+
+    const handlePeriodChange = (val: string) => {
+        router.push(`/admin/analytics?period=${val}`)
+    }
+
+    const selectedInspector = unifiedRecordStats.inspectorPerformance.find(i => i.id === selectedInspectorId)
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -128,18 +158,185 @@ export default function AnalyticsClient({
                     ))}
                 </div>
 
-                <Button
-                    variant="outline"
-                    className="w-full sm:w-auto rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 px-6 shadow-sm bg-white"
-                    onClick={() => window.print()}
-                >
-                    <Printer className="w-4 h-4" />
-                    Друк звіту
-                </Button>
+                <div className="flex items-center gap-3">
+                    <Select value={period} onValueChange={handlePeriodChange}>
+                        <SelectTrigger className="w-full sm:w-40 h-11 rounded-2xl bg-white border-slate-200 font-bold text-xs px-5 shadow-sm">
+                            <SelectValue placeholder="Період" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
+                            <SelectItem value="7" className="font-bold text-xs py-3">Останні 7 днів</SelectItem>
+                            <SelectItem value="30" className="font-bold text-xs py-3">Останні 30 днів</SelectItem>
+                            <SelectItem value="90" className="font-bold text-xs py-3">Останні 90 днів</SelectItem>
+                            <SelectItem value="365" className="font-bold text-xs py-3">За рік</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Button
+                        variant="outline"
+                        className="w-full sm:w-auto rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 px-6 shadow-sm bg-white"
+                        onClick={() => window.print()}
+                    >
+                        <Printer className="w-4 h-4" />
+                        Друк звіту
+                    </Button>
+                </div>
             </div>
 
             {/* Content Tabs */}
             <div className="space-y-8">
+                {activeTab === 'unified' && (
+                    <div className="space-y-8">
+                        {/* Overall Stats Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-blue-50 to-white">
+                                <CardContent className="p-8">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Всього ЄО</p>
+                                            <h3 className="text-4xl font-black text-slate-900">
+                                                {unifiedRecordStats.totalByType.find(t => t.recordType === 'EO')?._count || 0}
+                                            </h3>
+                                        </div>
+                                        <div className="p-3 bg-blue-100 rounded-2xl text-blue-600">
+                                            <ClipboardList className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-amber-50 to-white">
+                                <CardContent className="p-8">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1">Всього Звернень</p>
+                                            <h3 className="text-4xl font-black text-slate-900">
+                                                {unifiedRecordStats.totalByType.find(t => t.recordType === 'ZVERN')?._count || 0}
+                                            </h3>
+                                        </div>
+                                        <div className="p-3 bg-amber-100 rounded-2xl text-amber-600">
+                                            <MessageSquare className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-emerald-50 to-white">
+                                <CardContent className="p-8">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1">Виконано (Загалом)</p>
+                                            <h3 className="text-4xl font-black text-slate-900">
+                                                {unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.processed, 0)}
+                                            </h3>
+                                        </div>
+                                        <div className="p-3 bg-emerald-100 rounded-2xl text-emerald-600">
+                                            <CheckCircle className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Inspector-Specific Stats */}
+                        <Card className="border-0 shadow-xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden">
+                            <CardHeader className="p-8 bg-slate-50/50 border-b border-slate-100">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                        <ListTodo className="w-5 h-5 text-blue-500" /> Статистика за виконавцем
+                                    </CardTitle>
+                                    <Select value={selectedInspectorId} onValueChange={setSelectedInspectorId}>
+                                        <SelectTrigger className="w-full sm:w-64 h-11 rounded-xl bg-white border-slate-200 font-bold text-xs px-5 shadow-sm">
+                                            <SelectValue placeholder="Оберіть інспектора..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
+                                            <SelectItem value="all" className="font-bold text-xs py-3">Усі інспектори (середнє)</SelectItem>
+                                            {unifiedRecordStats.inspectorPerformance.map(i => (
+                                                <SelectItem key={i.id} value={i.id} className="font-bold text-xs py-3">
+                                                    {i.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-8">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    <div className="space-y-2 text-center p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Призначено</p>
+                                        <h4 className="text-5xl font-black text-blue-600">
+                                            {selectedInspectorId === 'all'
+                                                ? unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.assigned, 0)
+                                                : selectedInspector?.assigned || 0
+                                            }
+                                        </h4>
+                                    </div>
+                                    <div className="space-y-2 text-center p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Розглянуто</p>
+                                        <h4 className="text-5xl font-black text-emerald-600">
+                                            {selectedInspectorId === 'all'
+                                                ? unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.processed, 0)
+                                                : selectedInspector?.processed || 0
+                                            }
+                                        </h4>
+                                    </div>
+                                    <div className="space-y-2 text-center p-6 bg-amber-50/50 rounded-3xl border border-amber-100/50">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Залишилося</p>
+                                        <h4 className="text-5xl font-black text-amber-600">
+                                            {selectedInspectorId === 'all'
+                                                ? unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.pending, 0)
+                                                : selectedInspector?.pending || 0
+                                            }
+                                        </h4>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Summary Table */}
+                        <Card className="border-0 shadow-xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden">
+                            <CardHeader className="p-8 bg-white border-b border-slate-50">
+                                <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                    <TableHead className="p-0 h-auto font-black text-slate-900 border-none">Зведена таблиця виконавців</TableHead>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <Table>
+                                    <TableHeader className="bg-slate-50/50">
+                                        <TableRow className="border-slate-50 hover:bg-transparent">
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest px-8">Виконавець</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-center">Призначено</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-center">Розглянуто</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-center">В роботі</TableHead>
+                                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-right px-8">Прогрес</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {unifiedRecordStats.inspectorPerformance.sort((a, b) => b.assigned - a.assigned).map((item) => (
+                                            <TableRow key={item.id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
+                                                <TableCell className="font-bold text-slate-900 px-8 py-4">{item.name}</TableCell>
+                                                <TableCell className="text-center font-bold text-slate-600">{item.assigned}</TableCell>
+                                                <TableCell className="text-center font-bold text-emerald-600">{item.processed}</TableCell>
+                                                <TableCell className="text-center font-bold text-amber-600">{item.pending}</TableCell>
+                                                <TableCell className="text-right px-8 py-4">
+                                                    <div className="flex items-center justify-end gap-3 font-black text-xs">
+                                                        <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-emerald-500 rounded-full"
+                                                                style={{ width: `${item.assigned > 0 ? (item.processed / item.assigned) * 100 : 0}%` }}
+                                                            />
+                                                        </div>
+                                                        <span className="w-10">
+                                                            {item.assigned > 0 ? Math.round((item.processed / item.assigned) * 100) : 0}%
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
                 {activeTab === 'feedback' && (
                     <>
                         {/* KPI Cards */}

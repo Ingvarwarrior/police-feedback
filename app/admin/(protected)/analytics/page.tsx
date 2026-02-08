@@ -5,7 +5,8 @@ import AnalyticsClient from "./AnalyticsClient"
 import { subDays, startOfDay, endOfDay } from "date-fns"
 import { getHourlyDistribution, detectBurnout, getDayOfWeekDistribution } from "@/lib/time-analytics"
 
-export default async function AnalyticsPage() {
+export default async function AnalyticsPage(props: { searchParams: Promise<{ period?: string }> }) {
+    const searchParams = await props.searchParams
     const session = await auth()
     const userPerms = session?.user as any
     if (userPerms?.role !== 'ADMIN' && !userPerms?.permViewAnalytics) {
@@ -20,18 +21,21 @@ export default async function AnalyticsPage() {
         )
     }
 
-    // Fetch data for the last 30 days
-    const thirtyDaysAgo = subDays(new Date(), 30)
+    const period = searchParams.period || '30'
+    const days = parseInt(period) || 30
+    const startDate = subDays(new Date(), days)
 
     const [
         responses,
         officers,
         citizens,
         categoryStats,
-        resolutionStats
+        resolutionStats,
+        unifiedRecordStats,
+        unifiedRecordsByInspector
     ] = await Promise.all([
         prisma.response.findMany({
-            where: { createdAt: { gte: thirtyDaysAgo } },
+            where: { createdAt: { gte: startDate } },
             select: {
                 createdAt: true,
                 rateOverall: true,
@@ -74,7 +78,7 @@ export default async function AnalyticsPage() {
             }
         }),
         prisma.response.groupBy({
-            where: { rateOverall: { gt: 0 } },
+            where: { rateOverall: { gt: 0 }, createdAt: { gte: startDate } },
             by: ['incidentType'],
             _count: true,
             _avg: {
@@ -85,20 +89,74 @@ export default async function AnalyticsPage() {
             where: {
                 status: 'RESOLVED',
                 resolutionDate: { not: null },
-                createdAt: { gte: thirtyDaysAgo }
+                createdAt: { gte: startDate }
             },
             select: { createdAt: true, resolutionDate: true }
+        }),
+        // New stats for Unified Records
+        (prisma as any).unifiedRecord.groupBy({
+            where: { createdAt: { gte: startDate } },
+            by: ['recordType'],
+            _count: true
+        }),
+        (prisma as any).unifiedRecord.findMany({
+            where: { createdAt: { gte: startDate } },
+            select: {
+                assignedUserId: true,
+                status: true,
+                assignedUser: {
+                    select: { firstName: true, lastName: true }
+                }
+            }
         })
-    ])
+    ]) as any[]
+
+    // Process Unified Record stats by inspector
+    const inspectorStatsMap: Record<string, {
+        id: string,
+        name: string,
+        assigned: number,
+        processed: number,
+        pending: number
+    }> = {}
+
+    // Include all officers who are users as potential inspectors
+    const users = await prisma.user.findMany({
+        where: { role: { in: ['ADMIN', 'USER'] } },
+        select: { id: true, firstName: true, lastName: true }
+    })
+
+    users.forEach(u => {
+        inspectorStatsMap[u.id] = {
+            id: u.id,
+            name: `${u.lastName} ${u.firstName || ''}`.trim(),
+            assigned: 0,
+            processed: 0,
+            pending: 0
+        }
+    })
+
+    unifiedRecordsByInspector.forEach((r: any) => {
+        if (r.assignedUserId && inspectorStatsMap[r.assignedUserId]) {
+            inspectorStatsMap[r.assignedUserId].assigned++
+            if (r.status === 'PROCESSED') {
+                inspectorStatsMap[r.assignedUserId].processed++
+            } else {
+                inspectorStatsMap[r.assignedUserId].pending++
+            }
+        }
+    })
+
+    const inspectorPerformance = Object.values(inspectorStatsMap).filter(s => s.assigned > 0)
 
     // 1. Daily Trends
     const dailyTrends: Record<string, { date: string, count: number, avg: number }> = {}
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < days; i++) {
         const d = subDays(new Date(), i)
         const dateStr = d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' })
         dailyTrends[dateStr] = { date: dateStr, count: 0, avg: 0 }
     }
-    responses.forEach(r => {
+    responses.forEach((r: any) => {
         const dateStr = new Date(r.createdAt).toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' })
         if (dailyTrends[dateStr] && r.rateOverall && r.rateOverall > 0) {
             dailyTrends[dateStr].count++
@@ -112,7 +170,7 @@ export default async function AnalyticsPage() {
 
     // 2. Ratings distribution
     const ratingsDist = [0, 0, 0, 0, 0]
-    responses.forEach(r => {
+    responses.forEach((r: any) => {
         if (r.rateOverall && r.rateOverall >= 1 && r.rateOverall <= 5) {
             ratingsDist[Math.floor(r.rateOverall) - 1]++
         }
@@ -126,21 +184,21 @@ export default async function AnalyticsPage() {
     ]
 
     // 3. Efficiency (Resolution Speed)
-    const resolutionTimes = resolutionStats.map(s => {
+    const resolutionTimes = resolutionStats.map((s: any) => {
         return (new Date(s.resolutionDate!).getTime() - new Date(s.createdAt).getTime()) / (1000 * 60 * 60) // hours
     })
     const avgResolutionTime = resolutionTimes.length > 0
-        ? resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length
+        ? resolutionTimes.reduce((a: number, b: number) => a + b, 0) / resolutionTimes.length
         : 0
 
     // 4. Trust/Anonymity
     const anonymityData = [
-        { name: 'Анонімно', value: responses.filter(r => !r.wantContact).length },
-        { name: 'Залишили контакти', value: responses.filter(r => r.wantContact).length },
+        { name: 'Анонімно', value: responses.filter((r: any) => !r.wantContact).length },
+        { name: 'Залишили контакти', value: responses.filter((r: any) => r.wantContact).length },
     ]
 
     // 5. Citizen Engagement
-    const recurringCount = citizens.filter(c => c._count.responses > 1).length
+    const recurringCount = citizens.filter((c: any) => c._count.responses > 1).length
     const uniqueCount = citizens.length - recurringCount
     const engagementData = [
         { name: 'Унікальні', value: uniqueCount },
@@ -148,12 +206,11 @@ export default async function AnalyticsPage() {
     ]
 
     // 6. Personnel Correlation (Internal vs Citizen)
-    const correlationData = officers.map(o => {
+    const correlationData = officers.map((o: any) => {
         const evals = o.evaluations || []
         const internalScores: number[] = []
 
         evals.forEach((e: any) => {
-            // Check all 5 score dimensions
             if (e.scoreKnowledge && e.scoreKnowledge > 0) internalScores.push(e.scoreKnowledge)
             if (e.scoreTactics && e.scoreTactics > 0) internalScores.push(e.scoreTactics)
             if (e.scoreCommunication && e.scoreCommunication > 0) internalScores.push(e.scoreCommunication)
@@ -171,11 +228,11 @@ export default async function AnalyticsPage() {
             internal: internalAvg,
             badge: o.badgeNumber
         }
-    }).filter(d => d.internal > 0 && d.citizen > 0).slice(0, 10) // Top 10 for visibility
+    }).filter((d: any) => d.internal > 0 && d.citizen > 0).slice(0, 10)
 
     // 7. Security (Suspicious IPs)
     const ipClusters: Record<string, { count: number, phones: Set<string> }> = {}
-    responses.forEach(r => {
+    responses.forEach((r: any) => {
         if (r.ipHash) {
             if (!ipClusters[r.ipHash]) {
                 ipClusters[r.ipHash] = { count: 0, phones: new Set() }
@@ -187,7 +244,7 @@ export default async function AnalyticsPage() {
         }
     })
     const suspiciousIps = Object.entries(ipClusters)
-        .filter(([_, data]) => data.count > 3) // More than 3 reports from same IP in 30 days
+        .filter(([_, data]) => data.count > 3)
         .map(([hash, data]) => ({
             hash,
             count: data.count,
@@ -195,33 +252,27 @@ export default async function AnalyticsPage() {
         }))
         .sort((a, b) => b.count - a.count)
 
-    // Filter responses with valid ratings (exclude 0 or null)
-    const ratedResponses = responses.filter(r => r.rateOverall && r.rateOverall > 0)
-
-    // 9. Time Analytics
+    const ratedResponses = responses.filter((r: any) => r.rateOverall && r.rateOverall > 0)
     const hourlyData = getHourlyDistribution(ratedResponses)
     const dayOfWeekData = getDayOfWeekDistribution(ratedResponses)
-
-    // 10. Burnout Detection
     const burnoutAlerts = officers
-        .map(o => detectBurnout(o.id, `${o.firstName} ${o.lastName}`, ratedResponses))
+        .map((o: any) => detectBurnout(o.id, `${o.firstName} ${o.lastName}`, ratedResponses))
         .filter(Boolean)
-        .filter(alert => alert!.alertLevel !== 'none')
-        .sort((a, b) => {
-            const levelOrder = { 'critical': 3, 'warning': 2, 'none': 1 }
+        .filter((alert: any) => alert!.alertLevel !== 'none')
+        .sort((a: any, b: any) => {
+            const levelOrder: any = { 'critical': 3, 'warning': 2, 'none': 1 }
             return levelOrder[b!.alertLevel] - levelOrder[a!.alertLevel]
         })
-
-
 
     return (
         <div className="space-y-8 pb-10">
             <div>
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Аналітичний центр</h1>
-                <p className="text-slate-500 font-medium">Моніторинг показників та ефективності за останні 30 днів</p>
+                <p className="text-slate-500 font-medium">Моніторинг показників та ефективності за останні {days} днів</p>
             </div>
 
             <AnalyticsClient
+                period={period}
                 trendData={trendData}
                 ratingsData={ratingsData}
                 officers={officers}
@@ -243,7 +294,10 @@ export default async function AnalyticsPage() {
                     dayOfWeekData,
                     burnoutAlerts: burnoutAlerts as any[]
                 }}
-
+                unifiedRecordStats={{
+                    totalByType: unifiedRecordStats as any,
+                    inspectorPerformance
+                }}
             />
         </div>
     )
