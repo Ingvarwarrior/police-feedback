@@ -72,6 +72,27 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         },
     })
 
+    // Reset form when initialData changes (important for re-using the dialog component)
+    useEffect(() => {
+        if (isOpen) {
+            form.reset({
+                id: initialData?.id,
+                eoNumber: initialData?.eoNumber || "",
+                eoDate: initialData?.eoDate ? new Date(initialData.eoDate) : new Date(),
+                description: initialData?.description || "",
+                applicant: initialData?.applicant || "",
+                address: initialData?.address || "",
+                officerName: initialData?.officerName || "",
+                assignedUserId: initialData?.assignedUserId || null,
+                category: initialData?.category || "Загальне",
+                recordType: initialData?.recordType || "EO",
+                district: initialData?.district || "Хмільницький",
+                resolution: initialData?.resolution || "",
+                resolutionDate: initialData?.resolutionDate ? new Date(initialData.resolutionDate) : null,
+            })
+        }
+    }, [initialData, isOpen, form])
+
     const eoDate = form.watch("eoDate")
     const resolutionDate = form.watch("resolutionDate")
 
@@ -182,7 +203,10 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     return (
         <Dialog open={isOpen} onOpenChange={(open) => {
             setIsOpen(open)
-            if (!open) form.reset()
+            if (!open) {
+                // Delay reset slightly to avoid visual glitch during closing animation
+                setTimeout(() => form.reset(), 200)
+            }
         }}>
             <DialogTrigger asChild>
                 {trigger || (
@@ -350,6 +374,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                         type="button"
                         variant="ghost"
                         onClick={() => {
+                            form.reset()
                             setIsOpen(false)
                         }}
                         className="rounded-xl font-bold text-slate-500 hover:text-slate-900 flex-1 md:flex-none"
