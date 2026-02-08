@@ -341,19 +341,22 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     </div>
                 </form>
 
-                <DialogFooter className="p-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                <DialogFooter className="p-6 md:p-8 bg-slate-50 border-t border-slate-100 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
                     <Button
                         type="button"
                         variant="ghost"
-                        onClick={() => setIsOpen(false)}
-                        className="rounded-xl font-bold text-slate-500 hover:text-slate-900"
+                        onClick={() => {
+                            setIsOpen(false)
+                            form.reset()
+                        }}
+                        className="rounded-xl font-bold text-slate-500 hover:text-slate-900 order-2 md:order-1"
                     >
                         Скасувати
                     </Button>
                     <Button
                         onClick={form.handleSubmit(onSubmit)}
                         disabled={isLoading}
-                        className="bg-slate-900 hover:bg-black text-white rounded-xl px-8 shadow-lg shadow-slate-900/20 transition-all"
+                        className="bg-slate-900 hover:bg-black text-white rounded-xl px-8 h-12 md:h-10 shadow-lg shadow-slate-900/20 transition-all order-1 md:order-2"
                     >
                         {isLoading ? (
                             <>
