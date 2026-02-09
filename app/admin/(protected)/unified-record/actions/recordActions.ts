@@ -6,6 +6,9 @@ import { revalidatePath } from "next/cache"
 import * as XLSX from 'xlsx'
 import { z } from "zod"
 import { sendUnifiedAssignmentEmail } from "@/lib/mail"
+import { GoogleGenerativeAI } from "@google/generative-ai"
+
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "")
 
 const UnifiedRecordSchema = z.object({
     id: z.string().optional(),
@@ -573,6 +576,79 @@ export async function saveUnifiedRecordsAction(records: any[]) {
             })
         }
 
-        revalidatePath('/admin/unified-record')
-        return { success: true }
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
+
+export async function analyzeRecordImageAction(formData: FormData) {
+    const session = await auth()
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const file = formData.get('file') as File
+    if (!file) throw new Error("No file provided")
+
+    // Check for API key
+    if (!process.env.GOOGLE_AI_API_KEY) {
+        console.error("GOOGLE_AI_API_KEY is not set")
+        // Return mock data for development if key is missing
+        if (process.env.NODE_ENV === 'development') {
+            return {
+                success: true,
+                data: {
+                    eoNumber: "12345 (Mock)",
+                    description: "Тестовий опис події з фото",
+                    address: "м. Хмільник, вул. Тестова 1",
+                    applicant: "Іванов І.І."
+                }
+            }
+        }
+        throw new Error("AI Service not configured")
     }
+
+    try {
+        const buffer = await file.arrayBuffer()
+        const base64Image = Buffer.from(buffer).toString('base64')
+
+        const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" })
+
+        const prompt = `Проаналізуй це фото документа (рапорт або заява до поліції).
+    Витягни наступні дані у форматі JSON:
+    - eoNumber: номер ЄО (або реєстраційний номер)
+    - description: короткий зміст події/заяви
+    - address: адреса події або заявника
+    - applicant: ПІБ заявника
+    - officerName: ПІБ поліцейського (хто склав рапорт)
+    - date: дата події/документа (у форматі YYYY-MM-DD)
+
+    Якщо якихось даних немає, поверни null або порожній рядок.
+    Відповідай ТІЛЬКИ валідним JSON без markdown.`
+
+        const result = await model.generateContent([
+            prompt,
+            {
+                inlineData: {
+                    data: base64Image,
+                    mimeType: file.type
+                }
+            }
+        ])
+
+        const response = await result.response
+        const text = response.text()
+
+        let data
+        try {
+            // Clean markdown if present
+            const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim()
+            data = JSON.parse(jsonStr)
+        } catch (e) {
+            console.error("Failed to parse AI response:", text)
+            throw new Error("AI Response parsing failed")
+        }
+
+        return { success: true, data }
+    } catch (error: any) {
+        console.error("AI Analysis error:", error)
+        return { success: false, error: error.message || "Failed to analyze image" }
+    }
+}
