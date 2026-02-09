@@ -362,57 +362,39 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             {/* Tabs & Actions Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <Tabs defaultValue="ALL" className="w-full sm:w-auto" onValueChange={(v) => setActiveTab(v as any)}>
-                    <TabsList className="bg-white p-1 rounded-2xl border border-slate-300 shadow-sm h-14 flex items-center justify-start w-full sm:w-fit overflow-x-auto no-scrollbar">
+                    <TabsList className="bg-white/80 backdrop-blur-md p-1.5 rounded-[2rem] border border-slate-300 shadow-xl h-16 flex items-center justify-start w-full sm:w-fit overflow-x-auto no-scrollbar gap-1">
                         <TabsTrigger
                             value="ALL"
-                            className="rounded-xl px-4 md:px-8 h-full font-black uppercase tracking-widest text-[9px] md:text-[10px] data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all gap-2 shrink-0"
+                            className="rounded-[1.5rem] px-6 md:px-10 h-full font-black uppercase tracking-widestr text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-800 data-[state=active]:to-slate-950 data-[state=active]:text-white transition-all duration-300 gap-3 shrink-0 shadow-sm"
                         >
-                            Все записи
-                            <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md text-[9px] font-bold">
+                            Всі записи
+                            <span className="bg-slate-200/50 text-slate-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
                                 {records.length}
                             </span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="EO"
-                            className="rounded-xl px-4 md:px-8 h-full font-black uppercase tracking-widest text-[9px] md:text-[10px] data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all gap-2 shrink-0"
+                            className="rounded-[1.5rem] px-6 md:px-10 h-full font-black uppercase tracking-widest text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-800 data-[state=active]:text-white transition-all duration-300 gap-3 shrink-0 shadow-sm"
                         >
                             Єдиний облік
-                            <span className="bg-blue-50 text-blue-500 px-2 py-0.5 rounded-md text-[9px]">
-                                {records.filter(r => r.recordType === 'EO' &&
-                                    (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
-                                    (filterSearch.trim() ? (
-                                        String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                        r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                        r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                        r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                        r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
-                                    ) : true)
-                                ).length}
+                            <span className="bg-blue-50/50 text-blue-600 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
+                                {records.filter(r => r.recordType === 'EO').length}
                             </span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="ZVERN"
-                            className="rounded-xl px-4 md:px-8 h-full font-black uppercase tracking-widest text-[9px] md:text-[10px] data-[state=active]:bg-amber-500 data-[state=active]:text-white transition-all gap-2 shrink-0"
+                            className="rounded-[1.5rem] px-6 md:px-10 h-full font-black uppercase tracking-widest text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white transition-all duration-300 gap-3 shrink-0 shadow-sm"
                         >
                             Звернення
-                            <span className="bg-amber-50 text-amber-500 px-2 py-0.5 rounded-md text-[9px]">
-                                {records.filter(r => r.recordType === 'ZVERN' &&
-                                    (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
-                                    (filterSearch.trim() ? (
-                                        String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                        r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                        r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                        r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                        r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
-                                    ) : true)
-                                ).length}
+                            <span className="bg-amber-50/50 text-amber-600 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
+                                {records.filter(r => r.recordType === 'ZVERN').length}
                             </span>
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
 
                 {currentUser.role === 'ADMIN' && (
-                    <div className="flex items-center gap-2 p-1.5 bg-white/80 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto justify-center sm:justify-start h-14 overflow-x-auto no-scrollbar">
+                    <div className="flex items-center gap-3 p-2 bg-white/90 backdrop-blur-md rounded-[2rem] border border-slate-200 shadow-xl w-full sm:w-auto justify-center sm:justify-start h-16 overflow-x-auto no-scrollbar transition-all hover:shadow-2xl">
                         <CreateRecordDialog users={users} initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }} />
                         {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}
                         {(activeTab === 'ZVERN') && <ImportDialog defaultRecordType="ZVERN" />}
@@ -421,85 +403,53 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             </div>
 
             {/* Status Tabs (Combined with Type tabs for a logical flow) */}
-            <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-200 rounded-2xl border border-slate-300 w-full sm:w-fit">
+            <div className="flex flex-wrap items-center gap-2 p-2 bg-slate-100 rounded-[2.5rem] border border-slate-300 w-full sm:w-fit shadow-inner">
                 <button
                     onClick={() => setFilterStatus('PENDING')}
                     className={cn(
-                        "px-4 sm:px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center flex-1 sm:flex-none justify-center",
-                        filterStatus === 'PENDING' ? "bg-white text-blue-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"
+                        "px-6 sm:px-8 py-3 rounded-[1.8rem] text-[11px] font-black uppercase tracking-widest transition-all gap-3 flex items-center flex-1 sm:flex-none justify-center border-none",
+                        filterStatus === 'PENDING' ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg ring-2 ring-blue-200" : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
                     )}
                 >
-                    <Clock className="w-3.5 h-3.5" />
+                    <Clock className={cn("w-4 h-4", filterStatus === 'PENDING' ? "text-white" : "text-blue-500")} />
                     В роботі
                     <span className={cn(
-                        "px-1.5 py-0.5 rounded text-[8px] font-bold",
-                        filterStatus === 'PENDING' ? "bg-blue-100 text-blue-700" : "bg-slate-300 text-slate-600"
+                        "px-2.5 py-1 rounded-xl text-[9px] font-black min-w-[20px] shadow-sm",
+                        filterStatus === 'PENDING' ? "bg-white/20 text-white" : "bg-blue-100 text-blue-600"
                     )}>
-                        {records.filter(r =>
-                            (activeTab === 'ALL' || r.recordType === activeTab) &&
-                            r.status !== 'PROCESSED' &&
-                            (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
-                            (filterSearch.trim() ? (
-                                String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
-                            ) : true)
-                        ).length}
+                        {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && r.status !== 'PROCESSED').length}
                     </span>
                 </button>
                 <button
                     onClick={() => setFilterStatus('PROCESSED')}
                     className={cn(
-                        "px-4 sm:px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center flex-1 sm:flex-none justify-center",
-                        filterStatus === 'PROCESSED' ? "bg-white text-emerald-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"
+                        "px-6 sm:px-8 py-3 rounded-[1.8rem] text-[11px] font-black uppercase tracking-widest transition-all gap-3 flex items-center flex-1 sm:flex-none justify-center border-none",
+                        filterStatus === 'PROCESSED' ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-lg ring-2 ring-emerald-200" : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
                     )}
                 >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <CheckCircle2 className={cn("w-4 h-4", filterStatus === 'PROCESSED' ? "text-white" : "text-emerald-500")} />
                     Опрацьовані
                     <span className={cn(
-                        "px-1.5 py-0.5 rounded text-[8px] font-bold",
-                        filterStatus === 'PROCESSED' ? "bg-emerald-100 text-emerald-700" : "bg-slate-300 text-slate-600"
+                        "px-2.5 py-1 rounded-xl text-[9px] font-black min-w-[20px] shadow-sm",
+                        filterStatus === 'PROCESSED' ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-600"
                     )}>
-                        {records.filter(r =>
-                            (activeTab === 'ALL' || r.recordType === activeTab) &&
-                            r.status === 'PROCESSED' &&
-                            (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
-                            (filterSearch.trim() ? (
-                                String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
-                            ) : true)
-                        ).length}
+                        {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && r.status === 'PROCESSED').length}
                     </span>
                 </button>
                 <button
                     onClick={() => setFilterStatus('ALL')}
                     className={cn(
-                        "px-4 sm:px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center flex-1 sm:flex-none justify-center",
-                        filterStatus === 'ALL' ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"
+                        "px-6 sm:px-8 py-3 rounded-[1.8rem] text-[11px] font-black uppercase tracking-widest transition-all gap-3 flex items-center flex-1 sm:flex-none justify-center border-none",
+                        filterStatus === 'ALL' ? "bg-gradient-to-r from-slate-700 to-slate-900 text-white shadow-lg ring-2 ring-slate-300" : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
                     )}
                 >
-                    <ClipboardList className="w-3.5 h-3.5" />
+                    <ClipboardList className={cn("w-4 h-4", filterStatus === 'ALL' ? "text-white" : "text-slate-400")} />
                     Всі
                     <span className={cn(
-                        "px-1.5 py-0.5 rounded text-[8px] font-bold",
-                        filterStatus === 'ALL' ? "bg-slate-900 text-white" : "bg-slate-300 text-slate-600"
+                        "px-2.5 py-1 rounded-xl text-[9px] font-black min-w-[20px] shadow-sm",
+                        filterStatus === 'ALL' ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
                     )}>
-                        {records.filter(r =>
-                            (activeTab === 'ALL' || r.recordType === activeTab) &&
-                            (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
-                            (filterSearch.trim() ? (
-                                String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
-                            ) : true)
-                        ).length}
+                        {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab)).length}
                     </span>
                 </button>
             </div>
@@ -507,18 +457,18 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             {/* Assignment Filters (Admin Only) */}
             {
                 currentUser.role === 'ADMIN' && (
-                    <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-2xl border border-slate-300 w-full sm:w-fit shadow-sm">
+                    <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100 rounded-[2.2rem] border border-slate-300 w-full sm:w-fit shadow-inner">
                         <button
                             onClick={() => setFilterAssignment('ALL')}
                             className={cn(
-                                "flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center justify-center sm:justify-start",
-                                filterAssignment === 'ALL' ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                                "flex-1 sm:flex-none px-6 sm:px-7 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all gap-2.5 flex items-center justify-center border-none",
+                                filterAssignment === 'ALL' ? "bg-gradient-to-r from-slate-800 to-slate-950 text-white shadow-md ring-2 ring-slate-200" : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
                             )}
                         >
                             Всі
                             <span className={cn(
-                                "px-1.5 py-0.5 rounded text-[8px]",
-                                filterAssignment === 'ALL' ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                                "px-2 py-0.5 rounded-xl text-[9px] font-black min-w-[20px] shadow-xs",
+                                filterAssignment === 'ALL' ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
                             )}>
                                 {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && (filterStatus === 'ALL' || (filterStatus === 'PENDING' ? r.status !== 'PROCESSED' : r.status === 'PROCESSED'))).length}
                             </span>
@@ -526,15 +476,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <button
                             onClick={() => setFilterAssignment('ASSIGNED')}
                             className={cn(
-                                "flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center justify-center sm:justify-start",
-                                filterAssignment === 'ASSIGNED' ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                                "flex-1 sm:flex-none px-6 sm:px-7 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all gap-2.5 flex items-center justify-center border-none",
+                                filterAssignment === 'ASSIGNED' ? "bg-gradient-to-r from-indigo-500 to-blue-700 text-white shadow-md ring-2 ring-blue-100" : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
                             )}
                         >
-                            <User className="w-3 h-3" />
+                            <User className={cn("w-3.5 h-3.5", filterAssignment === 'ASSIGNED' ? "text-white" : "text-indigo-500")} />
                             Призначені
                             <span className={cn(
-                                "px-1.5 py-0.5 rounded text-[8px]",
-                                filterAssignment === 'ASSIGNED' ? "bg-white/20 text-white" : "bg-blue-50 text-blue-600"
+                                "px-2 py-0.5 rounded-xl text-[9px] font-black min-w-[20px] shadow-xs",
+                                filterAssignment === 'ASSIGNED' ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-700"
                             )}>
                                 {filteredRecords.filter(r => r.assignedUserId !== null).length}
                             </span>
@@ -542,15 +492,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <button
                             onClick={() => setFilterAssignment('UNASSIGNED')}
                             className={cn(
-                                "flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center justify-center sm:justify-start",
-                                filterAssignment === 'UNASSIGNED' ? "bg-amber-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                                "flex-1 sm:flex-none px-6 sm:px-7 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all gap-2.5 flex items-center justify-center border-none",
+                                filterAssignment === 'UNASSIGNED' ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md ring-2 ring-amber-100" : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
                             )}
                         >
-                            <UserPlus className="w-3 h-3" />
+                            <UserPlus className={cn("w-3.5 h-3.5", filterAssignment === 'UNASSIGNED' ? "text-white" : "text-amber-500")} />
                             Непризначені
                             <span className={cn(
-                                "px-1.5 py-0.5 rounded text-[8px]",
-                                filterAssignment === 'UNASSIGNED' ? "bg-white/20 text-white" : "bg-amber-50 text-amber-600"
+                                "px-2 py-0.5 rounded-xl text-[9px] font-black min-w-[20px] shadow-xs",
+                                filterAssignment === 'UNASSIGNED' ? "bg-white/20 text-white" : "bg-amber-100 text-amber-700"
                             )}>
                                 {filteredRecords.filter(r => r.assignedUserId === null).length}
                             </span>
@@ -559,23 +509,23 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 )
             }
             {/* Filters Bar */}
-            <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-300 shadow-sm flex flex-col xl:flex-row gap-4 items-center justify-between">
-                <div className="flex flex-col md:flex-row gap-4 w-full xl:w-auto flex-1">
-                    <div className="relative group flex-1 md:max-w-xs">
-                        <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-600 transition-colors" />
+            <div className="bg-white/90 backdrop-blur-sm p-5 md:p-7 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 flex flex-col xl:flex-row gap-5 items-center justify-between transition-all hover:shadow-2xl hover:shadow-slate-300/50">
+                <div className="flex flex-col md:flex-row gap-5 w-full xl:w-auto flex-1">
+                    <div className="relative group flex-1 md:max-w-xs transition-all">
+                        <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <Input
                             placeholder="№ ЄО..."
-                            className="pl-12 bg-white border-slate-300 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20 font-bold text-slate-900 placeholder:text-slate-400"
+                            className="pl-12 bg-slate-50 border-slate-200 rounded-2xl h-14 focus-visible:ring-4 focus-visible:ring-blue-500/10 focus-visible:border-blue-500 font-bold text-slate-900 placeholder:text-slate-400 border-2 transition-all"
                             value={filterEoNumber}
                             onChange={(e) => setFilterEoNumber(e.target.value)}
                         />
                     </div>
 
-                    <div className="relative group flex-[2]">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-600 transition-colors" />
+                    <div className="relative group flex-[2] transition-all">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <Input
                             placeholder="Пошук за подією або прізвищем..."
-                            className="pl-12 bg-white border-slate-300 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20 text-slate-900 placeholder:text-slate-400"
+                            className="pl-12 bg-slate-50 border-slate-200 rounded-2xl h-14 focus-visible:ring-4 focus-visible:ring-blue-500/10 focus-visible:border-blue-500 text-slate-900 placeholder:text-slate-400 border-2 transition-all font-medium"
                             value={filterSearch}
                             onChange={(e) => setFilterSearch(e.target.value)}
                         />
@@ -585,14 +535,14 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
                     {currentUser.role === 'ADMIN' && (
                         <Select value={filterInspector} onValueChange={setFilterInspector}>
-                            <SelectTrigger className="flex-1 md:w-[200px] rounded-xl border-slate-300 bg-white h-12 font-bold text-slate-700">
-                                <User className="w-4 h-4 mr-2 text-slate-500" />
+                            <SelectTrigger className="flex-1 md:w-[220px] rounded-2xl border-2 border-slate-200 bg-slate-50 h-14 font-black uppercase tracking-widest text-[10px] text-slate-700 hover:bg-white hover:border-blue-400 transition-all">
+                                <User className="w-4 h-4 mr-2 text-slate-400" />
                                 <SelectValue placeholder="Інспектор" />
                             </SelectTrigger>
-                            <SelectContent className="rounded-2xl max-h-[300px]">
-                                <SelectItem value="ALL">Всі інспектори</SelectItem>
+                            <SelectContent className="rounded-2xl border-slate-200 shadow-2xl overflow-hidden p-1 bg-white/95 backdrop-blur-sm">
+                                <SelectItem value="ALL" className="rounded-xl font-bold text-slate-500 uppercase tracking-widest text-[9px] focus:bg-slate-100 transition-colors">Всі інспектори</SelectItem>
                                 {users.map(u => (
-                                    <SelectItem key={u.id} value={u.id}>
+                                    <SelectItem key={u.id} value={u.id} className="rounded-xl font-black uppercase tracking-widest text-[10px] focus:bg-blue-50 focus:text-blue-700 transition-colors">
                                         {u.lastName} {u.firstName?.charAt(0)}.
                                     </SelectItem>
                                 ))}
@@ -601,43 +551,60 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     )}
 
                     <Select value={filterCategory} onValueChange={setFilterCategory}>
-                        <SelectTrigger className="flex-1 md:w-[180px] rounded-xl border-slate-300 bg-white h-12 font-bold text-slate-700">
-                            <Filter className="w-4 h-4 mr-2 text-slate-500" />
+                        <SelectTrigger className="flex-1 md:w-[200px] rounded-2xl border-2 border-slate-200 bg-slate-50 h-14 font-black uppercase tracking-widest text-[10px] text-slate-700 hover:bg-white hover:border-blue-400 transition-all">
+                            <Filter className="w-4 h-4 mr-2 text-slate-400" />
                             <SelectValue placeholder="Категорія" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-2xl">
-                            <SelectItem value="ALL">Всі категорії</SelectItem>
+                        <SelectContent className="rounded-2xl border-slate-200 shadow-2xl overflow-hidden p-1 bg-white/95 backdrop-blur-sm">
+                            <SelectItem value="ALL" className="rounded-xl font-bold text-slate-500 uppercase tracking-widest text-[9px] focus:bg-slate-100 transition-colors">Всі категорії</SelectItem>
                             {categories.map(cat => (
-                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                <SelectItem key={cat} value={cat} className="rounded-xl font-black uppercase tracking-widest text-[10px] focus:bg-blue-50 focus:text-blue-700 transition-colors">
+                                    {cat}
+                                </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
 
                     <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger className="flex-1 md:w-[180px] rounded-xl border-slate-300 bg-white h-12 font-bold text-slate-700">
-                            <ArrowUpDown className="w-4 h-4 mr-2 text-slate-500" />
+                        <SelectTrigger className="flex-1 md:w-[200px] rounded-2xl border-2 border-slate-200 bg-slate-50 h-14 font-black uppercase tracking-widest text-[10px] text-slate-700 hover:bg-white hover:border-blue-400 transition-all">
+                            <ArrowUpDown className="w-4 h-4 mr-2 text-slate-400" />
                             <SelectValue placeholder="Сортування" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-2xl">
-                            <SelectItem value="newest">Спочатку нові</SelectItem>
-                            <SelectItem value="oldest">Спочатку старі</SelectItem>
-                            <SelectItem value="eo_asc">№ ЄО (зростання)</SelectItem>
-                            <SelectItem value="eo_desc">№ ЄО (спадання)</SelectItem>
+                        <SelectContent className="rounded-2xl border-slate-200 shadow-2xl overflow-hidden p-1 bg-white/95 backdrop-blur-sm">
+                            <SelectItem value="newest" className="rounded-xl font-black uppercase tracking-widest text-[10px] focus:bg-blue-50 focus:text-blue-700 transition-colors">Спочатку нові</SelectItem>
+                            <SelectItem value="oldest" className="rounded-xl font-black uppercase tracking-widest text-[10px] focus:bg-blue-50 focus:text-blue-700 transition-colors">Спочатку старі</SelectItem>
+                            <SelectItem value="eo_asc" className="rounded-xl font-black uppercase tracking-widest text-[10px] focus:bg-blue-50 focus:text-blue-700 transition-colors">№ ЄО (зростання)</SelectItem>
+                            <SelectItem value="eo_desc" className="rounded-xl font-black uppercase tracking-widest text-[10px] focus:bg-blue-50 focus:text-blue-700 transition-colors">№ ЄО (спадання)</SelectItem>
                         </SelectContent>
                     </Select>
 
-                    <div className="h-8 w-px bg-slate-100 hidden sm:block mx-1" />
+                    <div className="h-10 w-px bg-slate-200 hidden sm:block mx-1" />
 
                     <Button
                         variant={showOnlyMine ? "default" : "outline"}
                         onClick={() => setShowOnlyMine(!showOnlyMine)}
                         className={cn(
-                            "h-12 rounded-xl font-bold transition-all px-6 gap-2",
-                            showOnlyMine ? "bg-slate-900 text-white shadow-lg" : "border-slate-300 text-slate-700 hover:bg-slate-100"
+                            "h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all px-8 gap-3 border-2 shrink-0",
+                            showOnlyMine ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-xl border-blue-400" : "border-slate-200 text-slate-700 hover:bg-white hover:border-blue-400 bg-slate-50"
                         )}
                     >
-                        <CalendarCheck2 className="w-4 h-4" />
+                        <CalendarCheck2 className={cn("w-4 h-4", showOnlyMine ? "text-white" : "text-blue-500")} />
                         {showOnlyMine ? "Мої завдання" : "Всі записи"}
+                    </Button>
+
+                    <Button
+                        variant="ghost"
+                        className="h-14 w-14 rounded-2xl bg-slate-100 border-2 border-slate-200 text-slate-400 hover:bg-white hover:text-red-500 hover:border-red-400 transition-all group shrink-0"
+                        onClick={() => {
+                            setFilterSearch("");
+                            setFilterEoNumber("");
+                            setFilterCategory("ALL");
+                            setFilterStatus("ALL");
+                            setFilterAssignment("ALL");
+                            setFilterInspector("ALL");
+                        }}
+                    >
+                        <Filter className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                     </Button>
                 </div>
             </div>
