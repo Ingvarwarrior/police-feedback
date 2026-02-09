@@ -63,7 +63,15 @@ export async function GET(
                         eoDate: true,
                         resolution: true,
                         resolutionDate: true,
-                        status: true
+                        status: true,
+                        applicant: true,
+                        recordType: true,
+                        assignedUser: {
+                            select: {
+                                firstName: true,
+                                lastName: true
+                            }
+                        }
                     },
                     orderBy: {
                         resolutionDate: 'desc'

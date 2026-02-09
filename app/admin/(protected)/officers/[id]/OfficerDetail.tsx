@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import {
-    ArrowLeft, Shield, Star, Award, TrendingUp, Phone, Activity, AlertTriangle, FileText, Trash2, CheckCircle2, XCircle, Users, Image as ImageIcon, ClipboardList
+    ArrowLeft, Shield, Star, Award, TrendingUp, Phone, Activity, AlertTriangle, FileText, Trash2, CheckCircle2, XCircle, Users, Image as ImageIcon, ClipboardList, MessageSquare
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
@@ -592,8 +592,8 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                         </div>
                     )}
 
-                    {/* Unified Records (ЄО) */}
-                    {stats.unifiedRecords && stats.unifiedRecords.length > 0 && (
+                    {/* Unified Records (EO) - Only EO types */}
+                    {stats.unifiedRecords && stats.unifiedRecords.filter((r: any) => r.recordType !== 'ZVERN').length > 0 && (
                         <div className="space-y-6">
                             <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 italic">
                                 <div className="w-1.5 h-6 bg-blue-600" />
@@ -601,7 +601,7 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                 Звернення в Єдиному обліку (ЄО)
                             </h2>
                             <div className="space-y-4">
-                                {stats.unifiedRecords.map((rec: any) => (
+                                {stats.unifiedRecords.filter((r: any) => r.recordType !== 'ZVERN').map((rec: any) => (
                                     <div key={rec.id} className="p-6 rounded-[2rem] border border-blue-100 bg-blue-50/20 shadow-sm group hover:shadow-md transition-all">
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
@@ -632,6 +632,47 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Mentions in Appeals (ZVERN) - Table View */}
+                    {stats.unifiedRecords && stats.unifiedRecords.filter((r: any) => r.recordType === 'ZVERN').length > 0 && (
+                        <div className="space-y-6">
+                            <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 italic">
+                                <div className="w-1.5 h-6 bg-purple-600" />
+                                <MessageSquare className="w-5 h-5 text-purple-600" />
+                                Згадки у зверненнях
+                            </h2>
+                            <div className="overflow-hidden rounded-[2rem] border border-purple-100 shadow-sm">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-purple-50/50 border-b border-purple-100 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                            <th className="px-6 py-4">Дата</th>
+                                            <th className="px-6 py-4">№ ЄО</th>
+                                            <th className="px-6 py-4">Заявник</th>
+                                            <th className="px-6 py-4">Інспектор</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-xs font-bold text-slate-700">
+                                        {stats.unifiedRecords.filter((r: any) => r.recordType === 'ZVERN').map((rec: any) => (
+                                            <tr key={rec.id} className="border-b border-purple-50 last:border-0 hover:bg-purple-50/30 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    {rec.eoDate ? format(new Date(rec.eoDate), 'dd.MM.yyyy') : '—'}
+                                                </td>
+                                                <td className="px-6 py-4 text-purple-600">
+                                                    {rec.eoNumber}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {rec.applicant || 'Анонімно'}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {rec.assignedUser ? `${rec.assignedUser.lastName} ${rec.assignedUser.firstName?.[0] || ''}.` : '—'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     )}

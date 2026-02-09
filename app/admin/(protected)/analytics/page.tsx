@@ -123,7 +123,8 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
                 status: true,
                 assignedUser: {
                     select: { firstName: true, lastName: true }
-                }
+                },
+                recordType: true
             }
         })
     ]) as any[]
@@ -132,18 +133,11 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
     const inspectorStatsMap: Record<string, {
         id: string,
         name: string,
+        recordType: string, // Add record type
         assigned: number,
         processed: number,
         pending: number
-    }> = {
-        'unassigned': {
-            id: 'unassigned',
-            name: 'Не призначено',
-            assigned: 0,
-            processed: 0,
-            pending: 0
-        }
-    }
+    }> = {}
 
     // Include all officers who are users as potential inspectors
     const users = await prisma.user.findMany({
@@ -151,35 +145,43 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
         select: { id: true, firstName: true, lastName: true }
     })
 
+    // Initialize for both types for all users
     users.forEach(u => {
-        inspectorStatsMap[u.id] = {
-            id: u.id,
-            name: `${u.lastName} ${u.firstName || ''}`.trim(),
-            assigned: 0,
-            processed: 0,
-            pending: 0
-        }
+        ['EO', 'ZVERN'].forEach(type => {
+            const compositeKey = `${u.id}_${type}`
+            inspectorStatsMap[compositeKey] = {
+                id: u.id,
+                name: `${u.lastName} ${u.firstName || ''}`.trim(),
+                recordType: type,
+                assigned: 0,
+                processed: 0,
+                pending: 0
+            }
+        })
     })
 
     unifiedRecordsByInspector.forEach((r: any) => {
-        const targetId = r.assignedUserId || 'unassigned'
+        const userId = r.assignedUserId || 'unassigned'
+        const type = r.recordType || 'EO' // Default to EO if missing
+        const compositeKey = `${userId}_${type}`
 
-        // Dynamically add to map if not pre-populated (e.g. user role changed)
-        if (!inspectorStatsMap[targetId]) {
-            inspectorStatsMap[targetId] = {
-                id: targetId,
-                name: r.assignedUser ? `${r.assignedUser.lastName} ${r.assignedUser.firstName || ''}`.trim() : 'Невідомий',
+        // Dynamically add to map if not pre-populated (e.g. user role changed or unassigned)
+        if (!inspectorStatsMap[compositeKey]) {
+            inspectorStatsMap[compositeKey] = {
+                id: userId,
+                name: r.assignedUser ? `${r.assignedUser.lastName} ${r.assignedUser.firstName || ''}`.trim() : (userId === 'unassigned' ? 'Не призначено' : 'Невідомий'),
+                recordType: type,
                 assigned: 0,
                 processed: 0,
                 pending: 0
             }
         }
 
-        inspectorStatsMap[targetId].assigned++
+        inspectorStatsMap[compositeKey].assigned++
         if (r.status === 'PROCESSED') {
-            inspectorStatsMap[targetId].processed++
+            inspectorStatsMap[compositeKey].processed++
         } else {
-            inspectorStatsMap[targetId].pending++
+            inspectorStatsMap[compositeKey].pending++
         }
     })
 
