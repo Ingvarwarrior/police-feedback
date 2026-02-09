@@ -66,10 +66,29 @@ export async function GET(
                         status: true,
                         applicant: true,
                         recordType: true,
+                        address: true,
+                        district: true,
+                        officers: {
+                            select: {
+                                id: true,
+                                firstName: true,
+                                lastName: true,
+                                badgeNumber: true
+                            }
+                        },
+                        concernsBpp: true,
+                        description: true,
+                        deadline: true,
+                        extensionStatus: true,
+                        extensionReason: true,
+                        createdAt: true,
+                        importedAt: true,
                         assignedUser: {
                             select: {
+                                id: true,
                                 firstName: true,
-                                lastName: true
+                                lastName: true,
+                                username: true
                             }
                         }
                     },
