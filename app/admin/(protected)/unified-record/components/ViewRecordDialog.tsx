@@ -29,6 +29,17 @@ interface ViewRecordDialogProps {
 export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewRecordDialogProps) {
     if (!record) return null
 
+    const safeFormat = (date: any, formatStr: string) => {
+        try {
+            if (!date) return "—";
+            const d = new Date(date);
+            if (isNaN(d.getTime())) return "—";
+            return format(d, formatStr, { locale: uk });
+        } catch (e) {
+            return "—";
+        }
+    }
+
     const statusMap: Record<string, { label: string, color: string, icon: any }> = {
         "PENDING": { label: "Очікує", color: "text-amber-600 bg-amber-50 border-amber-100", icon: Clock },
         "IN_PROGRESS": { label: "В роботі", color: "text-blue-600 bg-blue-50 border-blue-100", icon: Clock },
@@ -76,7 +87,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Дата реєстрації</p>
                                     <p className="font-bold text-slate-900">
-                                        {format(new Date(record.eoDate), "PPP", { locale: uk })}
+                                        {safeFormat(record.eoDate, "PPP")}
                                     </p>
                                 </div>
                             </div>
@@ -187,7 +198,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                 <p className="text-[10px] font-black uppercase tracking-tighter text-emerald-600 italic">Списано в справу</p>
                                 {record.resolutionDate && (
                                     <p className="text-[10px] font-bold text-emerald-600">
-                                        {format(new Date(record.resolutionDate), "dd.MM.yyyy HH:mm")}
+                                        {safeFormat(record.resolutionDate, "dd.MM.yyyy HH:mm")}
                                     </p>
                                 )}
                             </div>
@@ -203,9 +214,9 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                             </div>
                             <div className="flex items-end justify-between">
                                 <p className={cn("text-xl font-black italic",
-                                    record.status !== 'PROCESSED' && new Date(record.deadline) < new Date() ? "text-red-500" : "text-slate-900"
+                                    record.status !== 'PROCESSED' && record.deadline && new Date(record.deadline) < new Date() ? "text-red-500" : "text-slate-900"
                                 )}>
-                                    {record.deadline ? format(new Date(record.deadline), "dd MMMM yyyy", { locale: uk }) : "—"}
+                                    {safeFormat(record.deadline, "dd MMMM yyyy")}
                                 </p>
                                 {record.extensionStatus === 'APPROVED' && (
                                     <div className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[9px] font-bold uppercase tracking-tight">
@@ -230,12 +241,12 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                     <div className="pt-4 border-t border-slate-100 flex flex-wrap gap-6 items-center">
                         <div className="flex items-center gap-2 text-slate-400">
                             <History className="w-3.5 h-3.5" />
-                            <span className="text-[10px] font-bold">Створено: {format(new Date(record.createdAt), "dd.MM.yyyy HH:mm")}</span>
+                            <span className="text-[10px] font-bold">Створено: {safeFormat(record.createdAt, "dd.MM.yyyy HH:mm")}</span>
                         </div>
                         {record.importedAt && (
                             <div className="flex items-center gap-2 text-slate-400">
                                 <Building2 className="w-3.5 h-3.5" />
-                                <span className="text-[10px] font-bold">Імпортовано: {format(new Date(record.createdAt), "dd.MM.yyyy HH:mm")}</span>
+                                <span className="text-[10px] font-bold">Імпортовано: {safeFormat(record.createdAt, "dd.MM.yyyy HH:mm")}</span>
                             </div>
                         )}
                     </div>
