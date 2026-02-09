@@ -96,6 +96,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const [filterSearch, setFilterSearch] = useState("")
     const [filterCategory, setFilterCategory] = useState("ALL")
     const [activeTab, setActiveTab] = useState("ALL")
+    const [filterStatus, setFilterStatus] = useState("PENDING") // Default to pending for better focus
     const [sortBy, setSortBy] = useState("newest")
     const [showOnlyMine, setShowOnlyMine] = useState(false)
 
@@ -142,6 +143,13 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             result = result.filter(r => r.category === filterCategory)
         }
 
+        // Apply status filter
+        if (filterStatus === 'PENDING') {
+            result = result.filter(r => r.status !== 'PROCESSED')
+        } else if (filterStatus === 'PROCESSED') {
+            result = result.filter(r => r.status === 'PROCESSED')
+        }
+
         // Apply "show only mine" filter
         if (showOnlyMine) {
             result = result.filter(r => r.assignedUserId === currentUser.id)
@@ -155,7 +163,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         })
 
         return result
-    }, [records, filterSearch, filterCategory, activeTab, sortBy, showOnlyMine, currentUser.id])
+    }, [records, filterSearch, filterCategory, activeTab, filterStatus, sortBy, showOnlyMine, currentUser.id])
 
     const categories = useMemo(() => {
         const cats = new Set(initialRecords.map(r => r.category).filter(Boolean))
@@ -335,6 +343,58 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     </TabsTrigger>
                 </TabsList>
             </Tabs>
+
+            {/* Status Tabs (Combined with Type tabs for a logical flow) */}
+            <div className="flex items-center gap-2 p-1 bg-slate-100/50 rounded-2xl border border-slate-100 w-fit">
+                <button
+                    onClick={() => setFilterStatus('PENDING')}
+                    className={cn(
+                        "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
+                        filterStatus === 'PENDING' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    )}
+                >
+                    <Clock className="w-3.5 h-3.5" />
+                    В роботі
+                    <span className={cn(
+                        "px-1.5 py-0.5 rounded text-[8px]",
+                        filterStatus === 'PENDING' ? "bg-blue-100 text-blue-600" : "bg-slate-200 text-slate-500"
+                    )}>
+                        {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && r.status !== 'PROCESSED').length}
+                    </span>
+                </button>
+                <button
+                    onClick={() => setFilterStatus('PROCESSED')}
+                    className={cn(
+                        "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
+                        filterStatus === 'PROCESSED' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    )}
+                >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Опрацьовані
+                    <span className={cn(
+                        "px-1.5 py-0.5 rounded text-[8px]",
+                        filterStatus === 'PROCESSED' ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-500"
+                    )}>
+                        {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && r.status === 'PROCESSED').length}
+                    </span>
+                </button>
+                <button
+                    onClick={() => setFilterStatus('ALL')}
+                    className={cn(
+                        "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
+                        filterStatus === 'ALL' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    )}
+                >
+                    <ClipboardList className="w-3.5 h-3.5" />
+                    Всі
+                    <span className={cn(
+                        "px-1.5 py-0.5 rounded text-[8px]",
+                        filterStatus === 'ALL' ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"
+                    )}>
+                        {records.filter(r => activeTab === 'ALL' || r.recordType === activeTab).length}
+                    </span>
+                </button>
+            </div>
             {/* Filters Bar */}
             <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative w-full md:w-96 group">
