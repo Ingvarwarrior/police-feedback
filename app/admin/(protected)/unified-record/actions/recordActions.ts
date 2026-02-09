@@ -193,7 +193,6 @@ export async function getUnifiedRecords(params?: {
             }
         },
         orderBy: { eoDate: 'desc' },
-        orderBy: { eoDate: 'desc' },
         take: 500 // Increased limit for visibility
     })
 }
@@ -342,239 +341,240 @@ export async function saveUnifiedRecordsAction(records: any[]) {
 
     revalidatePath('/admin/unified-record')
     return { success: true, count: createdCount + updatedCount, createdCount, updatedCount }
+}
 
-    export async function upsertUnifiedRecordAction(data: any) {
-        const session = await auth()
-        if (!session?.user?.email) throw new Error("Unauthorized")
+export async function upsertUnifiedRecordAction(data: any) {
+    const session = await auth()
+    if (!session?.user?.email) throw new Error("Unauthorized")
 
-        const user = await prisma.user.findUnique({
-            where: { username: session.user.email },
-            select: { id: true, role: true, permManageUnifiedRecords: true }
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { id: true, role: true, permManageUnifiedRecords: true }
+    })
+    if (!user) throw new Error("User not found")
+
+    // Only admins or users with permManageUnifiedRecords can create or edit basic record details
+    if (user.role !== 'ADMIN' && !user.permManageUnifiedRecords) throw new Error("У вас немає прав для створення чи редагування записів ЄО")
+
+    const validated = UnifiedRecordSchema.parse(data)
+
+    let oldRecord = null
+    if (validated.id) {
+        oldRecord = await prisma.unifiedRecord.findUnique({
+            where: { id: validated.id },
+            select: { assignedUserId: true }
         })
-        if (!user) throw new Error("User not found")
+    }
 
-        // Only admins or users with permManageUnifiedRecords can create or edit basic record details
-        if (user.role !== 'ADMIN' && !user.permManageUnifiedRecords) throw new Error("У вас немає прав для створення чи редагування записів ЄО")
+    // Calculate deadline if not provided (15 days from eoDate)
+    const deadline = validated.deadline || (validated.eoDate ? new Date(new Date(validated.eoDate).getTime() + 15 * 24 * 60 * 60 * 1000) : null)
 
-        const validated = UnifiedRecordSchema.parse(data)
-
-        let oldRecord = null
-        if (validated.id) {
-            oldRecord = await prisma.unifiedRecord.findUnique({
-                where: { id: validated.id },
-                select: { assignedUserId: true }
-            })
+    const record = await prisma.unifiedRecord.upsert({
+        where: { eoNumber: validated.eoNumber },
+        update: {
+            ...validated,
+            deadline: deadline,
+            updatedAt: new Date()
+        },
+        create: {
+            ...validated,
+            deadline: deadline
         }
+    })
 
-        // Calculate deadline if not provided (15 days from eoDate)
-        const deadline = validated.deadline || (validated.eoDate ? new Date(new Date(validated.eoDate).getTime() + 15 * 24 * 60 * 60 * 1000) : null)
-
-        const record = await prisma.unifiedRecord.upsert({
-            where: { eoNumber: validated.eoNumber },
-            update: {
-                ...validated,
-                deadline: deadline,
-                updatedAt: new Date()
-            },
-            create: {
-                ...validated,
-                deadline: deadline
-            }
-        })
-
-        // Create notification only if assignment changed or is new
-        if (validated.assignedUserId && (!oldRecord || oldRecord.assignedUserId !== validated.assignedUserId)) {
-            await prisma.adminNotification.create({
-                data: {
-                    title: "Нове призначення ЄО",
-                    message: `Вам призначено запис ЄО №${validated.eoNumber}`,
-                    type: "ASSIGNMENT",
-                    priority: "NORMAL",
-                    userId: validated.assignedUserId,
-                    link: `/admin/unified-record?search=${validated.eoNumber}`
-                }
-            })
-
-            // Send Email Notification (if enabled)
-            const settings = await prisma.settings.findUnique({ where: { id: "global" } })
-            if (settings?.sendAssignmentEmails !== false) {
-                const assignee = await prisma.user.findUnique({
-                    where: { id: validated.assignedUserId },
-                    select: { email: true, firstName: true, lastName: true }
-                })
-                if (assignee?.email) {
-                    await sendUnifiedAssignmentEmail(assignee, record)
-                }
-            }
-        }
-
-        revalidatePath('/admin/unified-record')
-        return { success: true, record }
-    }
-
-    export async function getUsersForAssignment() {
-        const session = await auth()
-        if (!session) throw new Error("Unauthorized")
-
-        return await prisma.user.findMany({
-            select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                username: true
-            },
-            orderBy: { lastName: 'asc' }
-        })
-    }
-
-    export async function deleteUnifiedRecordAction(id: string) {
-        const session = await auth()
-        if (!session?.user?.email) throw new Error("Unauthorized")
-
-        const user = await prisma.user.findUnique({
-            where: { username: session.user.email },
-            select: { role: true }
-        })
-        if (user?.role !== 'ADMIN') throw new Error("Only admins can delete records")
-
-        await prisma.unifiedRecord.delete({
-            where: { id }
-        })
-
-        revalidatePath('/admin/unified-record')
-        return { success: true }
-    }
-
-    export async function bulkDeleteUnifiedRecordsAction(ids: string[]) {
-        const session = await auth()
-        if (!session?.user?.email) throw new Error("Unauthorized")
-
-        const user = await prisma.user.findUnique({
-            where: { username: session.user.email },
-            select: { role: true }
-        })
-        if (user?.role !== 'ADMIN') throw new Error("Only admins can delete records")
-
-        await prisma.unifiedRecord.deleteMany({
-            where: { id: { in: ids } }
-        })
-
-        revalidatePath('/admin/unified-record')
-        return { success: true }
-    }
-
-    export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: string) {
-        const session = await auth()
-        if (!session?.user?.email) throw new Error("Unauthorized")
-
-        const user = await prisma.user.findUnique({
-            where: { username: session.user.email },
-            select: { role: true, permAssignUnifiedRecords: true }
-        })
-        if (user?.role !== 'ADMIN' && !user?.permAssignUnifiedRecords) throw new Error("У вас немає прав для призначення записів ЄО")
-
-        await prisma.unifiedRecord.updateMany({
-            where: { id: { in: ids } },
-            data: {
-                assignedUserId: userId
-            }
-        })
-
-        // Create a single bulk notification
+    // Create notification only if assignment changed or is new
+    if (validated.assignedUserId && (!oldRecord || oldRecord.assignedUserId !== validated.assignedUserId)) {
         await prisma.adminNotification.create({
             data: {
-                title: "Масове призначення ЄО",
-                message: `Вам призначено ${ids.length} нових записів ЄО`,
+                title: "Нове призначення ЄО",
+                message: `Вам призначено запис ЄО №${validated.eoNumber}`,
                 type: "ASSIGNMENT",
                 priority: "NORMAL",
-                userId: userId,
-                link: `/admin/unified-record`
+                userId: validated.assignedUserId,
+                link: `/admin/unified-record?search=${validated.eoNumber}`
             }
         })
 
-        // Send individual emails for bulk assignment (if enabled)
+        // Send Email Notification (if enabled)
         const settings = await prisma.settings.findUnique({ where: { id: "global" } })
         if (settings?.sendAssignmentEmails !== false) {
             const assignee = await prisma.user.findUnique({
-                where: { id: userId },
+                where: { id: validated.assignedUserId },
                 select: { email: true, firstName: true, lastName: true }
             })
-
             if (assignee?.email) {
-                const records = await prisma.unifiedRecord.findMany({
-                    where: { id: { in: ids } }
-                })
-                for (const record of records) {
-                    await sendUnifiedAssignmentEmail(assignee, record)
-                }
+                await sendUnifiedAssignmentEmail(assignee, record)
             }
         }
-
-        revalidatePath('/admin/unified-record')
-        return { success: true }
-    }
-    export async function bulkUpdateResolutionAction(ids: string[], resolution: string, date: Date = new Date()) {
-        const session = await auth()
-        if (!session?.user?.email) throw new Error("Unauthorized")
-
-        const user = await prisma.user.findUnique({
-            where: { username: session.user.email },
-            select: { role: true, permProcessUnifiedRecords: true }
-        })
-        if (user?.role !== 'ADMIN' && !user?.permProcessUnifiedRecords) throw new Error("У вас немає прав для масового опрацювання")
-
-        await prisma.unifiedRecord.updateMany({
-            where: { id: { in: ids } },
-            data: {
-                resolution,
-                resolutionDate: date,
-                status: "PROCESSED",
-                processedAt: date
-            }
-        })
-
-        revalidatePath('/admin/unified-record')
-        return { success: true }
     }
 
-    export async function returnForRevisionAction(id: string, comment: string) {
-        const session = await auth()
-        if (!session?.user?.email) throw new Error("Unauthorized")
+    revalidatePath('/admin/unified-record')
+    return { success: true, record }
+}
 
-        const user = await prisma.user.findUnique({
-            where: { username: session.user.email },
-            select: { role: true }
+export async function getUsersForAssignment() {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    return await prisma.user.findMany({
+        select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            username: true
+        },
+        orderBy: { lastName: 'asc' }
+    })
+}
+
+export async function deleteUnifiedRecordAction(id: string) {
+    const session = await auth()
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true }
+    })
+    if (user?.role !== 'ADMIN') throw new Error("Only admins can delete records")
+
+    await prisma.unifiedRecord.delete({
+        where: { id }
+    })
+
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
+
+export async function bulkDeleteUnifiedRecordsAction(ids: string[]) {
+    const session = await auth()
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true }
+    })
+    if (user?.role !== 'ADMIN') throw new Error("Only admins can delete records")
+
+    await prisma.unifiedRecord.deleteMany({
+        where: { id: { in: ids } }
+    })
+
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
+
+export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: string) {
+    const session = await auth()
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true, permAssignUnifiedRecords: true }
+    })
+    if (user?.role !== 'ADMIN' && !user?.permAssignUnifiedRecords) throw new Error("У вас немає прав для призначення записів ЄО")
+
+    await prisma.unifiedRecord.updateMany({
+        where: { id: { in: ids } },
+        data: {
+            assignedUserId: userId
+        }
+    })
+
+    // Create a single bulk notification
+    await prisma.adminNotification.create({
+        data: {
+            title: "Масове призначення ЄО",
+            message: `Вам призначено ${ids.length} нових записів ЄО`,
+            type: "ASSIGNMENT",
+            priority: "NORMAL",
+            userId: userId,
+            link: `/admin/unified-record`
+        }
+    })
+
+    // Send individual emails for bulk assignment (if enabled)
+    const settings = await prisma.settings.findUnique({ where: { id: "global" } })
+    if (settings?.sendAssignmentEmails !== false) {
+        const assignee = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true, firstName: true, lastName: true }
         })
-        if (user?.role !== 'ADMIN') throw new Error("Тільки адміністратор може повертати на доопрацювання")
 
-        const record = await prisma.unifiedRecord.findUnique({
-            where: { id },
-            select: { assignedUserId: true, eoNumber: true }
-        })
-
-        if (!record) throw new Error("Запис не знайдено")
-
-        await prisma.unifiedRecord.update({
-            where: { id },
-            data: {
-                status: "IN_PROGRESS",
-                processedAt: null,
-                resolutionDate: null,
-            }
-        })
-
-        if (record.assignedUserId) {
-            await prisma.adminNotification.create({
-                data: {
-                    title: "Запис повернуто на доопрацювання",
-                    message: `Адмін повернув ЄО №${record.eoNumber} на доопрацювання. Коментар: ${comment}`,
-                    type: "ALERT",
-                    priority: "HIGH",
-                    userId: record.assignedUserId,
-                    link: `/admin/unified-record?search=${record.eoNumber}`
-                }
+        if (assignee?.email) {
+            const records = await prisma.unifiedRecord.findMany({
+                where: { id: { in: ids } }
             })
+            for (const record of records) {
+                await sendUnifiedAssignmentEmail(assignee, record)
+            }
         }
+    }
+
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
+export async function bulkUpdateResolutionAction(ids: string[], resolution: string, date: Date = new Date()) {
+    const session = await auth()
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true, permProcessUnifiedRecords: true }
+    })
+    if (user?.role !== 'ADMIN' && !user?.permProcessUnifiedRecords) throw new Error("У вас немає прав для масового опрацювання")
+
+    await prisma.unifiedRecord.updateMany({
+        where: { id: { in: ids } },
+        data: {
+            resolution,
+            resolutionDate: date,
+            status: "PROCESSED",
+            processedAt: date
+        }
+    })
+
+    revalidatePath('/admin/unified-record')
+    return { success: true }
+}
+
+export async function returnForRevisionAction(id: string, comment: string) {
+    const session = await auth()
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true }
+    })
+    if (user?.role !== 'ADMIN') throw new Error("Тільки адміністратор може повертати на доопрацювання")
+
+    const record = await prisma.unifiedRecord.findUnique({
+        where: { id },
+        select: { assignedUserId: true, eoNumber: true }
+    })
+
+    if (!record) throw new Error("Запис не знайдено")
+
+    await prisma.unifiedRecord.update({
+        where: { id },
+        data: {
+            status: "IN_PROGRESS",
+            processedAt: null,
+            resolutionDate: null,
+        }
+    })
+
+    if (record.assignedUserId) {
+        await prisma.adminNotification.create({
+            data: {
+                title: "Запис повернуто на доопрацювання",
+                message: `Адмін повернув ЄО №${record.eoNumber} на доопрацювання. Коментар: ${comment}`,
+                type: "ALERT",
+                priority: "HIGH",
+                userId: record.assignedUserId,
+                link: `/admin/unified-record?search=${record.eoNumber}`
+            }
+        })
+    }
 
     revalidatePath('/admin/unified-record')
     return { success: true }
