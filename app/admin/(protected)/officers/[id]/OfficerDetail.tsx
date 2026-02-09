@@ -658,7 +658,11 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                 {stats.unifiedRecords.map((rec: any) => (
                                     <tr key={rec.id} className="border-b border-blue-50 last:border-0 hover:bg-blue-50/30 transition-all group">
                                         <td className="px-8 py-6 whitespace-nowrap">
-                                            {rec.eoDate ? format(new Date(rec.eoDate), 'dd.MM.yyyy') : '—'}
+                                            {(() => {
+                                                if (!rec.eoDate) return '—';
+                                                const d = new Date(rec.eoDate);
+                                                return !isNaN(d.getTime()) ? format(d, 'dd.MM.yyyy') : '—';
+                                            })()}
                                         </td>
                                         <td className="px-8 py-6">
                                             <span className={cn(
