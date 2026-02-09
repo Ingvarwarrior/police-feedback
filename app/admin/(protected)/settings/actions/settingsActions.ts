@@ -37,6 +37,7 @@ export async function updateSettings(data: any) {
                 piiRetentionDays: parseInt(data.piiRetentionDays),
                 welcomeMessage: data.welcomeMessage,
                 warningKeywords: data.warningKeywords,
+                sendAssignmentEmails: !!data.sendAssignmentEmails,
             }
         })
 

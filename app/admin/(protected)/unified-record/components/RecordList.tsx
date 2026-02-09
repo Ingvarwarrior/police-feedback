@@ -27,8 +27,7 @@ import {
     Loader2,
     CalendarCheck2,
     Eye,
-    Shield,
-    Printer
+    Shield
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -51,7 +50,6 @@ import {
 import CreateRecordDialog from "./CreateRecordDialog"
 import ViewRecordDialog from "./ViewRecordDialog"
 import RecordProcessPopover from "./RecordProcessPopover"
-import ResolutionPrint from "./ResolutionPrint"
 import {
     deleteUnifiedRecordAction,
     bulkDeleteUnifiedRecordsAction,
@@ -110,10 +108,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [isDeleting, setIsDeleting] = useState(false)
     const [isAssigning, setIsAssigning] = useState(false)
-
-    // Print state
-    const [printRecord, setPrintRecord] = useState<any>(null)
-    const [isPrintOpen, setIsPrintOpen] = useState(false)
 
 
     useEffect(() => {
@@ -617,19 +611,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                     </AlertDialogFooter>
                                                                 </AlertDialogContent>
                                                             </AlertDialog>
-
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-9 md:h-8 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all flex-1 md:flex-none"
-                                                                onClick={() => {
-                                                                    setPrintRecord(record)
-                                                                    setIsPrintOpen(true)
-                                                                }}
-                                                            >
-                                                                <Printer className="w-3.5 h-3.5 md:mr-1.5" />
-                                                                <span className="hidden md:inline">Резолюція</span>
-                                                            </Button>
                                                         </>
                                                     )}
 
@@ -876,40 +857,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     </div >
                 )}
             </div>
-
-            {/* Print Resolution Dialog */}
-            <AlertDialog open={isPrintOpen} onOpenChange={setIsPrintOpen}>
-                <AlertDialogContent className="max-w-2xl rounded-[2rem] border-none shadow-2xl">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="text-xl font-black uppercase italic tracking-tight">Попередній перегляд резолюції</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Перевірте дані перед друком. Резолюція буде роздрукована у форматі A5.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-
-                    <div className="bg-slate-50 p-6 rounded-2xl overflow-auto max-h-[60vh] flex justify-center">
-                        {printRecord && (
-                            <div className="shadow-lg transform scale-75 origin-top print:scale-100 print:transform-none">
-                                <ResolutionPrint record={printRecord} />
-                            </div>
-                        )}
-                    </div>
-
-                    <AlertDialogFooter className="bg-slate-50 p-6 -m-6 mt-6 rounded-b-[2rem]">
-                        <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500">Скасувати</AlertDialogCancel>
-                        <Button
-                            onClick={() => {
-                                window.print()
-                                setIsPrintOpen(false)
-                            }}
-                            className="bg-slate-900 hover:bg-black text-white rounded-xl font-bold px-8 gap-2"
-                        >
-                            <Printer className="w-4 h-4" />
-                            Друкувати
-                        </Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
 
             {/* Bulk Actions Floating Toolbar */}
             {selectedIds.length > 0 && (

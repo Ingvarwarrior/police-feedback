@@ -334,13 +334,11 @@ export async function upsertUnifiedRecordAction(data: any) {
         update: {
             ...validated,
             deadline: deadline,
-            assignedAt: validated.assignedUserId && (!oldRecord || oldRecord.assignedUserId !== validated.assignedUserId) ? new Date() : undefined,
             updatedAt: new Date()
         },
         create: {
             ...validated,
-            deadline: deadline,
-            assignedAt: validated.assignedUserId ? new Date() : null
+            deadline: deadline
         }
     })
 
@@ -357,13 +355,16 @@ export async function upsertUnifiedRecordAction(data: any) {
             }
         })
 
-        // Send Email Notification
-        const assignee = await prisma.user.findUnique({
-            where: { id: validated.assignedUserId },
-            select: { email: true, firstName: true, lastName: true }
-        })
-        if (assignee?.email) {
-            await sendUnifiedAssignmentEmail(assignee, record)
+        // Send Email Notification (if enabled)
+        const settings = await prisma.settings.findUnique({ where: { id: "global" } })
+        if (settings?.sendAssignmentEmails !== false) {
+            const assignee = await prisma.user.findUnique({
+                where: { id: validated.assignedUserId },
+                select: { email: true, firstName: true, lastName: true }
+            })
+            if (assignee?.email) {
+                await sendUnifiedAssignmentEmail(assignee, record)
+            }
         }
     }
 
@@ -435,8 +436,7 @@ export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: stri
     await prisma.unifiedRecord.updateMany({
         where: { id: { in: ids } },
         data: {
-            assignedUserId: userId,
-            assignedAt: new Date()
+            assignedUserId: userId
         }
     })
 
@@ -452,18 +452,21 @@ export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: stri
         }
     })
 
-    // Send individual emails for bulk assignment
-    const assignee = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { email: true, firstName: true, lastName: true }
-    })
-
-    if (assignee?.email) {
-        const records = await prisma.unifiedRecord.findMany({
-            where: { id: { in: ids } }
+    // Send individual emails for bulk assignment (if enabled)
+    const settings = await prisma.settings.findUnique({ where: { id: "global" } })
+    if (settings?.sendAssignmentEmails !== false) {
+        const assignee = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true, firstName: true, lastName: true }
         })
-        for (const record of records) {
-            await sendUnifiedAssignmentEmail(assignee, record)
+
+        if (assignee?.email) {
+            const records = await prisma.unifiedRecord.findMany({
+                where: { id: { in: ids } }
+            })
+            for (const record of records) {
+                await sendUnifiedAssignmentEmail(assignee, record)
+            }
         }
     }
 

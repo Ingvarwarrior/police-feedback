@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { updateSettings } from './actions/settingsActions'
 import { toast } from 'sonner'
+import { Switch } from '@/components/ui/switch'
 
 interface SettingsFormProps {
     initialSettings: any
@@ -46,6 +47,10 @@ export default function SettingsForm({ initialSettings }: SettingsFormProps) {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { id, value } = e.target
         setFormData((prev: any) => ({ ...prev, [id]: value }))
+    }
+
+    const handleSwitchChange = (id: string, checked: boolean) => {
+        setFormData((prev: any) => ({ ...prev, [id]: checked }))
     }
 
     return (
@@ -168,6 +173,23 @@ export default function SettingsForm({ initialSettings }: SettingsFormProps) {
                                         className="min-h-[100px] rounded-2xl bg-slate-50/50 p-4"
                                     />
                                     <p className="text-[10px] text-slate-400 italic">Відгуки з цими словами будуть помічені як "Пріоритетні"</p>
+                                </div>
+                            </div>
+
+                            <div className="pt-6 border-t border-slate-100">
+                                <div className="flex items-center justify-between p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50">
+                                    <div className="space-y-1">
+                                        <Label htmlFor="sendAssignmentEmails" className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                            <Bell className="w-4 h-4 text-blue-500" />
+                                            Email-сповіщення про призначення
+                                        </Label>
+                                        <p className="text-xs text-slate-500 font-medium">Надсилати інспекторам лист на пошту при призначенні нового ЄО чи звернення</p>
+                                    </div>
+                                    <Switch
+                                        id="sendAssignmentEmails"
+                                        checked={formData.sendAssignmentEmails}
+                                        onCheckedChange={(checked) => handleSwitchChange('sendAssignmentEmails', checked)}
+                                    />
                                 </div>
                             </div>
                         </CardContent>

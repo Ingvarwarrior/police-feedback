@@ -67,6 +67,7 @@ model Settings {
   piiRetentionDays        Int      @default(30)
   welcomeMessage          String   @default("Вітаємо в системі відгуків про роботу патрульної поліції.")
   warningKeywords         String   @default("корупція, хабар, насилля, катування")
+  sendAssignmentEmails    Boolean  @default(true)
   updatedAt               DateTime @updatedAt
 }
 
