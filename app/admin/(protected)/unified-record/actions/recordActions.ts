@@ -195,10 +195,11 @@ export async function getUnifiedRecords(params?: {
 }
 
 function parseExcelRow(row: any, fileName: string) {
-    const eoNumber = row['№ ЄО'] || row['Номер ЄО'] || row['eoNumber'] || row['№'] || row['Номер'] || row['№ звернення']
-    if (!eoNumber) return null
+    const eoNumberVal = row['№ ЄО'] || row['Номер ЄО'] || row['eoNumber'] || row['№'] || row['Номер'] || row['№ звернення']
+    if (!eoNumberVal) return null
+    const eoNumber = String(eoNumberVal).trim()
 
-    const eoDateStr = row['дата, час повідомлення'] || row['Дата'] || row['Date']
+    const eoDateStr = row['дата, час повідомлення'] || row['Дата'] || row['Date'] || row['дата']
     let eoDate = new Date()
 
     if (eoDateStr) {
@@ -228,9 +229,9 @@ function parseExcelRow(row: any, fileName: string) {
         district: row['Район'] || null,
         address: row['Адреса'] || row['local_address'] || null,
         description: row['подія'] || row['Event'] || row['Зміст'] || row['Content'] || null,
-        applicant: row['заявник'] || row['Applicant'] || null,
+        applicant: row['заявник'] || row['Applicant'] || row['ПІБ'] || null,
         category: row['Категорія'] || null,
-        officerName: row['Рапорт- ПІБ хто склав'] || row['Офіцер'] || row['Виконавець'] || row['ПІБ'] || null,
+        officerName: row['Рапорт- ПІБ хто склав'] || row['Офіцер'] || row['Виконавець'] || null,
         resolution: row['Рішення'] || row['Resolution'] || null,
         resolutionDate: row['Дата рішення'] ? new Date(row['Дата рішення']) : null,
         sourceFile: fileName
