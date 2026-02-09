@@ -174,6 +174,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         result.sort((a, b) => {
             if (sortBy === 'newest') return new Date(b.eoDate).getTime() - new Date(a.eoDate).getTime()
             if (sortBy === 'oldest') return new Date(a.eoDate).getTime() - new Date(b.eoDate).getTime()
+
+            if (sortBy === 'eo_asc' || sortBy === 'eo_desc') {
+                const valA = String(a.eoNumber || '')
+                const valB = String(b.eoNumber || '')
+                // Alphanumeric comparison
+                const cmp = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' })
+                return sortBy === 'eo_asc' ? cmp : -cmp
+            }
+
             return 0
         })
 
@@ -559,6 +568,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <SelectContent className="rounded-2xl">
                             <SelectItem value="newest">Спочатку нові</SelectItem>
                             <SelectItem value="oldest">Спочатку старі</SelectItem>
+                            <SelectItem value="eo_asc">№ ЄО (зростання)</SelectItem>
+                            <SelectItem value="eo_desc">№ ЄО (спадання)</SelectItem>
                         </SelectContent>
                     </Select>
 
