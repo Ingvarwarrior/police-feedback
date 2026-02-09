@@ -195,11 +195,22 @@ export async function getUnifiedRecords(params?: {
 }
 
 function parseExcelRow(row: any, fileName: string) {
+    // Log all available columns for debugging
+    console.log('Excel row keys:', Object.keys(row))
+    console.log('Excel row values:', row)
+
     const eoNumberVal = row['№ ЄО'] || row['Номер ЄО'] || row['eoNumber'] || row['№'] || row['Номер'] || row['№ звернення']
-    if (!eoNumberVal) return null
+    console.log('Found eoNumber:', eoNumberVal)
+
+    if (!eoNumberVal) {
+        console.log('No eoNumber found, skipping row')
+        return null
+    }
     const eoNumber = String(eoNumberVal).trim()
 
     const eoDateStr = row['дата, час повідомлення'] || row['Дата'] || row['Date'] || row['дата']
+    console.log('Found date string:', eoDateStr)
+
     let eoDate = new Date()
 
     if (eoDateStr) {
@@ -223,13 +234,16 @@ function parseExcelRow(row: any, fileName: string) {
         eoDate = new Date()
     }
 
+    const applicant = row['заявник'] || row['Applicant'] || row['ПІБ'] || null
+    console.log('Found applicant:', applicant)
+
     return {
         eoNumber: String(eoNumber),
         eoDate,
         district: row['Район'] || null,
         address: row['Адреса'] || row['local_address'] || null,
         description: row['подія'] || row['Event'] || row['Зміст'] || row['Content'] || null,
-        applicant: row['заявник'] || row['Applicant'] || row['ПІБ'] || null,
+        applicant,
         category: row['Категорія'] || null,
         officerName: row['Рапорт- ПІБ хто склав'] || row['Офіцер'] || row['Виконавець'] || null,
         resolution: row['Рішення'] || row['Resolution'] || null,
