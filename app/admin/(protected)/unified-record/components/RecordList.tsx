@@ -97,6 +97,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const [filterCategory, setFilterCategory] = useState("ALL")
     const [activeTab, setActiveTab] = useState("ALL")
     const [filterStatus, setFilterStatus] = useState("PENDING") // Default to pending for better focus
+    const [filterAssignment, setFilterAssignment] = useState("ALL") // ALL, ASSIGNED, UNASSIGNED
+    const [filterEoNumber, setFilterEoNumber] = useState("")
     const [sortBy, setSortBy] = useState("newest")
     const [showOnlyMine, setShowOnlyMine] = useState(false)
 
@@ -150,6 +152,18 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             result = result.filter(r => r.status === 'PROCESSED')
         }
 
+        // Apply assignment filter
+        if (filterAssignment === 'ASSIGNED') {
+            result = result.filter(r => r.assignedUserId !== null)
+        } else if (filterAssignment === 'UNASSIGNED') {
+            result = result.filter(r => r.assignedUserId === null)
+        }
+
+        // Apply EO number dedicated filter
+        if (filterEoNumber) {
+            result = result.filter(r => r.eoNumber.toLowerCase().includes(filterEoNumber.toLowerCase()))
+        }
+
         // Apply "show only mine" filter
         if (showOnlyMine) {
             result = result.filter(r => r.assignedUserId === currentUser.id)
@@ -163,7 +177,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         })
 
         return result
-    }, [records, filterSearch, filterCategory, activeTab, filterStatus, sortBy, showOnlyMine, currentUser.id])
+    }, [records, filterSearch, filterCategory, activeTab, filterStatus, filterAssignment, filterEoNumber, sortBy, showOnlyMine, currentUser.id])
 
     const categories = useMemo(() => {
         const cats = new Set(initialRecords.map(r => r.category).filter(Boolean))
@@ -395,16 +409,81 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     </span>
                 </button>
             </div>
+
+            {/* Assignment Filters (Admin Only) */}
+            {currentUser.role === 'ADMIN' && (
+                <div className="flex flex-wrap items-center gap-2 p-1 bg-white rounded-2xl border border-slate-100 w-fit shadow-sm">
+                    <button
+                        onClick={() => setFilterAssignment('ALL')}
+                        className={cn(
+                            "px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
+                            filterAssignment === 'ALL' ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                        )}
+                    >
+                        Всі призначені/непризначені
+                        <span className={cn(
+                            "px-1.5 py-0.5 rounded text-[8px]",
+                            filterAssignment === 'ALL' ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                        )}>
+                            {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && (filterStatus === 'ALL' || (filterStatus === 'PENDING' ? r.status !== 'PROCESSED' : r.status === 'PROCESSED'))).length}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setFilterAssignment('ASSIGNED')}
+                        className={cn(
+                            "px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
+                            filterAssignment === 'ASSIGNED' ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                        )}
+                    >
+                        <User className="w-3 h-3" />
+                        Призначені
+                        <span className={cn(
+                            "px-1.5 py-0.5 rounded text-[8px]",
+                            filterAssignment === 'ASSIGNED' ? "bg-white/20 text-white" : "bg-blue-50 text-blue-600"
+                        )}>
+                            {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && (filterStatus === 'ALL' || (filterStatus === 'PENDING' ? r.status !== 'PROCESSED' : r.status === 'PROCESSED')) && r.assignedUserId !== null).length}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setFilterAssignment('UNASSIGNED')}
+                        className={cn(
+                            "px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
+                            filterAssignment === 'UNASSIGNED' ? "bg-amber-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                        )}
+                    >
+                        <UserPlus className="w-3 h-3" />
+                        Непризначені
+                        <span className={cn(
+                            "px-1.5 py-0.5 rounded text-[8px]",
+                            filterAssignment === 'UNASSIGNED' ? "bg-white/20 text-white" : "bg-amber-50 text-amber-600"
+                        )}>
+                            {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && (filterStatus === 'ALL' || (filterStatus === 'PENDING' ? r.status !== 'PROCESSED' : r.status === 'PROCESSED')) && r.assignedUserId === null).length}
+                        </span>
+                    </button>
+                </div>
+            )}
             {/* Filters Bar */}
             <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="relative w-full md:w-96 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                    <Input
-                        placeholder="Пошук за номером, подією або прізвищем поліцейського..."
-                        className="pl-12 bg-slate-50 border-0 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20"
-                        value={filterSearch}
-                        onChange={(e) => setFilterSearch(e.target.value)}
-                    />
+                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
+                    <div className="relative group flex-1 md:max-w-xs">
+                        <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Input
+                            placeholder="№ ЄО..."
+                            className="pl-12 bg-slate-50 border-0 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20 font-bold"
+                            value={filterEoNumber}
+                            onChange={(e) => setFilterEoNumber(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="relative group flex-[2]">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Input
+                            placeholder="Пошук за подією або прізвищем..."
+                            className="pl-12 bg-slate-50 border-0 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20"
+                            value={filterSearch}
+                            onChange={(e) => setFilterSearch(e.target.value)}
+                        />
+                    </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
