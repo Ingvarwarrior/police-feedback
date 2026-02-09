@@ -194,23 +194,35 @@ export async function getUnifiedRecords(params?: {
     })
 }
 
-function parseExcelRow(row: any, fileName: string) {
-    // Log all available columns for debugging
-    console.log('Excel row keys:', Object.keys(row))
-    console.log('Excel row values:', row)
+function findValue(row: any, patterns: string[]) {
+    const keys = Object.keys(row)
+    for (const pattern of patterns) {
+        // Direct match
+        if (row[pattern] !== undefined) return row[pattern]
 
-    const eoNumberVal = row['№ ЄО'] || row['Номер ЄО'] || row['eoNumber'] || row['№'] || row['Номер'] || row['№ звернення']
-    console.log('Found eoNumber:', eoNumberVal)
+        // Match with trimming and case-insensitive
+        const lowerPattern = pattern.toLowerCase().trim()
+        const foundKey = keys.find(k => k.toLowerCase().trim() === lowerPattern)
+        if (foundKey) return row[foundKey]
 
-    if (!eoNumberVal) {
-        console.log('No eoNumber found, skipping row')
-        return null
+        // Partial match for common variations
+        const partialKey = keys.find(k => k.toLowerCase().includes(lowerPattern))
+        if (partialKey) return row[partialKey]
     }
+    return null
+}
+
+function parseExcelRow(row: any, fileName: string) {
+    // Debug log for first row to see what keys we have
+    if (process.env.NODE_ENV === 'development') {
+        console.log('Parsing row keys:', Object.keys(row))
+    }
+
+    const eoNumberVal = findValue(row, ['№ ЄО', 'Номер ЄО', 'eoNumber', '№', 'Номер', '№ звернення'])
+    if (!eoNumberVal) return null
     const eoNumber = String(eoNumberVal).trim()
 
-    const eoDateStr = row['дата, час повідомлення'] || row['Дата'] || row['Date'] || row['дата']
-    console.log('Found date string:', eoDateStr)
-
+    const eoDateStr = findValue(row, ['дата, час повідомлення', 'Дата', 'Date', 'дата'])
     let eoDate = new Date()
 
     if (eoDateStr) {
@@ -234,20 +246,17 @@ function parseExcelRow(row: any, fileName: string) {
         eoDate = new Date()
     }
 
-    const applicant = row['заявник'] || row['Applicant'] || row['ПІБ'] || null
-    console.log('Found applicant:', applicant)
-
     return {
-        eoNumber: String(eoNumber),
+        eoNumber,
         eoDate,
-        district: row['Район'] || null,
-        address: row['Адреса'] || row['local_address'] || null,
-        description: row['подія'] || row['Event'] || row['Зміст'] || row['Content'] || null,
-        applicant,
-        category: row['Категорія'] || null,
-        officerName: row['Рапорт- ПІБ хто склав'] || row['Офіцер'] || row['Виконавець'] || null,
-        resolution: row['Рішення'] || row['Resolution'] || null,
-        resolutionDate: row['Дата рішення'] ? new Date(row['Дата рішення']) : null,
+        district: findValue(row, ['Район']) || null,
+        address: findValue(row, ['Адреса', 'local_address']) || null,
+        description: findValue(row, ['подія', 'Event', 'Зміст', 'Content', 'Зміст звернення']) || null,
+        applicant: findValue(row, ['заявник', 'Applicant', 'ПІБ']) || null,
+        category: findValue(row, ['Категорія']) || null,
+        officerName: findValue(row, ['Рапорт- ПІБ хто склав', 'Офіцер', 'Виконавець']) || null,
+        resolution: findValue(row, ['Рішення', 'Resolution']) || null,
+        resolutionDate: findValue(row, ['Дата рішення']) ? new Date(findValue(row, ['Дата рішення'])) : null,
         sourceFile: fileName
     }
 }
