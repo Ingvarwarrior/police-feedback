@@ -342,64 +342,66 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
 
     return (
         <div className="space-y-6">
-            {/* Tabs Navigation */}
-            <Tabs defaultValue="ALL" className="w-full" onValueChange={setActiveTab}>
-                <TabsList className="bg-white p-1 rounded-2xl border border-slate-300 shadow-sm h-14 mb-4 w-full justify-start overflow-x-auto overflow-y-hidden no-scrollbar">
-                    <TabsTrigger
-                        value="ALL"
-                        className="rounded-xl px-4 md:px-8 h-full font-black uppercase tracking-widest text-[9px] md:text-[10px] data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all gap-2 shrink-0"
-                    >
-                        Все записи
-                        <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md text-[9px] font-bold">
-                            {records.length}
-                        </span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="EO"
-                        className="rounded-xl px-4 md:px-8 h-full font-black uppercase tracking-widest text-[9px] md:text-[10px] data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all gap-2 shrink-0"
-                    >
-                        Єдиний облік
-                        <span className="bg-blue-50 text-blue-500 px-2 py-0.5 rounded-md text-[9px]">
-                            {records.filter(r => r.recordType === 'EO' &&
-                                (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
-                                (filterSearch.trim() ? (
-                                    String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                    r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                    r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                    r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                    r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
-                                ) : true)
-                            ).length}
-                        </span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="ZVERN"
-                        className="rounded-xl px-4 md:px-8 h-full font-black uppercase tracking-widest text-[9px] md:text-[10px] data-[state=active]:bg-amber-500 data-[state=active]:text-white transition-all gap-2 shrink-0"
-                    >
-                        Звернення
-                        <span className="bg-amber-50 text-amber-500 px-2 py-0.5 rounded-md text-[9px]">
-                            {records.filter(r => r.recordType === 'ZVERN' &&
-                                (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
-                                (filterSearch.trim() ? (
-                                    String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                    r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                    r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                    r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
-                                    r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
-                                ) : true)
-                            ).length}
-                        </span>
-                    </TabsTrigger>
+            {/* Tabs & Actions Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <Tabs defaultValue="ALL" className="w-full sm:w-auto" onValueChange={(v) => setActiveTab(v as any)}>
+                    <TabsList className="bg-white p-1 rounded-2xl border border-slate-300 shadow-sm h-14 flex items-center justify-start w-full sm:w-fit overflow-x-auto no-scrollbar">
+                        <TabsTrigger
+                            value="ALL"
+                            className="rounded-xl px-4 md:px-8 h-full font-black uppercase tracking-widest text-[9px] md:text-[10px] data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all gap-2 shrink-0"
+                        >
+                            Все записи
+                            <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md text-[9px] font-bold">
+                                {records.length}
+                            </span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="EO"
+                            className="rounded-xl px-4 md:px-8 h-full font-black uppercase tracking-widest text-[9px] md:text-[10px] data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all gap-2 shrink-0"
+                        >
+                            Єдиний облік
+                            <span className="bg-blue-50 text-blue-500 px-2 py-0.5 rounded-md text-[9px]">
+                                {records.filter(r => r.recordType === 'EO' &&
+                                    (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
+                                    (filterSearch.trim() ? (
+                                        String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                        r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                        r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                        r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                        r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
+                                    ) : true)
+                                ).length}
+                            </span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="ZVERN"
+                            className="rounded-xl px-4 md:px-8 h-full font-black uppercase tracking-widest text-[9px] md:text-[10px] data-[state=active]:bg-amber-500 data-[state=active]:text-white transition-all gap-2 shrink-0"
+                        >
+                            Звернення
+                            <span className="bg-amber-50 text-amber-500 px-2 py-0.5 rounded-md text-[9px]">
+                                {records.filter(r => r.recordType === 'ZVERN' &&
+                                    (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
+                                    (filterSearch.trim() ? (
+                                        String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                        r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                        r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                        r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                        r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
+                                    ) : true)
+                                ).length}
+                            </span>
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
 
-                    {currentUser.role === 'ADMIN' && (
-                        <div className="ml-auto flex items-center gap-2 pr-1">
-                            <CreateRecordDialog users={users} initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }} />
-                            {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}
-                            {(activeTab === 'ZVERN') && <ImportDialog defaultRecordType="ZVERN" />}
-                        </div>
-                    )}
-                </TabsList>
-            </Tabs>
+                {currentUser.role === 'ADMIN' && (
+                    <div className="flex items-center gap-2 p-1.5 bg-white/80 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto justify-center sm:justify-start h-14 overflow-x-auto no-scrollbar">
+                        <CreateRecordDialog users={users} initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }} />
+                        {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}
+                        {(activeTab === 'ZVERN') && <ImportDialog defaultRecordType="ZVERN" />}
+                    </div>
+                )}
+            </div>
 
             {/* Status Tabs (Combined with Type tabs for a logical flow) */}
             <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-200 rounded-2xl border border-slate-300 w-full sm:w-fit">
@@ -492,11 +494,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <button
                             onClick={() => setFilterAssignment('ALL')}
                             className={cn(
-                                "px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
+                                "flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center justify-center sm:justify-start",
                                 filterAssignment === 'ALL' ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                             )}
                         >
-                            Всі призначені/непризначені
+                            Всі
                             <span className={cn(
                                 "px-1.5 py-0.5 rounded text-[8px]",
                                 filterAssignment === 'ALL' ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
@@ -507,7 +509,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <button
                             onClick={() => setFilterAssignment('ASSIGNED')}
                             className={cn(
-                                "px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
+                                "flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center justify-center sm:justify-start",
                                 filterAssignment === 'ASSIGNED' ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                             )}
                         >
@@ -523,7 +525,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <button
                             onClick={() => setFilterAssignment('UNASSIGNED')}
                             className={cn(
-                                "px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
+                                "flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center justify-center sm:justify-start",
                                 filterAssignment === 'UNASSIGNED' ? "bg-amber-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                             )}
                         >
