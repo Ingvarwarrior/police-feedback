@@ -82,7 +82,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                             </div>
 
                             <div className="flex gap-4">
-                                <div className="p-3 bg-slate-50 rounded-2xl text-slate-400">
+                                <div className="p-3 bg-slate-50 rounded-2xl text-slate-600">
                                     <User className="w-5 h-5" />
                                 </div>
                                 <div className="space-y-1">
@@ -94,7 +94,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
 
                         <div className="space-y-6">
                             <div className="flex gap-4">
-                                <div className="p-3 bg-slate-50 rounded-2xl text-slate-400">
+                                <div className="p-3 bg-slate-50 rounded-2xl text-slate-600">
                                     <MapPin className="w-5 h-5" />
                                 </div>
                                 <div className="space-y-1">
@@ -107,7 +107,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                             </div>
 
                             <div className="flex gap-4">
-                                <div className="p-3 bg-slate-50 rounded-2xl text-slate-400">
+                                <div className="p-3 bg-slate-50 rounded-2xl text-slate-600">
                                     <Shield className="w-5 h-5" />
                                 </div>
                                 <div className="space-y-1">
