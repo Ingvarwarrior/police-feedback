@@ -57,6 +57,8 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
                 toast.success(`Успішно імпортовано ${result.count} записів`)
                 setIsOpen(false)
                 reset()
+                // Force page reload to ensure records are visible
+                setTimeout(() => window.location.reload(), 500)
             }
         } catch (error: any) {
             toast.error(error.message || "Помилка збереження")

@@ -303,8 +303,12 @@ export async function saveUnifiedRecordsAction(records: any[]) {
     if (user?.role !== 'ADMIN' && !user?.permManageUnifiedRecords) throw new Error("У вас немає прав для збереження записів ЄО")
 
     let count = 0
+    let errors = []
+    console.log(`[IMPORT] Starting to save ${records.length} records...`)
+
     for (const record of records) {
         try {
+            console.log(`[IMPORT] Processing record: ${record.eoNumber}`)
             // Need to convert date strings back to Date objects if they came from client
             const formattedRecord = {
                 ...record,
@@ -318,13 +322,20 @@ export async function saveUnifiedRecordsAction(records: any[]) {
                 create: formattedRecord
             })
             count++
-        } catch (e) {
-            console.error(`Error saving EO ${record.eoNumber}:`, e)
+            console.log(`[IMPORT] Successfully saved: ${record.eoNumber}`)
+        } catch (e: any) {
+            console.error(`[IMPORT] Error saving EO ${record.eoNumber}:`, e)
+            errors.push({ eoNumber: record.eoNumber, error: e.message })
         }
     }
 
+    console.log(`[IMPORT] Completed. Saved: ${count}/${records.length}`)
+    if (errors.length > 0) {
+        console.error(`[IMPORT] Errors encountered:`, errors)
+    }
+
     revalidatePath('/admin/unified-record')
-    return { success: true, count }
+    return { success: true, count, errors }
 }
 
 export async function upsertUnifiedRecordAction(data: any) {
