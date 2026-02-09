@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -114,9 +115,25 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const [isAssigning, setIsAssigning] = useState(false)
 
 
+    const searchParams = useSearchParams()
+
     useEffect(() => {
         setRecords(initialRecords)
     }, [initialRecords])
+
+    // Auto-view record if recordId is in URL
+    useEffect(() => {
+        const recordId = searchParams.get('recordId')
+        if (recordId && initialRecords.length > 0) {
+            const record = initialRecords.find(r => r.id === recordId)
+            if (record) {
+                setViewRecord(record)
+                setIsViewOpen(true)
+                // Optionally clear the tab filter if needed, but usually it's fine
+                setActiveTab(record.recordType || 'ALL')
+            }
+        }
+    }, [searchParams, initialRecords])
 
 
     const filteredRecords = useMemo(() => {

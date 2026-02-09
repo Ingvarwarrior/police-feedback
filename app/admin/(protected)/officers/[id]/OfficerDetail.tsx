@@ -592,69 +592,7 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                         </div>
                     )}
 
-                    {/* Consolidated Unified Records & Appeals Table */}
-                    {stats.unifiedRecords && stats.unifiedRecords.length > 0 && (
-                        <div className="space-y-6">
-                            <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 italic">
-                                <div className="w-1.5 h-6 bg-blue-600" />
-                                <ClipboardList className="w-5 h-5 text-blue-600" />
-                                Згадки у ЄО та Зверненнях
-                            </h2>
-                            <div className="overflow-hidden rounded-[2rem] border border-blue-100 shadow-sm">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="bg-blue-50/50 border-b border-blue-100 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                                            <th className="px-6 py-4">Дата</th>
-                                            <th className="px-6 py-4">Тип</th>
-                                            <th className="px-6 py-4">Номер</th>
-                                            <th className="px-6 py-4">Заявник</th>
-                                            <th className="px-6 py-4">Інспектор</th>
-                                            <th className="px-6 py-4">Деталі</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="text-xs font-bold text-slate-700">
-                                        {stats.unifiedRecords.map((rec: any) => (
-                                            <tr key={rec.id} className="border-b border-blue-50 last:border-0 hover:bg-blue-50/30 transition-colors">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {rec.eoDate ? format(new Date(rec.eoDate), 'dd.MM.yyyy') : '—'}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={cn(
-                                                        "px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest",
-                                                        rec.recordType === 'ZVERN' ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
-                                                    )}>
-                                                        {rec.recordType === 'ZVERN' ? 'Звернення' : 'ЄО'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-blue-600 font-black">
-                                                    {rec.eoNumber}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {rec.applicant || <span className="text-slate-400 italic">Не вказано</span>}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {rec.assignedUser ? (
-                                                        <span className="flex items-center gap-1">
-                                                            <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[9px] text-slate-500">
-                                                                {rec.assignedUser.firstName?.[0]}
-                                                            </div>
-                                                            {rec.assignedUser.lastName}
-                                                        </span>
-                                                    ) : <span className="text-slate-400 italic">—</span>}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <Link href={`/admin/unified-record`} className="text-blue-500 hover:text-blue-700">
-                                                        <ArrowLeft className="w-4 h-4 rotate-180" />
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
-
+                    {/* Citizen Feedback */}
                     <div className="space-y-6">
                         <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 italic">
                             <div className="w-1.5 h-6 bg-emerald-500" />
@@ -691,6 +629,81 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                     </div>
                 </div>
             </div>
+
+            {/* Consolidated Unified Records & Appeals Table - FULL WIDTH NOW */}
+            {stats.unifiedRecords && stats.unifiedRecords.length > 0 && (
+                <div className="space-y-6 pt-12 border-t border-slate-100">
+                    <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3 italic">
+                        <div className="w-2 h-8 bg-blue-600" />
+                        <ClipboardList className="w-6 h-6 text-blue-600" />
+                        Згадки у ЄО та Зверненнях (Детальна таблиця)
+                    </h2>
+                    <div className="overflow-hidden rounded-[3rem] border border-blue-100 shadow-xl bg-white">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-blue-50/50 border-b border-blue-100 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                                    <th className="px-8 py-6">Дата</th>
+                                    <th className="px-8 py-6">Тип</th>
+                                    <th className="px-8 py-6">Номер</th>
+                                    <th className="px-8 py-6">Заявник</th>
+                                    <th className="px-8 py-6">Інспектор</th>
+                                    <th className="px-8 py-6">Опис справи</th>
+                                    <th className="px-8 py-6 text-right">Дія</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-sm font-bold text-slate-700">
+                                {stats.unifiedRecords.map((rec: any) => (
+                                    <tr key={rec.id} className="border-b border-blue-50 last:border-0 hover:bg-blue-50/30 transition-all group">
+                                        <td className="px-8 py-6 whitespace-nowrap">
+                                            {rec.eoDate ? format(new Date(rec.eoDate), 'dd.MM.yyyy') : '—'}
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <span className={cn(
+                                                "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest",
+                                                rec.recordType === 'ZVERN' ? "bg-purple-100 text-purple-700 shadow-sm" : "bg-blue-100 text-blue-700 shadow-sm"
+                                            )}>
+                                                {rec.recordType === 'ZVERN' ? 'Звернення' : 'ЄО'}
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-6 text-blue-600 font-black text-base italic">
+                                            {rec.eoNumber}
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            {rec.applicant || <span className="text-slate-400 italic font-medium">Не вказано</span>}
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            {rec.assignedUser ? (
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-[10px] font-black shadow-lg">
+                                                        {rec.assignedUser.firstName?.[0]}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="leading-none">{rec.assignedUser.lastName}</span>
+                                                        <span className="text-[10px] text-slate-400 font-medium">Виконавець</span>
+                                                    </div>
+                                                </div>
+                                            ) : <span className="text-slate-400 italic">—</span>}
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <p className="line-clamp-2 text-xs text-slate-500 font-medium max-w-md leading-relaxed">
+                                                {rec.description || 'Опис відсутній'}
+                                            </p>
+                                        </td>
+                                        <td className="px-8 py-6 text-right">
+                                            <Link
+                                                href={`/admin/unified-record?recordId=${rec.id}`}
+                                                className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-white border border-slate-200 text-blue-600 shadow-sm hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all group"
+                                            >
+                                                <ArrowLeft className="w-5 h-5 rotate-180" />
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
