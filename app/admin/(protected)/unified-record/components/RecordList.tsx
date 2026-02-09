@@ -344,13 +344,13 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         <div className="space-y-6">
             {/* Tabs Navigation */}
             <Tabs defaultValue="ALL" className="w-full" onValueChange={setActiveTab}>
-                <TabsList className="bg-white p-1 rounded-2xl border border-slate-100 shadow-sm h-14 mb-2 w-full justify-start overflow-x-auto overflow-y-hidden no-scrollbar">
+                <TabsList className="bg-white p-1 rounded-2xl border border-slate-300 shadow-sm h-14 mb-4 w-full justify-start overflow-x-auto overflow-y-hidden no-scrollbar">
                     <TabsTrigger
                         value="ALL"
                         className="rounded-xl px-4 md:px-8 h-full font-black uppercase tracking-widest text-[9px] md:text-[10px] data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all gap-2 shrink-0"
                     >
                         Все записи
-                        <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md text-[9px]">
+                        <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md text-[9px] font-bold">
                             {records.length}
                         </span>
                     </TabsTrigger>
@@ -402,19 +402,19 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             </Tabs>
 
             {/* Status Tabs (Combined with Type tabs for a logical flow) */}
-            <div className="flex items-center gap-2 p-1 bg-slate-100/50 rounded-2xl border border-slate-100 w-fit">
+            <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-200 rounded-2xl border border-slate-300 w-full sm:w-fit">
                 <button
                     onClick={() => setFilterStatus('PENDING')}
                     className={cn(
-                        "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
-                        filterStatus === 'PENDING' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                        "px-4 sm:px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center flex-1 sm:flex-none justify-center",
+                        filterStatus === 'PENDING' ? "bg-white text-blue-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"
                     )}
                 >
                     <Clock className="w-3.5 h-3.5" />
                     В роботі
                     <span className={cn(
-                        "px-1.5 py-0.5 rounded text-[8px]",
-                        filterStatus === 'PENDING' ? "bg-blue-100 text-blue-600" : "bg-slate-200 text-slate-500"
+                        "px-1.5 py-0.5 rounded text-[8px] font-bold",
+                        filterStatus === 'PENDING' ? "bg-blue-100 text-blue-700" : "bg-slate-300 text-slate-600"
                     )}>
                         {records.filter(r =>
                             (activeTab === 'ALL' || r.recordType === activeTab) &&
@@ -433,15 +433,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 <button
                     onClick={() => setFilterStatus('PROCESSED')}
                     className={cn(
-                        "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
-                        filterStatus === 'PROCESSED' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                        "px-4 sm:px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center flex-1 sm:flex-none justify-center",
+                        filterStatus === 'PROCESSED' ? "bg-white text-emerald-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"
                     )}
                 >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     Опрацьовані
                     <span className={cn(
-                        "px-1.5 py-0.5 rounded text-[8px]",
-                        filterStatus === 'PROCESSED' ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-500"
+                        "px-1.5 py-0.5 rounded text-[8px] font-bold",
+                        filterStatus === 'PROCESSED' ? "bg-emerald-100 text-emerald-700" : "bg-slate-300 text-slate-600"
                     )}>
                         {records.filter(r =>
                             (activeTab === 'ALL' || r.recordType === activeTab) &&
@@ -460,15 +460,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 <button
                     onClick={() => setFilterStatus('ALL')}
                     className={cn(
-                        "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
-                        filterStatus === 'ALL' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                        "px-4 sm:px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center flex-1 sm:flex-none justify-center",
+                        filterStatus === 'ALL' ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"
                     )}
                 >
                     <ClipboardList className="w-3.5 h-3.5" />
                     Всі
                     <span className={cn(
-                        "px-1.5 py-0.5 rounded text-[8px]",
-                        filterStatus === 'ALL' ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"
+                        "px-1.5 py-0.5 rounded text-[8px] font-bold",
+                        filterStatus === 'ALL' ? "bg-slate-900 text-white" : "bg-slate-300 text-slate-600"
                     )}>
                         {records.filter(r =>
                             (activeTab === 'ALL' || r.recordType === activeTab) &&
@@ -486,86 +486,88 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             </div>
 
             {/* Assignment Filters (Admin Only) */}
-            {currentUser.role === 'ADMIN' && (
-                <div className="flex flex-wrap items-center gap-2 p-1 bg-white rounded-2xl border border-slate-100 w-fit shadow-sm">
-                    <button
-                        onClick={() => setFilterAssignment('ALL')}
-                        className={cn(
-                            "px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
-                            filterAssignment === 'ALL' ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                        )}
-                    >
-                        Всі призначені/непризначені
-                        <span className={cn(
-                            "px-1.5 py-0.5 rounded text-[8px]",
-                            filterAssignment === 'ALL' ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
-                        )}>
-                            {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && (filterStatus === 'ALL' || (filterStatus === 'PENDING' ? r.status !== 'PROCESSED' : r.status === 'PROCESSED'))).length}
-                        </span>
-                    </button>
-                    <button
-                        onClick={() => setFilterAssignment('ASSIGNED')}
-                        className={cn(
-                            "px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
-                            filterAssignment === 'ASSIGNED' ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                        )}
-                    >
-                        <User className="w-3 h-3" />
-                        Призначені
-                        <span className={cn(
-                            "px-1.5 py-0.5 rounded text-[8px]",
-                            filterAssignment === 'ASSIGNED' ? "bg-white/20 text-white" : "bg-blue-50 text-blue-600"
-                        )}>
-                            {filteredRecords.filter(r => r.assignedUserId !== null).length}
-                        </span>
-                    </button>
-                    <button
-                        onClick={() => setFilterAssignment('UNASSIGNED')}
-                        className={cn(
-                            "px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
-                            filterAssignment === 'UNASSIGNED' ? "bg-amber-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                        )}
-                    >
-                        <UserPlus className="w-3 h-3" />
-                        Непризначені
-                        <span className={cn(
-                            "px-1.5 py-0.5 rounded text-[8px]",
-                            filterAssignment === 'UNASSIGNED' ? "bg-white/20 text-white" : "bg-amber-50 text-amber-600"
-                        )}>
-                            {filteredRecords.filter(r => r.assignedUserId === null).length}
-                        </span>
-                    </button>
-                </div>
-            )}
+            {
+                currentUser.role === 'ADMIN' && (
+                    <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-2xl border border-slate-300 w-full sm:w-fit shadow-sm">
+                        <button
+                            onClick={() => setFilterAssignment('ALL')}
+                            className={cn(
+                                "px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
+                                filterAssignment === 'ALL' ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                            )}
+                        >
+                            Всі призначені/непризначені
+                            <span className={cn(
+                                "px-1.5 py-0.5 rounded text-[8px]",
+                                filterAssignment === 'ALL' ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                            )}>
+                                {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && (filterStatus === 'ALL' || (filterStatus === 'PENDING' ? r.status !== 'PROCESSED' : r.status === 'PROCESSED'))).length}
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => setFilterAssignment('ASSIGNED')}
+                            className={cn(
+                                "px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
+                                filterAssignment === 'ASSIGNED' ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                            )}
+                        >
+                            <User className="w-3 h-3" />
+                            Призначені
+                            <span className={cn(
+                                "px-1.5 py-0.5 rounded text-[8px]",
+                                filterAssignment === 'ASSIGNED' ? "bg-white/20 text-white" : "bg-blue-50 text-blue-600"
+                            )}>
+                                {filteredRecords.filter(r => r.assignedUserId !== null).length}
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => setFilterAssignment('UNASSIGNED')}
+                            className={cn(
+                                "px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
+                                filterAssignment === 'UNASSIGNED' ? "bg-amber-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                            )}
+                        >
+                            <UserPlus className="w-3 h-3" />
+                            Непризначені
+                            <span className={cn(
+                                "px-1.5 py-0.5 rounded text-[8px]",
+                                filterAssignment === 'UNASSIGNED' ? "bg-white/20 text-white" : "bg-amber-50 text-amber-600"
+                            )}>
+                                {filteredRecords.filter(r => r.assignedUserId === null).length}
+                            </span>
+                        </button>
+                    </div>
+                )
+            }
             {/* Filters Bar */}
-            <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
+            <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-300 shadow-sm flex flex-col xl:flex-row gap-4 items-center justify-between">
+                <div className="flex flex-col md:flex-row gap-4 w-full xl:w-auto flex-1">
                     <div className="relative group flex-1 md:max-w-xs">
-                        <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-600 transition-colors" />
                         <Input
                             placeholder="№ ЄО..."
-                            className="pl-12 bg-slate-50 border-0 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20 font-bold"
+                            className="pl-12 bg-white border-slate-300 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20 font-bold text-slate-900 placeholder:text-slate-400"
                             value={filterEoNumber}
                             onChange={(e) => setFilterEoNumber(e.target.value)}
                         />
                     </div>
 
                     <div className="relative group flex-[2]">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-600 transition-colors" />
                         <Input
                             placeholder="Пошук за подією або прізвищем..."
-                            className="pl-12 bg-slate-50 border-0 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20"
+                            className="pl-12 bg-white border-slate-300 rounded-2xl h-12 focus-visible:ring-2 focus-visible:ring-blue-500/20 text-slate-900 placeholder:text-slate-400"
                             value={filterSearch}
                             onChange={(e) => setFilterSearch(e.target.value)}
                         />
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
                     {currentUser.role === 'ADMIN' && (
                         <Select value={filterInspector} onValueChange={setFilterInspector}>
-                            <SelectTrigger className="flex-1 md:w-[200px] rounded-xl border-slate-200 bg-white h-12 font-medium">
-                                <User className="w-4 h-4 mr-2 text-slate-400" />
+                            <SelectTrigger className="flex-1 md:w-[200px] rounded-xl border-slate-300 bg-white h-12 font-bold text-slate-700">
+                                <User className="w-4 h-4 mr-2 text-slate-500" />
                                 <SelectValue placeholder="Інспектор" />
                             </SelectTrigger>
                             <SelectContent className="rounded-2xl max-h-[300px]">
@@ -580,8 +582,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     )}
 
                     <Select value={filterCategory} onValueChange={setFilterCategory}>
-                        <SelectTrigger className="flex-1 md:w-[180px] rounded-xl border-slate-200 bg-white h-12 font-medium">
-                            <Filter className="w-4 h-4 mr-2 text-slate-400" />
+                        <SelectTrigger className="flex-1 md:w-[180px] rounded-xl border-slate-300 bg-white h-12 font-bold text-slate-700">
+                            <Filter className="w-4 h-4 mr-2 text-slate-500" />
                             <SelectValue placeholder="Категорія" />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl">
@@ -593,8 +595,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     </Select>
 
                     <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger className="flex-1 md:w-[180px] rounded-xl border-slate-200 bg-white h-12 font-medium">
-                            <ArrowUpDown className="w-4 h-4 mr-2 text-slate-400" />
+                        <SelectTrigger className="flex-1 md:w-[180px] rounded-xl border-slate-300 bg-white h-12 font-bold text-slate-700">
+                            <ArrowUpDown className="w-4 h-4 mr-2 text-slate-500" />
                             <SelectValue placeholder="Сортування" />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl">
@@ -612,7 +614,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         onClick={() => setShowOnlyMine(!showOnlyMine)}
                         className={cn(
                             "h-12 rounded-xl font-bold transition-all px-6 gap-2",
-                            showOnlyMine ? "bg-slate-900 text-white shadow-lg" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                            showOnlyMine ? "bg-slate-900 text-white shadow-lg" : "border-slate-300 text-slate-700 hover:bg-slate-100"
                         )}
                     >
                         <CalendarCheck2 className="w-4 h-4" />
@@ -625,8 +627,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     <Button
                         variant="outline"
                         className={cn(
-                            "h-12 rounded-xl px-4 border-slate-200 font-bold gap-2 transition-all",
-                            selectedIds.length === filteredRecords.length && filteredRecords.length > 0 ? "bg-blue-50 border-blue-200 text-blue-600" : "bg-white hover:bg-slate-50"
+                            "h-12 rounded-xl px-4 border-slate-300 font-bold gap-2 transition-all text-slate-700",
+                            selectedIds.length === filteredRecords.length && filteredRecords.length > 0 ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white hover:bg-slate-100"
                         )}
                         onClick={toggleSelectAll}
                     >
@@ -638,7 +640,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         Вибрати всі
                     </Button>
 
-                    <Button variant="outline" className="h-12 rounded-xl px-4 border-slate-200 hover:bg-slate-50 font-bold gap-2">
+                    <Button variant="outline" className="h-12 rounded-xl px-4 border-slate-300 hover:bg-slate-100 text-slate-700 font-bold gap-2">
                         <Download className="w-4 h-4" />
                         Експорт
                     </Button>
@@ -799,21 +801,21 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-6 border-t border-slate-50">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-6 border-t border-slate-200">
                                                 <div className="space-y-3">
-                                                    <div className="flex items-center gap-2 text-slate-400">
+                                                    <div className="flex items-center gap-2 text-slate-500">
                                                         <User className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-bold uppercase tracking-widest">Заявник</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest">Заявник</span>
                                                     </div>
-                                                    <p className="text-sm font-bold text-slate-700">
+                                                    <p className="text-sm font-black text-slate-900">
                                                         <span className="text-slate-400 text-[10px] mr-1">Гр.</span> {record.applicant || '—'}
                                                     </p>
                                                 </div>
 
                                                 <div className="space-y-3">
-                                                    <div className="flex items-center gap-2 text-slate-400">
+                                                    <div className="flex items-center gap-2 text-slate-500">
                                                         <FileText className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-bold uppercase tracking-widest">Результат</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest">Результат</span>
                                                     </div>
 
                                                     <div className="space-y-1">
@@ -835,9 +837,9 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 {/* Tagged Officers */}
                                                 {record.concernsBpp && record.officers && record.officers.length > 0 && (
                                                     <div className="space-y-3 col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-1">
-                                                        <div className="flex items-center gap-2 text-slate-400">
+                                                        <div className="flex items-center gap-2 text-slate-500">
                                                             <Shield className="w-4 h-4 shrink-0" />
-                                                            <span className="text-xs font-bold uppercase tracking-widest">Прив'язані поліцейські</span>
+                                                            <span className="text-xs font-black uppercase tracking-widest">Прив'язані поліцейські</span>
                                                         </div>
                                                         <div className="flex flex-wrap gap-2">
                                                             {record.officers.map((officer: any) => (
@@ -850,9 +852,9 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 )}
 
                                                 <div className="space-y-3">
-                                                    <div className="flex items-center gap-2 text-slate-400">
+                                                    <div className="flex items-center gap-2 text-slate-500">
                                                         <Briefcase className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-bold uppercase tracking-widest">Відповідальний</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest">Відповідальний</span>
                                                     </div>
                                                     <div className="space-y-1">
                                                         <Select
@@ -873,7 +875,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             }}
                                                             disabled={isAssigning || currentUser.role !== 'ADMIN'}
                                                         >
-                                                            <SelectTrigger className="h-9 rounded-xl border-slate-100 bg-slate-50/50 hover:bg-slate-100 transition-all text-sm font-bold w-full">
+                                                            <SelectTrigger className="h-10 rounded-xl border-slate-300 bg-white hover:bg-slate-50 transition-all text-sm font-black text-slate-900 w-full shadow-sm">
                                                                 <SelectValue placeholder="Оберіть інспектора..." />
                                                             </SelectTrigger>
                                                             <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -1024,119 +1026,120 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                         </div>
                                     </div>
                                 </CardContent>
-                            </Card >
-                        ))
-                        }
-                    </div >
+                            </Card>
+                        ))}
+                    </div>
                 )}
             </div>
 
             {/* Bulk Actions Floating Toolbar */}
-            {selectedIds.length > 0 && (
-                <div className="fixed bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-5 w-[95%] md:w-auto">
-                    <div className="bg-slate-900 text-white px-4 md:px-8 py-3 md:py-4 rounded-2xl md:rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col md:flex-row items-center gap-4 md:gap-8 border border-white/10 backdrop-blur-xl max-h-[80vh] overflow-y-auto md:overflow-visible">
-                        <div className="flex items-center justify-between w-full md:w-auto gap-4">
-                            <div className="flex flex-col">
-                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none">Вибрано</span>
-                                <span className="text-sm md:text-xl font-black italic">{selectedIds.length} записів</span>
+            {
+                selectedIds.length > 0 && (
+                    <div className="fixed bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-5 w-[95%] md:w-auto">
+                        <div className="bg-slate-900 text-white px-4 md:px-8 py-3 md:py-4 rounded-2xl md:rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col md:flex-row items-center gap-4 md:gap-8 border border-white/10 backdrop-blur-xl max-h-[80vh] overflow-y-auto md:overflow-visible">
+                            <div className="flex items-center justify-between w-full md:w-auto gap-4">
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none">Вибрано</span>
+                                    <span className="text-sm md:text-xl font-black italic">{selectedIds.length} записів</span>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    className="h-8 w-8 rounded-lg hover:bg-white/10 text-slate-400 p-0 md:hidden"
+                                    onClick={() => setSelectedIds([])}
+                                >
+                                    <XCircle className="w-5 h-5" />
+                                </Button>
                             </div>
-                            <Button
-                                variant="ghost"
-                                className="h-8 w-8 rounded-lg hover:bg-white/10 text-slate-400 p-0 md:hidden"
-                                onClick={() => setSelectedIds([])}
-                            >
-                                <XCircle className="w-5 h-5" />
-                            </Button>
-                        </div>
 
-                        <div className="h-px md:h-11 w-full md:w-px bg-white/10" />
+                            <div className="h-px md:h-11 w-full md:w-px bg-white/10" />
 
-                        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
-                            {currentUser.role === 'ADMIN' && (
-                                <Select onValueChange={(val) => handleBulkAssign(val)}>
-                                    <SelectTrigger className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-white/5 border-white/10 hover:bg-white/10 transition-all min-w-[140px] md:min-w-[200px] text-[10px] md:text-sm font-bold">
-                                        <UserPlus className="w-3 md:w-4 h-3 md:h-4 mr-1 md:mr-2 text-blue-400" />
-                                        <SelectValue placeholder="Призначити..." />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-none shadow-2xl">
-                                        {users.map(user => (
-                                            <SelectItem key={user.id} value={user.id}>
-                                                {user.lastName} {user.firstName || user.username}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/20 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm">
-                                        <CheckCircle2 className="w-3 md:w-4 h-3 md:h-4" />
-                                        Рішення
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-72 md:w-80 p-6 rounded-[2rem] border-none shadow-2xl space-y-4 mb-4">
-                                    <div className="space-y-2">
-                                        <h4 className="text-sm font-black uppercase tracking-tight italic">Рішення для {selectedIds.length} записів:</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {resolutionPresets.map(preset => (
-                                                <button
-                                                    key={preset}
-                                                    onClick={() => handleUpdateResolution(selectedIds, preset)}
-                                                    className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-600 hover:text-white rounded-xl text-[10px] font-bold transition-all w-full text-left"
-                                                >
-                                                    {preset}
-                                                </button>
+                            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+                                {currentUser.role === 'ADMIN' && (
+                                    <Select onValueChange={(val) => handleBulkAssign(val)}>
+                                        <SelectTrigger className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-white/10 border-white/20 hover:bg-white/20 transition-all min-w-[140px] md:min-w-[200px] text-[10px] md:text-sm font-bold text-white shadow-lg">
+                                            <UserPlus className="w-3 md:w-4 h-3 md:h-4 mr-1 md:mr-2 text-blue-300" />
+                                            <SelectValue placeholder="Призначити..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-none shadow-2xl">
+                                            {users.map(user => (
+                                                <SelectItem key={user.id} value={user.id}>
+                                                    {user.lastName} {user.firstName || user.username}
+                                                </SelectItem>
                                             ))}
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
+                                        </SelectContent>
+                                    </Select>
+                                )}
 
-                            {currentUser.role === 'ADMIN' && (
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm">
-                                            <Trash2 className="w-3 md:w-4 h-3 md:h-4" />
-                                            <span className="hidden sm:inline">Видалити</span>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm shadow-lg">
+                                            <CheckCircle2 className="w-3 md:w-4 h-3 md:h-4" />
+                                            Рішення
                                         </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl w-[90%] md:w-full">
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle className="text-lg md:text-xl font-black uppercase italic tracking-tight">Масове видалення</AlertDialogTitle>
-                                            <AlertDialogDescription className="text-sm md:text-base text-slate-500 font-medium">
-                                                Ви впевнені, що хочете видалити {selectedIds.length} вибраних записів?
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter className="bg-slate-50 p-4 md:p-6 -m-4 md:-m-6 mt-4 md:mt-6 rounded-b-[2rem] flex-col md:flex-row gap-2">
-                                            <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500 mt-0">Скасувати</AlertDialogCancel>
-                                            <AlertDialogAction
-                                                onClick={handleBulkDelete}
-                                                className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
-                                            >
-                                                Так, видалити все
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            )}
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-72 md:w-80 p-6 rounded-[2rem] border-none shadow-2xl space-y-4 mb-4">
+                                        <div className="space-y-2">
+                                            <h4 className="text-sm font-black uppercase tracking-tight italic">Рішення для {selectedIds.length} записів:</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {resolutionPresets.map(preset => (
+                                                    <button
+                                                        key={preset}
+                                                        onClick={() => handleUpdateResolution(selectedIds, preset)}
+                                                        className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-600 hover:text-white rounded-xl text-[10px] font-bold transition-all w-full text-left"
+                                                    >
+                                                        {preset}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
 
-                            <Button
-                                variant="ghost"
-                                className="h-10 md:h-12 w-10 md:w-12 rounded-xl md:rounded-2xl hover:bg-white/10 text-slate-400 p-0 hidden md:flex"
-                                onClick={() => setSelectedIds([])}
-                            >
-                                <XCircle className="w-5 md:w-6 h-5 md:h-6" />
-                            </Button>
+                                {currentUser.role === 'ADMIN' && (
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm">
+                                                <Trash2 className="w-3 md:w-4 h-3 md:h-4" />
+                                                <span className="hidden sm:inline">Видалити</span>
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl w-[90%] md:w-full">
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle className="text-lg md:text-xl font-black uppercase italic tracking-tight">Масове видалення</AlertDialogTitle>
+                                                <AlertDialogDescription className="text-sm md:text-base text-slate-500 font-medium">
+                                                    Ви впевнені, що хочете видалити {selectedIds.length} вибраних записів?
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter className="bg-slate-50 p-4 md:p-6 -m-4 md:-m-6 mt-4 md:mt-6 rounded-b-[2rem] flex-col md:flex-row gap-2">
+                                                <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500 mt-0">Скасувати</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={handleBulkDelete}
+                                                    className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
+                                                >
+                                                    Так, видалити все
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                )}
+
+                                <Button
+                                    variant="ghost"
+                                    className="h-10 md:h-12 w-10 md:w-12 rounded-xl md:rounded-2xl hover:bg-white/10 text-slate-400 p-0 hidden md:flex"
+                                    onClick={() => setSelectedIds([])}
+                                >
+                                    <XCircle className="w-5 md:w-6 h-5 md:h-6" />
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-            <ViewRecordDialog
+                )
+            }
+            < ViewRecordDialog
                 record={viewRecord}
                 isOpen={isViewOpen}
                 onOpenChange={setIsViewOpen}
             />
-        </div>
+        </div >
     )
 }

@@ -127,7 +127,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
 
                     {/* Linked Officers Section for Processed Records */}
                     {record.status === 'PROCESSED' && (
-                        <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-4">
+                        <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 space-y-4 shadow-sm">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Shield className="w-4 h-4 text-blue-600" />
@@ -163,12 +163,12 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                     )}
 
                     {/* Full Description */}
-                    <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-3">
+                    <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 space-y-3 shadow-sm">
                         <div className="flex items-center gap-2">
                             <ClipboardList className="w-4 h-4 text-slate-400" />
                             <h3 className="text-xs font-black uppercase tracking-widest text-slate-900">Фабула / Опис події</h3>
                         </div>
-                        <p className="text-sm font-bold text-slate-700 leading-relaxed uppercase italic">
+                        <p className="text-sm font-black text-slate-900 leading-relaxed uppercase italic">
                             {record.description}
                         </p>
                     </div>
@@ -196,10 +196,10 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
 
                     {/* Deadline & Extensions */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="p-6 border border-slate-100 rounded-3xl space-y-3">
+                        <div className="p-6 border border-slate-200 rounded-3xl space-y-3 bg-white shadow-sm">
                             <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-slate-400" />
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Термін виконання</h4>
+                                <Clock className="w-4 h-4 text-slate-500" />
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-600">Термін виконання</h4>
                             </div>
                             <div className="flex items-end justify-between">
                                 <p className={cn("text-xl font-black italic",
