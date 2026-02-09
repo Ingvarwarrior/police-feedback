@@ -21,6 +21,7 @@ import {
 import { EditOfficerDialog } from "./EditOfficerDialog"
 import { AddEvaluationDialog } from "../components/AddEvaluationDialog"
 import { toast } from "sonner"
+import ViewRecordDialog from "../../unified-record/components/ViewRecordDialog"
 import { analyzeOfficerFeedback } from "./actions/analysisActions"
 import { formatPhoneNumberForCall } from "@/lib/utils"
 import { useAdminStore } from "@/lib/admin-store"
@@ -76,6 +77,8 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
     const [isEvalOpen, setIsEvalOpen] = useState(false)
     const [printMode, setPrintMode] = useState<'DOSSIER' | null>(null)
     const [analysis, setAnalysis] = useState<any>(null)
+    const [viewRecord, setViewRecord] = useState<any>(null)
+    const [isViewOpen, setIsViewOpen] = useState(false)
     const isAdmin = userRole === 'ADMIN'
     const { removeOfficer, updateOfficer } = useAdminStore()
 
@@ -690,18 +693,27 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                             </p>
                                         </td>
                                         <td className="px-8 py-6 text-right">
-                                            <Link
-                                                href={`/admin/unified-record?recordId=${rec.id}`}
+                                            <button
+                                                onClick={() => {
+                                                    setViewRecord(rec);
+                                                    setIsViewOpen(true);
+                                                }}
                                                 className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-white border border-slate-200 text-blue-600 shadow-sm hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all group"
                                             >
                                                 <ArrowLeft className="w-5 h-5 rotate-180" />
-                                            </Link>
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
+
+                    <ViewRecordDialog
+                        record={viewRecord}
+                        isOpen={isViewOpen}
+                        onOpenChange={setIsViewOpen}
+                    />
                 </div>
             )}
         </div>
