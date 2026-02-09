@@ -58,12 +58,7 @@ export default async function UnifiedRecordPage() {
                     </p>
                 </div>
 
-                {currentUser.role === 'ADMIN' && (
-                    <div className="flex flex-wrap gap-4 relative z-10">
-                        <CreateRecordDialog users={users} />
-                        <ImportDialog />
-                    </div>
-                )}
+                {/* Buttons moved to RecordList for better tab context */}
             </div>
 
             {/* Info Note */}

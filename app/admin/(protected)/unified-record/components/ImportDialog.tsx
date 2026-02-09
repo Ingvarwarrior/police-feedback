@@ -17,13 +17,17 @@ import { uk } from "date-fns/locale"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
-export default function ImportDialog() {
+interface ImportDialogProps {
+    defaultRecordType?: 'EO' | 'ZVERN'
+}
+
+export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [file, setFile] = useState<File | null>(null)
     const [step, setStep] = useState<'upload' | 'preview'>('upload')
     const [previewRecords, setPreviewRecords] = useState<any[]>([])
-    const [recordType, setRecordType] = useState<'EO' | 'ZVERN'>('EO')
+    const [recordType, setRecordType] = useState<'EO' | 'ZVERN'>(defaultRecordType)
 
     const handleParse = async () => {
         if (!file) return
@@ -73,9 +77,12 @@ export default function ImportDialog() {
             if (!val) reset()
         }}>
             <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold gap-2 px-6 shadow-lg shadow-blue-200 transition-all active:scale-95">
+                <Button className={cn(
+                    "rounded-2xl font-bold gap-2 px-6 shadow-lg transition-all active:scale-95",
+                    recordType === 'ZVERN' ? "bg-slate-900 hover:bg-black text-white shadow-slate-200" : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"
+                )}>
                     <Upload className="w-4 h-4" />
-                    Імпорт ЄО
+                    {recordType === 'EO' ? 'Імпорт ЄО' : 'Імпорт Звернень'}
                 </Button>
             </DialogTrigger>
             <DialogContent className={`${step === 'preview' ? 'sm:max-w-4xl' : 'sm:max-w-md'} rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl`}>
@@ -84,7 +91,7 @@ export default function ImportDialog() {
                         <div className="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
                             {step === 'upload' ? <Upload className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
                         </div>
-                        {step === 'upload' ? 'Імпорт журналів ЄО' : 'Попередній перегляд'}
+                        {step === 'upload' ? (recordType === 'EO' ? 'Імпорт журналів ЄО' : 'Імпорт Звернень громадян') : 'Попередній перегляд'}
                     </DialogTitle>
                 </DialogHeader>
 

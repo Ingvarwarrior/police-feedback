@@ -50,6 +50,7 @@ import {
 import CreateRecordDialog from "./CreateRecordDialog"
 import ViewRecordDialog from "./ViewRecordDialog"
 import RecordProcessPopover from "./RecordProcessPopover"
+import ImportDialog from "./ImportDialog"
 import {
     deleteUnifiedRecordAction,
     bulkDeleteUnifiedRecordsAction,
@@ -99,6 +100,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const [filterStatus, setFilterStatus] = useState("PENDING") // Default to pending for better focus
     const [filterAssignment, setFilterAssignment] = useState("ALL") // ALL, ASSIGNED, UNASSIGNED
     const [filterEoNumber, setFilterEoNumber] = useState("")
+    const [filterInspector, setFilterInspector] = useState("ALL")
     const [sortBy, setSortBy] = useState("newest")
     const [showOnlyMine, setShowOnlyMine] = useState(false)
 
@@ -165,6 +167,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             result = result.filter(r => r.eoNumber && String(r.eoNumber).toLowerCase().includes(lowerEo))
         }
 
+        // Apply inspector filter
+        if (filterInspector !== 'ALL') {
+            result = result.filter(r => r.assignedUserId === filterInspector)
+        }
+
         // Apply "show only mine" filter
         if (showOnlyMine) {
             result = result.filter(r => r.assignedUserId === currentUser.id)
@@ -187,7 +194,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         })
 
         return result
-    }, [records, filterSearch, filterCategory, activeTab, filterStatus, filterAssignment, filterEoNumber, sortBy, showOnlyMine, currentUser.id])
+    }, [records, filterSearch, filterCategory, activeTab, filterStatus, filterAssignment, filterEoNumber, filterInspector, sortBy, showOnlyMine, currentUser.id])
 
     const categories = useMemo(() => {
         const cats = new Set(initialRecords.map(r => r.category).filter(Boolean))
@@ -383,6 +390,14 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             ).length}
                         </span>
                     </TabsTrigger>
+
+                    {currentUser.role === 'ADMIN' && (
+                        <div className="ml-auto flex items-center gap-2 pr-1">
+                            <CreateRecordDialog users={users} initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }} />
+                            {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}
+                            {(activeTab === 'ZVERN') && <ImportDialog defaultRecordType="ZVERN" />}
+                        </div>
+                    )}
                 </TabsList>
             </Tabs>
 
@@ -547,6 +562,23 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    {currentUser.role === 'ADMIN' && (
+                        <Select value={filterInspector} onValueChange={setFilterInspector}>
+                            <SelectTrigger className="flex-1 md:w-[200px] rounded-xl border-slate-200 bg-white h-12 font-medium">
+                                <User className="w-4 h-4 mr-2 text-slate-400" />
+                                <SelectValue placeholder="Інспектор" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-2xl max-h-[300px]">
+                                <SelectItem value="ALL">Всі інспектори</SelectItem>
+                                {users.map(u => (
+                                    <SelectItem key={u.id} value={u.id}>
+                                        {u.lastName} {u.firstName?.charAt(0)}.
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+
                     <Select value={filterCategory} onValueChange={setFilterCategory}>
                         <SelectTrigger className="flex-1 md:w-[180px] rounded-xl border-slate-200 bg-white h-12 font-medium">
                             <Filter className="w-4 h-4 mr-2 text-slate-400" />
