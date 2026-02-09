@@ -334,11 +334,13 @@ export async function upsertUnifiedRecordAction(data: any) {
         update: {
             ...validated,
             deadline: deadline,
+            assignedAt: validated.assignedUserId && (!oldRecord || oldRecord.assignedUserId !== validated.assignedUserId) ? new Date() : undefined,
             updatedAt: new Date()
         },
         create: {
             ...validated,
-            deadline: deadline
+            deadline: deadline,
+            assignedAt: validated.assignedUserId ? new Date() : null
         }
     })
 
@@ -432,7 +434,10 @@ export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: stri
 
     await prisma.unifiedRecord.updateMany({
         where: { id: { in: ids } },
-        data: { assignedUserId: userId }
+        data: {
+            assignedUserId: userId,
+            assignedAt: new Date()
+        }
     })
 
     // Create a single bulk notification

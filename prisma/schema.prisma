@@ -300,6 +300,7 @@ model UnifiedRecord {
   sourceFile        String?
   importedAt        DateTime  @default(now())
   createdAt         DateTime  @default(now())
+  assignedAt       DateTime?
   updatedAt         DateTime  @updatedAt
   assignedUser      User?     @relation("AssignedUnifiedRecords", fields: [assignedUserId], references: [id])
   officers          Officer[] @relation("UnifiedRecordOfficers")
