@@ -54,11 +54,9 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
         try {
             const result = await saveUnifiedRecordsAction(previewRecords)
             if (result.success) {
-                toast.success(`Успішно імпортовано ${result.count} записів`)
+                toast.success(`Імпорт завершено: ${result.createdCount} нових, ${result.updatedCount} оновлено`)
                 setIsOpen(false)
                 reset()
-                // Force page reload to ensure records are visible
-                setTimeout(() => window.location.reload(), 500)
             }
         } catch (error: any) {
             toast.error(error.message || "Помилка збереження")
