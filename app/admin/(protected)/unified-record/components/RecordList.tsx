@@ -126,10 +126,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         }
 
         // Apply search filter
-        if (filterSearch) {
-            const lowerSearch = filterSearch.toLowerCase()
+        if (filterSearch.trim()) {
+            const lowerSearch = filterSearch.trim().toLowerCase()
             result = result.filter(r =>
-                r.eoNumber.toLowerCase().includes(lowerSearch) ||
+                (r.eoNumber && String(r.eoNumber).toLowerCase().includes(lowerSearch)) ||
                 (r.description?.toLowerCase().includes(lowerSearch)) ||
                 (r.address?.toLowerCase().includes(lowerSearch)) ||
                 (r.applicant?.toLowerCase().includes(lowerSearch)) ||
@@ -160,8 +160,9 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         }
 
         // Apply EO number dedicated filter
-        if (filterEoNumber) {
-            result = result.filter(r => r.eoNumber.toLowerCase().includes(filterEoNumber.toLowerCase()))
+        if (filterEoNumber.trim()) {
+            const lowerEo = filterEoNumber.trim().toLowerCase()
+            result = result.filter(r => r.eoNumber && String(r.eoNumber).toLowerCase().includes(lowerEo))
         }
 
         // Apply "show only mine" filter
@@ -343,7 +344,16 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     >
                         Єдиний облік
                         <span className="bg-blue-50 text-blue-500 px-2 py-0.5 rounded-md text-[9px]">
-                            {records.filter(r => r.recordType === 'EO').length}
+                            {records.filter(r => r.recordType === 'EO' &&
+                                (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
+                                (filterSearch.trim() ? (
+                                    String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                    r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                    r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                    r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                    r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
+                                ) : true)
+                            ).length}
                         </span>
                     </TabsTrigger>
                     <TabsTrigger
@@ -352,7 +362,16 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     >
                         Звернення
                         <span className="bg-amber-50 text-amber-500 px-2 py-0.5 rounded-md text-[9px]">
-                            {records.filter(r => r.recordType === 'ZVERN').length}
+                            {records.filter(r => r.recordType === 'ZVERN' &&
+                                (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
+                                (filterSearch.trim() ? (
+                                    String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                    r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                    r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                    r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                    r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
+                                ) : true)
+                            ).length}
                         </span>
                     </TabsTrigger>
                 </TabsList>
@@ -373,7 +392,18 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         "px-1.5 py-0.5 rounded text-[8px]",
                         filterStatus === 'PENDING' ? "bg-blue-100 text-blue-600" : "bg-slate-200 text-slate-500"
                     )}>
-                        {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && r.status !== 'PROCESSED').length}
+                        {records.filter(r =>
+                            (activeTab === 'ALL' || r.recordType === activeTab) &&
+                            r.status !== 'PROCESSED' &&
+                            (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
+                            (filterSearch.trim() ? (
+                                String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
+                            ) : true)
+                        ).length}
                     </span>
                 </button>
                 <button
@@ -389,7 +419,18 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         "px-1.5 py-0.5 rounded text-[8px]",
                         filterStatus === 'PROCESSED' ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-500"
                     )}>
-                        {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && r.status === 'PROCESSED').length}
+                        {records.filter(r =>
+                            (activeTab === 'ALL' || r.recordType === activeTab) &&
+                            r.status === 'PROCESSED' &&
+                            (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
+                            (filterSearch.trim() ? (
+                                String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
+                            ) : true)
+                        ).length}
                     </span>
                 </button>
                 <button
@@ -405,7 +446,17 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         "px-1.5 py-0.5 rounded text-[8px]",
                         filterStatus === 'ALL' ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"
                     )}>
-                        {records.filter(r => activeTab === 'ALL' || r.recordType === activeTab).length}
+                        {records.filter(r =>
+                            (activeTab === 'ALL' || r.recordType === activeTab) &&
+                            (filterEoNumber.trim() ? String(r.eoNumber).toLowerCase().includes(filterEoNumber.trim().toLowerCase()) : true) &&
+                            (filterSearch.trim() ? (
+                                String(r.eoNumber).toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                r.description?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                r.address?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                r.applicant?.toLowerCase().includes(filterSearch.trim().toLowerCase()) ||
+                                r.officers?.some((o: any) => o.lastName?.toLowerCase().includes(filterSearch.trim().toLowerCase()))
+                            ) : true)
+                        ).length}
                     </span>
                 </button>
             </div>
@@ -441,7 +492,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             "px-1.5 py-0.5 rounded text-[8px]",
                             filterAssignment === 'ASSIGNED' ? "bg-white/20 text-white" : "bg-blue-50 text-blue-600"
                         )}>
-                            {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && (filterStatus === 'ALL' || (filterStatus === 'PENDING' ? r.status !== 'PROCESSED' : r.status === 'PROCESSED')) && r.assignedUserId !== null).length}
+                            {filteredRecords.filter(r => r.assignedUserId !== null).length}
                         </span>
                     </button>
                     <button
@@ -457,7 +508,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             "px-1.5 py-0.5 rounded text-[8px]",
                             filterAssignment === 'UNASSIGNED' ? "bg-white/20 text-white" : "bg-amber-50 text-amber-600"
                         )}>
-                            {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && (filterStatus === 'ALL' || (filterStatus === 'PENDING' ? r.status !== 'PROCESSED' : r.status === 'PROCESSED')) && r.assignedUserId === null).length}
+                            {filteredRecords.filter(r => r.assignedUserId === null).length}
                         </span>
                     </button>
                 </div>
