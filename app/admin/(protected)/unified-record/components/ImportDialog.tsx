@@ -181,10 +181,21 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
                                     <p className="font-black uppercase tracking-widest text-amber-600">Вимоги до структури:</p>
                                     <p className="font-medium">Для коректного зчитування, файл має містити колонки:</p>
                                     <div className="flex flex-wrap gap-2">
-                                        {['№ ЄО', 'подія', 'заявник', 'Рапорт- ПІБ'].map(tag => (
-                                            <span key={tag} className="bg-white border border-amber-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">{tag}</span>
-                                        ))}
+                                        {recordType === 'EO' ? (
+                                            ['№ ЄО', 'подія', 'заявник', 'Рапорт- ПІБ'].map(tag => (
+                                                <span key={tag} className="bg-white border border-amber-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">{tag}</span>
+                                            ))
+                                        ) : (
+                                            ['№', 'дата', 'ПІБ', 'Зміст'].map(tag => (
+                                                <span key={tag} className="bg-white border border-amber-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">{tag}</span>
+                                            ))
+                                        )}
                                     </div>
+                                    {recordType === 'ZVERN' && (
+                                        <p className="text-[9px] font-bold text-slate-500 mt-2 italic">
+                                            * № може містити літери та цифри (напр. 123-А або ЗВ-45)
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

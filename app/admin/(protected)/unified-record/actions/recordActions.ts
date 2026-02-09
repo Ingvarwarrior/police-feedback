@@ -9,7 +9,7 @@ import { sendUnifiedAssignmentEmail } from "@/lib/mail"
 
 const UnifiedRecordSchema = z.object({
     id: z.string().optional(),
-    eoNumber: z.string().min(1, "Номер ЄО обов'язковий"),
+    eoNumber: z.string().min(1, "Номер обов'язковий"),
     eoDate: z.date(),
     district: z.string().optional().nullable(),
     address: z.string().optional().nullable(),
@@ -195,7 +195,7 @@ export async function getUnifiedRecords(params?: {
 }
 
 function parseExcelRow(row: any, fileName: string) {
-    const eoNumber = row['№ ЄО'] || row['Номер ЄО'] || row['eoNumber']
+    const eoNumber = row['№ ЄО'] || row['Номер ЄО'] || row['eoNumber'] || row['№'] || row['Номер'] || row['№ звернення']
     if (!eoNumber) return null
 
     const eoDateStr = row['дата, час повідомлення'] || row['Дата'] || row['Date']
@@ -230,7 +230,7 @@ function parseExcelRow(row: any, fileName: string) {
         description: row['подія'] || row['Event'] || row['Зміст'] || row['Content'] || null,
         applicant: row['заявник'] || row['Applicant'] || null,
         category: row['Категорія'] || null,
-        officerName: row['Рапорт- ПІБ хто склав'] || row['Офіцер'] || null,
+        officerName: row['Рапорт- ПІБ хто склав'] || row['Офіцер'] || row['Виконавець'] || row['ПІБ'] || null,
         resolution: row['Рішення'] || row['Resolution'] || null,
         resolutionDate: row['Дата рішення'] ? new Date(row['Дата рішення']) : null,
         sourceFile: fileName
