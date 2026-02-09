@@ -592,13 +592,13 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                         </div>
                     )}
 
-                    {/* Unified Records & Appeals (Combined Table) */}
+                    {/* Consolidated Unified Records & Appeals Table */}
                     {stats.unifiedRecords && stats.unifiedRecords.length > 0 && (
                         <div className="space-y-6">
                             <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 italic">
                                 <div className="w-1.5 h-6 bg-blue-600" />
                                 <ClipboardList className="w-5 h-5 text-blue-600" />
-                                Згадки в ЄО та зверненнях
+                                Згадки у ЄО та Зверненнях
                             </h2>
                             <div className="overflow-hidden rounded-[2rem] border border-blue-100 shadow-sm">
                                 <table className="w-full text-left border-collapse">
@@ -609,13 +609,13 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                             <th className="px-6 py-4">Номер</th>
                                             <th className="px-6 py-4">Заявник</th>
                                             <th className="px-6 py-4">Інспектор</th>
-                                            <th className="px-6 py-4 text-right">Статус</th>
+                                            <th className="px-6 py-4">Деталі</th>
                                         </tr>
                                     </thead>
                                     <tbody className="text-xs font-bold text-slate-700">
                                         {stats.unifiedRecords.map((rec: any) => (
                                             <tr key={rec.id} className="border-b border-blue-50 last:border-0 hover:bg-blue-50/30 transition-colors">
-                                                <td className="px-6 py-4">
+                                                <td className="px-6 py-4 whitespace-nowrap">
                                                     {rec.eoDate ? format(new Date(rec.eoDate), 'dd.MM.yyyy') : '—'}
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -626,22 +626,26 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                                         {rec.recordType === 'ZVERN' ? 'Звернення' : 'ЄО'}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-blue-600">
+                                                <td className="px-6 py-4 text-blue-600 font-black">
                                                     {rec.eoNumber}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    {rec.applicant || '—'}
+                                                    {rec.applicant || <span className="text-slate-400 italic">Не вказано</span>}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    {rec.assignedUser ? `${rec.assignedUser.lastName} ${rec.assignedUser.firstName?.[0] || ''}.` : '—'}
+                                                    {rec.assignedUser ? (
+                                                        <span className="flex items-center gap-1">
+                                                            <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[9px] text-slate-500">
+                                                                {rec.assignedUser.firstName?.[0]}
+                                                            </div>
+                                                            {rec.assignedUser.lastName}
+                                                        </span>
+                                                    ) : <span className="text-slate-400 italic">—</span>}
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className={cn(
-                                                        "inline-flex px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest",
-                                                        rec.status === 'PROCESSED' ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-                                                    )}>
-                                                        {rec.status === 'PROCESSED' ? 'Опрацьовано' : 'В роботі'}
-                                                    </div>
+                                                <td className="px-6 py-4">
+                                                    <Link href={`/admin/unified-record`} className="text-blue-500 hover:text-blue-700">
+                                                        <ArrowLeft className="w-4 h-4 rotate-180" />
+                                                    </Link>
                                                 </td>
                                             </tr>
                                         ))}
