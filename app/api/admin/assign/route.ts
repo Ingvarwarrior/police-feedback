@@ -62,10 +62,15 @@ export async function POST(req: Request) {
                 })
 
                 if (assignee?.email) {
-                    // Non-blocking email sending
-                    sendAssignmentEmail(assignee, response).catch(err =>
-                        console.error("Async email error:", err)
-                    )
+                    // Check if assignment emails are enabled
+                    const settings = await prisma.settings.findUnique({ where: { id: "global" } })
+
+                    if (settings?.sendAssignmentEmails !== false) {
+                        // Non-blocking email sending
+                        sendAssignmentEmail(assignee, response).catch(err =>
+                            console.error("Async email error:", err)
+                        )
+                    }
                 }
             }
         }

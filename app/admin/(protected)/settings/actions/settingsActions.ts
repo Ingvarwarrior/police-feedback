@@ -12,7 +12,10 @@ export async function getSettings() {
 
         if (!settings) {
             settings = await prisma.settings.create({
-                data: { id: "global" }
+                data: {
+                    id: "global",
+                    sendAssignmentEmails: true // Ensure explicitly set to true by default
+                }
             })
         }
 

@@ -34,6 +34,8 @@ export async function GET(request: Request) {
             }
         })
 
+        // Check if assignment emails are enabled
+        const settings = await prisma.settings.findUnique({ where: { id: "global" } })
         let sentCount = 0
 
         for (const record of recordsToRemind) {
@@ -45,8 +47,11 @@ export async function GET(request: Request) {
             const daysLeft = Math.round((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
             if (daysLeft === 0 || daysLeft === 1) {
-                await sendUnifiedRecordReminderEmail(record.assignedUser, record, daysLeft)
-                sentCount++
+                // Send email only if enabled
+                if (settings?.sendAssignmentEmails !== false) {
+                    await sendUnifiedRecordReminderEmail(record.assignedUser, record, daysLeft)
+                    sentCount++
+                }
             }
         }
 
