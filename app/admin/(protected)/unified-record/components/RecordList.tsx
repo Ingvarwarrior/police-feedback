@@ -41,7 +41,7 @@ import {
 import { format } from "date-fns"
 import { uk } from "date-fns/locale"
 import { toast } from "sonner"
-import * as Papa from "papaparse"
+import * as XLSX from "xlsx"
 import {
     Tabs,
     TabsContent,
@@ -368,7 +368,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             return
         }
 
-        const csvData = itemsToExport.map(r => ({
+        const exportData = itemsToExport.map(r => ({
             "Дата звернення": format(new Date(r.eoDate), 'dd.MM.yyyy', { locale: uk }),
             "№ ЄО/Звернення": r.eoNumber || '-',
             "Заявник": r.applicant || '-',
@@ -379,14 +379,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             "Рішення": r.resolution || '-'
         }))
 
-        const csvString = Papa.unparse(csvData)
-        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvString], { type: 'text/csv;charset=utf-8;' })
-        const link = document.createElement("a")
-        link.href = URL.createObjectURL(blob)
-        link.download = `export_records_${format(new Date(), 'dd_MM_yyyy')}.csv`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+        const ws = XLSX.utils.json_to_sheet(exportData)
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, "Unified Records")
+        XLSX.writeFile(wb, `export_records_${format(new Date(), 'dd_MM_yyyy')}.xlsx`)
+
         toast.success(`Експортовано ${itemsToExport.length} записів`)
     }
 
