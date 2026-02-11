@@ -62,6 +62,7 @@ interface AnalyticsClientProps {
         inspectorPerformance: {
             id: string,
             name: string,
+            recordType?: string,
             assigned: number,
             processed: number,
             pending: number
@@ -279,44 +280,8 @@ export default function AnalyticsClient({
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {[...unifiedRecordStats.inspectorPerformance] // In real app, we should filter by recordType here too, but data structure currently aggregates all types per inspector in `page.tsx`.
-                                                // Wait, inspecting `page.tsx` again: `inspectorStatsMap` aggregates EVERYTHING.
-                                                // I need to update `page.tsx` to separate stats by type if I want separate tables.
-                                                // The current `page.tsx` logic:
-                                                // `unifiedRecordsByInspector` returns ALL records.
-                                                // `inspectorStatsMap` sums them up.
-                                                // It DOES NOT separate by type!
-                                                // I need to fix `page.tsx` logic first to support filtering by type or aggregation by type.
-                                                // But for now, I will assume the user wants the same table or allow me to upgrade `page.tsx` logic.
-                                                // Actually, in `page.tsx` I added `recordType` to the query, but I didn't change the aggregation logic `inspectorStatsMap`.
-                                                // So `inspectorPerformance` prop currently has MIXED data.
-                                                // This is a logic bug in my plan vs execution.
-                                                // I should probably move the aggregation to the CLIENT side or provide raw data?
-                                                // Or better, update `page.tsx` to key by `inspectorId + recordType`.
-                                                // BUT, for now, let's just proceed with rendering. I can't filter here because `inspectorPerformance` is already aggregated totals.
-                                                // Re-reading `page.tsx`:
-                                                // `unifiedRecordsByInspector.forEach(...)` -> sums up numbers.
-                                                // I need to change `page.tsx` to group by inspector AND type?
-                                                // OR, passing the raw `unifiedRecordsByInspector` to client would be easier and let client do the math.
-                                                // `unifiedRecordsByInspector` is passed to `Promise.all` but NOT passed to `AnalyticsClient`?
-                                                // Checking `page.tsx`...
-                                                // `unifiedRecordStats` passed to client has `totalByType` and `inspectorPerformance`.
-                                                // `unifiedRecordsByInspector` (raw rows) is NOT passed to client.
-                                                // So I CANNOT filter by type in client unless I change `page.tsx`.
-                                                // I MUST change `page.tsx` to aggregate by type.
-                                                //
-                                                // Correct path:
-                                                // 1. Modify `page.tsx` to aggregate stats separate for EO and ZVERN.
-                                                // 2. Pass `inspectorPerformanceEO` and `inspectorPerformanceZVERN` or detailed list.
-                                                // 
-                                                // Given I already modified `page.tsx` to SELECT recordType, I just need to use it in the aggregation loop.
-                                                // I will pause this tool, go fix `page.tsx`, then come back?
-                                                // No, I can't pause. I must finish this tool call or error it.
-                                                // I will implement the UI assuming I have the data, but I know I don't.
-                                                // Actually, I can allow the UI to show mixed stats for now (Task says "analytics separate report for appeals... inspector performance table"). 
-                                                // Showing mixed stats in "Appeals" tab is wrong.
-                                                // I will proceed with this edit, but I will make a mental note to FIX `page.tsx` aggregation logic in the next step.
-                                                // I will add a TODO note in the code here.
+                                            {[...unifiedRecordStats.inspectorPerformance]
+                                                .filter(i => i.recordType === 'ZVERN' && i.assigned > 0)
                                                 .sort((a, b) => b.assigned - a.assigned)
                                                 .map((item) => (
                                                     <TableRow key={item.id} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
@@ -475,6 +440,7 @@ export default function AnalyticsClient({
                                         <TableHeader className="bg-slate-50/50">
                                             <TableRow className="border-slate-50 hover:bg-transparent">
                                                 <TableHead className="font-black uppercase text-[10px] tracking-widest px-8 py-5">Виконавець</TableHead>
+                                                <TableHead className="font-black uppercase text-[10px] tracking-widest py-5">Тип</TableHead>
                                                 <TableHead className="font-black uppercase text-[10px] tracking-widest text-center py-5">Призначено</TableHead>
                                                 <TableHead className="font-black uppercase text-[10px] tracking-widest text-center py-5">Розглянуто</TableHead>
                                                 <TableHead className="font-black uppercase text-[10px] tracking-widest text-center py-5">В роботі</TableHead>
@@ -495,6 +461,14 @@ export default function AnalyticsClient({
                                                                 <span className="text-amber-600 italic">Не призначено</span>
                                                             ) : item.name}
                                                         </TableCell>
+                                                        <TableCell className="py-6">
+                                                            <span className={cn(
+                                                                "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest",
+                                                                item.recordType === 'EO' ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"
+                                                            )}>
+                                                                {item.recordType === 'EO' ? 'ЄО' : 'Звернення'}
+                                                            </span>
+                                                        </TableCell>
                                                         <TableCell className="text-center font-bold text-slate-600 py-6">{item.assigned}</TableCell>
                                                         <TableCell className="text-center font-bold text-emerald-600 py-6">{item.processed}</TableCell>
                                                         <TableCell className="text-center font-bold text-amber-600 py-6">{item.pending}</TableCell>
@@ -514,8 +488,8 @@ export default function AnalyticsClient({
                                                     </TableRow>
                                                 ))}
                                             {unifiedRecordStats.inspectorPerformance.length > 0 && (
-                                                <TableRow className="bg-slate-50/80 font-black border-t-2 border-slate-200">
-                                                    <TableCell className="px-8 py-6 uppercase tracking-wider text-[10px]">Всього за період</TableCell>
+                                                <TableRow className="bg-slate-50/80 font-black border-t-2 border-slate-200 text-slate-900">
+                                                    <TableCell colSpan={2} className="px-8 py-6 uppercase tracking-wider text-[10px]">Всього за період</TableCell>
                                                     <TableCell className="text-center py-6">
                                                         {unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.assigned, 0)}
                                                     </TableCell>
@@ -536,7 +510,7 @@ export default function AnalyticsClient({
                                             )}
                                             {unifiedRecordStats.inspectorPerformance.length === 0 && (
                                                 <TableRow>
-                                                    <TableCell colSpan={5} className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+                                                    <TableCell colSpan={6} className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
                                                         Дані за обраний період відсутні
                                                     </TableCell>
                                                 </TableRow>
