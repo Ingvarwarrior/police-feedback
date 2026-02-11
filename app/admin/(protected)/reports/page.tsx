@@ -58,14 +58,14 @@ export default async function ReportsPage() {
         <div className="space-y-8 pb-12">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Відгуки громадян</h1>
-                    <p className="text-slate-500 font-medium tracking-tight">Повний перелік отриманих анкет громадян</p>
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic transition-colors duration-300">Відгуки громадян</h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium tracking-tight transition-colors duration-300">Повний перелік отриманих анкет громадян</p>
                 </div>
             </div>
 
-            <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden">
-                <CardHeader className="bg-slate-50/50 border-b px-8 py-6">
-                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+            <Card className="border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900 transition-colors duration-300">
+                <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 border-b dark:border-slate-800 px-8 py-6 transition-colors duration-300">
+                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-900 dark:text-slate-200">
                         <FileText className="w-4 h-4 text-primary" />
                         Усі записи ({responses.length})
                     </CardTitle>

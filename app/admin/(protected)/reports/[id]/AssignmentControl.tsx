@@ -71,7 +71,7 @@ export default function AssignmentControl({ responseId, currentAssigneeId, canEd
 
     if (!canEdit) {
         return (
-            <div className="flex items-center gap-2 text-slate-400 font-medium py-2">
+            <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 font-medium py-2 transition-colors duration-300">
                 <Shield className="w-4 h-4" />
                 <span>Призначення обмежено</span>
             </div>
@@ -80,7 +80,7 @@ export default function AssignmentControl({ responseId, currentAssigneeId, canEd
 
     return (
         <div className="space-y-3">
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-2">
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest flex items-center gap-2 transition-colors duration-300">
                 <UserPlus className="w-3.5 h-3.5" />
                 Відповідальний за опрацювання
             </p>
@@ -89,11 +89,11 @@ export default function AssignmentControl({ responseId, currentAssigneeId, canEd
                 onValueChange={handleAssign}
                 disabled={assigning || loading}
             >
-                <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white ring-offset-white focus:ring-primary">
+                <SelectTrigger className="h-11 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 ring-offset-white dark:ring-offset-slate-900 focus:ring-primary transition-colors duration-300">
                     <SelectValue placeholder="Виберіть виконавця" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-slate-200">
-                    <SelectItem value="unassigned" className="text-slate-400 italic">Не призначено</SelectItem>
+                <SelectContent className="rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                    <SelectItem value="unassigned" className="text-slate-400 dark:text-slate-500 italic">Не призначено</SelectItem>
                     {users.map(u => (
                         <SelectItem key={u.id} value={u.id}>
                             {u.firstName || u.lastName ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : u.email} ({u.role})

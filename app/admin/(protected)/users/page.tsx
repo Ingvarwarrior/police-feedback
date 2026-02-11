@@ -23,8 +23,8 @@ export default async function UsersPage() {
         <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Керування персоналом</h1>
-                    <p className="text-slate-500 font-medium italic">Додавання та налаштування доступів для інспекторів</p>
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic transition-colors duration-300">Керування персоналом</h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium italic transition-colors duration-300">Додавання та налаштування доступів для інспекторів</p>
                 </div>
                 <Link href="/admin/users/new" className="w-full sm:w-auto">
                     <Button className="w-full sm:w-auto rounded-2xl font-black uppercase tracking-widest gap-2 h-12 px-6 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
@@ -35,13 +35,13 @@ export default async function UsersPage() {
             </div>
 
             <div className="grid gap-6">
-                <Card className="border-0 shadow-xl ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden">
-                    <CardHeader className="bg-slate-50/50 border-b px-8 py-6 flex flex-row items-center justify-between">
-                        <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-400">
+                <Card className="border-0 shadow-xl ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900 transition-colors duration-300">
+                    <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 border-b dark:border-slate-800 px-8 py-6 flex flex-row items-center justify-between transition-colors duration-300">
+                        <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-400 dark:text-slate-500 transition-colors duration-300">
                             <Users className="w-4 h-4 text-primary" />
                             Зареєстровані користувачі
                         </CardTitle>
-                        <span className="bg-white border border-slate-200 px-3 py-1 rounded-full text-[10px] font-black text-slate-400 uppercase">
+                        <span className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1 rounded-full text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase transition-colors duration-300">
                             Всього: {users.length}
                         </span>
                     </CardHeader>
@@ -50,8 +50,8 @@ export default async function UsersPage() {
                     </CardContent>
                 </Card>
 
-                <div className="p-6 bg-amber-50 rounded-3xl border border-amber-100 flex gap-4 text-xs text-amber-800 font-medium">
-                    <div className="p-2 bg-amber-200 rounded-xl h-fit">
+                <div className="p-6 bg-amber-50 dark:bg-amber-900/10 rounded-3xl border border-amber-100 dark:border-amber-900/20 flex gap-4 text-xs text-amber-800 dark:text-amber-400 font-medium transition-colors duration-300">
+                    <div className="p-2 bg-amber-200 dark:bg-amber-900/40 rounded-xl h-fit transition-colors duration-300">
                         <Shield className="w-4 h-4" />
                     </div>
                     <div>

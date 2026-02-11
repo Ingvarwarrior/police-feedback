@@ -55,7 +55,7 @@ export default function StatusControl({ id, currentStatus, canEdit = true }: Sta
                         variant="outline"
                         disabled={key === currentStatus || isPending || !canEdit}
                         onClick={() => handleUpdate(key)}
-                        className={`rounded-xl font-bold text-[10px] uppercase tracking-widest h-12 ${key === currentStatus ? 'border-primary ring-1 ring-primary/20' : 'border-slate-200'}`}
+                        className={`rounded-xl font-bold text-[10px] uppercase tracking-widest h-12 transition-all duration-300 ${key === currentStatus ? 'border-primary ring-1 ring-primary/20 bg-primary/5 dark:bg-primary/20' : 'border-slate-200 dark:border-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                     >
                         {cfg.label}
                     </Button>

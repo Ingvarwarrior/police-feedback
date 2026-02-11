@@ -126,8 +126,8 @@ export default function ReportResolution({
     // Read-only view when resolved
     if (!canEdit && initialNotes) {
         return (
-            <div className="p-6 bg-emerald-50 rounded-[2.5rem] border border-emerald-200 space-y-6 shadow-sm">
-                <div className="flex items-center gap-2 text-emerald-600 font-black text-[10px] uppercase tracking-widest">
+            <div className="p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-[2.5rem] border border-emerald-200 dark:border-emerald-900/30 space-y-6 shadow-sm transition-colors duration-300">
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-black text-[10px] uppercase tracking-widest transition-colors duration-300">
                     <CheckCircle2 className="w-4 h-4" />
                     Опрацьовано та закрито
                 </div>
@@ -135,30 +135,30 @@ export default function ReportResolution({
                 <div className="grid gap-6 md:grid-cols-2">
                     <div className="space-y-4">
                         <div>
-                            <p className="text-[10px] text-emerald-700 font-black uppercase tracking-widest mb-1">Категорія</p>
-                            <p className="text-slate-900 font-bold">{getCategoryLabel(initialCategory)}</p>
+                            <p className="text-[10px] text-emerald-700 dark:text-emerald-500 font-black uppercase tracking-widest mb-1 transition-colors duration-300">Категорія</p>
+                            <p className="text-slate-900 dark:text-emerald-100 font-bold transition-colors duration-300">{getCategoryLabel(initialCategory)}</p>
                         </div>
                         <div>
-                            <p className="text-[10px] text-emerald-700 font-black uppercase tracking-widest mb-1">Нотатки</p>
-                            <p className="text-slate-700 italic leading-relaxed">"{initialNotes}"</p>
+                            <p className="text-[10px] text-emerald-700 dark:text-emerald-500 font-black uppercase tracking-widest mb-1 transition-colors duration-300">Нотатки</p>
+                            <p className="text-slate-700 dark:text-slate-300 italic leading-relaxed transition-colors duration-300">"{initialNotes}"</p>
                         </div>
                     </div>
 
                     {initialTaggedOfficers.length > 0 && (
-                        <div className="bg-white/50 p-4 rounded-2xl border border-emerald-100">
-                            <p className="text-[10px] text-emerald-700 font-black uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/20 transition-colors duration-300">
+                            <p className="text-[10px] text-emerald-700 dark:text-emerald-500 font-black uppercase tracking-widest mb-3 flex items-center gap-2 transition-colors duration-300">
                                 <Users className="w-3.5 h-3.5" />
                                 Причетні офіцери
                             </p>
                             <div className="space-y-2">
                                 {initialTaggedOfficers.map((o: Officer) => (
-                                    <div key={o.id} className="flex items-center gap-2 text-sm bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
-                                        <div className="p-1.5 bg-slate-100 rounded-lg text-slate-500">
+                                    <div key={o.id} className="flex items-center gap-2 text-sm bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors duration-300">
+                                        <div className="p-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors duration-300">
                                             <ShieldCheck className="w-3.5 h-3.5" />
                                         </div>
                                         <div>
-                                            <p className="font-bold text-slate-900">{o.lastName} {o.firstName[0]}.</p>
-                                            <p className="text-[10px] text-slate-400 font-medium">{o.badgeNumber} • {o.rank || 'Офіцер'}</p>
+                                            <p className="font-bold text-slate-900 dark:text-slate-200 transition-colors duration-300">{o.lastName} {o.firstName[0]}.</p>
+                                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium transition-colors duration-300">{o.badgeNumber} • {o.rank || 'Офіцер'}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -168,7 +168,7 @@ export default function ReportResolution({
                 </div>
 
                 {initialNotes && (
-                    <div className={`mt-4 p-4 rounded-2xl flex items-center gap-3 ${initialIsConfirmed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                    <div className={`mt-4 p-4 rounded-2xl flex items-center gap-3 transition-colors duration-300 ${initialIsConfirmed ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300'}`}>
                         {initialIsConfirmed ? <ShieldCheck className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
                         <p className="text-xs font-bold uppercase tracking-wider">
                             {initialIsConfirmed ? 'Факт підтверджено - впливає на рейтинг' : 'Факт НЕ підтверджено - не впливає на рейтинг'}

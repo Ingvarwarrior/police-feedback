@@ -242,8 +242,8 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">Особовий склад</h1>
-                    <p className="text-sm md:text-base text-slate-500 mt-1">Моніторинг ефективності та оцінювання офіцерів</p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white transition-colors duration-300">Особовий склад</h1>
+                    <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 mt-1 transition-colors duration-300">Моніторинг ефективності та оцінювання офіцерів</p>
                 </div>
                 <div className="flex gap-2 w-full md:w-auto">
                     {canCreate && (
@@ -261,12 +261,12 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
             </div>
 
             {/* Filters & Actions - Sticky */}
-            <div className="sticky top-[-1px] z-20 flex flex-col md:flex-row gap-4 items-center bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 -mx-1">
+            <div className="sticky top-[-1px] z-20 flex flex-col md:flex-row gap-4 items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 -mx-1 transition-colors duration-300">
                 <div className="relative flex-1 w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
                         placeholder="Пошук офіцера..."
-                        className="pl-10 h-10 rounded-lg border-0 bg-slate-100 focus-visible:ring-0 placeholder:text-slate-400"
+                        className="pl-10 h-10 rounded-lg border-0 bg-slate-100 dark:bg-slate-800 dark:text-white focus-visible:ring-0 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors duration-300"
                         value={searchTerm}
                         onChange={(e) => {
                             setSearchTerm(e.target.value)
@@ -281,17 +281,17 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                             size="icon"
                             onClick={handleRecalibrate}
                             disabled={loading}
-                            className="h-10 w-10 rounded-lg border-slate-200 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50"
+                            className="h-10 w-10 rounded-lg border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 bg-transparent"
                             title="Перерахувати статистику"
                         >
                             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         </Button>
                     )}
-                    <Select value={`${sortConfig.key}-${sortConfig.dir}`} onValueChange={(val) => {
+                    <Select onValueChange={(val) => {
                         const [key, dir] = val.split('-') as [SortKey, SortDir]
                         setSortConfig({ key, dir })
                     }}>
-                        <SelectTrigger className="w-full md:w-[240px] h-10 rounded-lg bg-slate-50 border-slate-200">
+                        <SelectTrigger className="w-full md:w-[240px] h-10 rounded-lg bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 transition-colors duration-300">
                             <SelectValue placeholder="Сортування" />
                         </SelectTrigger>
                         <SelectContent align="end" className="rounded-xl">
@@ -313,45 +313,47 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
             </div>
 
             {/* Bulk Action Bar */}
-            {selectedIds.length > 0 && canDelete && (
-                <div className="flex items-center justify-between bg-slate-900 text-white p-4 rounded-xl animate-in slide-in-from-top-2">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-white/10 px-3 py-1 rounded text-sm font-medium">
-                            Обрано: {selectedIds.length}
+            {
+                selectedIds.length > 0 && canDelete && (
+                    <div className="flex items-center justify-between bg-slate-900 dark:bg-slate-800 text-white p-4 rounded-xl animate-in slide-in-from-top-2 transition-colors duration-300">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-white/10 px-3 py-1 rounded text-sm font-medium">
+                                Обрано: {selectedIds.length}
+                            </div>
+                            <div className="text-sm text-slate-400">
+                                Виберіть дію для застосування до обраних офіцерів
+                            </div>
                         </div>
-                        <div className="text-sm text-slate-400">
-                            Виберіть дію для застосування до обраних офіцерів
-                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Видалити обраних
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Видалити обраних офіцерів?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Ви збираєтесь видалити {selectedIds.length} офіцерів. Ця дія незворотна і видалить також історію їх оцінювання.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Скасувати</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700">
+                                        Видалити ({selectedIds.length})
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Видалити обраних
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Видалити обраних офіцерів?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Ви збираєтесь видалити {selectedIds.length} офіцерів. Ця дія незворотна і видалить також історію їх оцінювання.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Скасувати</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700">
-                                    Видалити ({selectedIds.length})
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-            )}
+                )
+            }
 
             {/* Officers List (Desktop Table) */}
-            <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+            <div className="hidden md:block bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-x-auto transition-colors duration-300">
                 <table className="w-full">
-                    <thead className="bg-slate-50 border-b border-slate-100">
+                    <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 transition-colors duration-300">
                         <tr>
                             {canDelete && (
                                 <th className="w-12 px-6 py-4">
@@ -415,10 +417,10 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                     </div>
                                 </button>
                             </th>
-                            <th className="px-6 py-4 text-center text-xs font-black uppercase tracking-widest text-slate-500">Дії</th>
+                            <th className="px-6 py-4 text-center text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Дії</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-300">
                         {loading ? (
                             <tr>
                                 <td colSpan={canDelete ? 6 : 5} className="px-6 py-12 text-center text-slate-400">
@@ -442,7 +444,7 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                         }
                                         router.push(`/admin/officers/${officer.id}`)
                                     }}
-                                    className={`transition-colors cursor-pointer ${selectedIds.includes(officer.id) ? 'bg-blue-50/50 hover:bg-blue-50' : 'hover:bg-slate-100/80'}`}
+                                    className={`transition-colors cursor-pointer ${selectedIds.includes(officer.id) ? 'bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30' : 'hover:bg-slate-100/80 dark:hover:bg-slate-800/50'}`}
                                 >
                                     {canDelete && (
                                         <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
@@ -461,7 +463,7 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                                     setPreviewOfficer(officer);
                                                 }}
                                             >
-                                                <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200 transition-transform duration-300 md:group-hover:scale-[1.1] relative z-10">
+                                                <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 transition-transform duration-300 md:group-hover:scale-[1.1] relative z-10">
                                                     {officer.imageUrl ? (
                                                         <img
                                                             src={officer.imageUrl}
@@ -475,32 +477,32 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                                 </div>
                                             </div>
                                             <div>
-                                                <div className="font-bold text-slate-900">{officer.lastName} {officer.firstName}</div>
-                                                <div className="text-xs text-slate-500 font-mono">#{officer.badgeNumber}</div>
+                                                <div className="font-bold text-slate-900 dark:text-slate-200">{officer.lastName} {officer.firstName}</div>
+                                                <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">#{officer.badgeNumber}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="text-sm font-medium text-slate-700">{officer.rank || '—'}</span>
+                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{officer.rank || '—'}</span>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="text-sm text-slate-600">{officer.department || '—'}</span>
+                                        <span className="text-sm text-slate-600 dark:text-slate-400">{officer.department || '—'}</span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
-                                            <Star className={`w-4 h-4 ${officer.avgScore >= 4 ? 'text-yellow-500 fill-yellow-500' : 'text-slate-300'}`} />
-                                            <span className="font-bold text-slate-900">{officer.avgScore > 0 ? officer.avgScore : '-'}</span>
+                                            <Star className={`w-4 h-4 ${officer.avgScore >= 4 ? 'text-yellow-500 fill-yellow-500' : 'text-slate-300 dark:text-slate-600'}`} />
+                                            <span className="font-bold text-slate-900 dark:text-slate-100">{officer.avgScore > 0 ? officer.avgScore : '-'}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="text-sm">
-                                            <span className="font-medium text-slate-900">{officer.totalEvaluations}</span>
+                                            <span className="font-medium text-slate-900 dark:text-slate-100">{officer.totalEvaluations}</span>
                                             <span className="text-slate-400 mx-1">/</span>
-                                            <span className="text-slate-500">{officer.totalResponses}</span>
+                                            <span className="text-slate-500 dark:text-slate-400">{officer.totalResponses}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="text-sm text-slate-600 font-mono">
+                                        <span className="text-sm text-slate-600 dark:text-slate-400 font-mono">
                                             {officer.birthDate ? new Date(officer.birthDate).toLocaleDateString() : '—'}
                                         </span>
                                     </td>
@@ -508,7 +510,7 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                         <div className="flex items-center justify-center gap-2">
                                             {officer.phone && (
                                                 <a href={`tel:${formatPhoneNumberForCall(officer.phone)}`}>
-                                                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-emerald-100 text-emerald-600 hover:bg-emerald-50">
+                                                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-emerald-100 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 bg-transparent">
                                                         <Phone className="w-4 h-4" />
                                                     </Button>
                                                 </a>
@@ -517,7 +519,7 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                                 <Button
                                                     variant="outline"
                                                     size="icon"
-                                                    className="h-8 w-8 rounded-lg border-blue-100 text-blue-600 hover:bg-blue-50"
+                                                    className="h-8 w-8 rounded-lg border-blue-100 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-transparent"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setEvalOfficerId(officer.id);
@@ -528,7 +530,7 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                             )}
 
                                             <Link href={`/admin/officers/${officer.id}`}>
-                                                <Button variant="ghost" size="sm" className="rounded-lg text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-slate-900">
+                                                <Button variant="ghost" size="sm" className="rounded-lg text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-200">
                                                     ДЕТАЛІ
                                                 </Button>
                                             </Link>
@@ -536,7 +538,7 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-8 w-8 text-red-300 hover:text-red-500 hover:bg-red-50"
+                                                    className="h-8 w-8 text-red-300 dark:text-red-900 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setDeleteOfficer(officer);
@@ -568,9 +570,9 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                 setScrollPosition(container.scrollTop)
                             }
                             router.push(`/admin/officers/${officer.id}`)
-                        }} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm active:scale-[0.98] transition-all">
+                        }} className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm active:scale-[0.98] transition-all">
                             <div className="flex items-start gap-4">
-                                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 shadow-inner">
+                                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-100 dark:border-slate-800 shadow-inner">
                                     {officer.imageUrl ? (
                                         <img src={officer.imageUrl} alt="" className="w-full h-full object-cover" />
                                     ) : (
@@ -590,21 +592,21 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded-lg font-black text-xs">
+                                        <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-2 py-1 rounded-lg font-black text-xs">
                                             {officer.avgScore > 0 ? officer.avgScore : '-'} <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                                         </div>
                                     </div>
                                     <div className="mt-3 flex flex-col gap-2">
-                                        {officer.rank && <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase w-fit">{officer.rank}</span>}
-                                        {officer.department && <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase w-fit">{officer.department}</span>}
+                                        {officer.rank && <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase w-fit">{officer.rank}</span>}
+                                        {officer.department && <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase w-fit">{officer.department}</span>}
                                     </div>
                                 </div>
                             </div>
-                            <div className="mt-5 pt-4 border-t border-slate-50 flex items-center justify-between gap-2 overflow-hidden">
+                            <div className="mt-5 pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between gap-2 overflow-hidden">
                                 <div className="flex items-center gap-2">
                                     {officer.phone && (
                                         <a href={`tel:${formatPhoneNumberForCall(officer.phone)}`} onClick={(e) => e.stopPropagation()}>
-                                            <Button size="icon" variant="outline" className="h-10 w-10 rounded-2xl border-emerald-100 text-emerald-600">
+                                            <Button size="icon" variant="outline" className="h-10 w-10 rounded-2xl border-emerald-100 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 bg-transparent">
                                                 <Phone className="w-4 h-4" />
                                             </Button>
                                         </a>
@@ -613,7 +615,7 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                         <Button
                                             size="icon"
                                             variant="outline"
-                                            className="h-10 w-10 rounded-2xl border-blue-100 text-blue-600"
+                                            className="h-10 w-10 rounded-2xl border-blue-100 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 bg-transparent"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setEvalOfficerId(officer.id);
@@ -623,7 +625,7 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                         </Button>
                                     )}
                                 </div>
-                                <Button size="sm" variant="ghost" className="text-primary font-black uppercase tracking-widest text-[10px] h-10 px-4 rounded-xl hover:bg-primary/5">
+                                <Button size="sm" variant="ghost" className="text-primary dark:text-blue-400 font-black uppercase tracking-widest text-[10px] h-10 px-4 rounded-xl hover:bg-primary/5 dark:hover:bg-blue-900/20">
                                     Деталі →
                                 </Button>
                             </div>
@@ -639,14 +641,14 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                         <img
                             src={previewOfficer.imageUrl}
                             alt="Officer Full Photo"
-                            className="w-full h-auto rounded-lg shadow-2xl ring-4 ring-white"
+                            className="w-full h-auto rounded-lg shadow-2xl ring-4 ring-white dark:ring-slate-800"
                         />
                     ) : (
-                        <div className="bg-white p-8 rounded-lg flex flex-col items-center gap-4 text-center">
-                            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center text-slate-300">
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-lg flex flex-col items-center gap-4 text-center transition-colors duration-300">
+                            <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 dark:text-slate-600 transition-colors duration-300">
                                 <Shield className="w-12 h-12" />
                             </div>
-                            <p className="text-slate-500 font-medium">Фото відсутнє</p>
+                            <p className="text-slate-500 dark:text-slate-400 font-medium transition-colors duration-300">Фото відсутнє</p>
                         </div>
                     )}
                 </DialogContent>
@@ -661,15 +663,15 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
             />
 
             <AlertDialog open={!!deleteOfficer} onOpenChange={(open) => !open && setDeleteOfficer(null)}>
-                <AlertDialogContent className="rounded-[2.5rem] border-0">
+                <AlertDialogContent className="rounded-[2.5rem] border-0 bg-white dark:bg-slate-900 shadow-xl transition-colors duration-300">
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="font-black uppercase italic">Видалити офіцера?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-slate-500 font-medium">
+                        <AlertDialogTitle className="font-black uppercase italic text-slate-900 dark:text-white transition-colors duration-300">Видалити офіцера?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-slate-500 dark:text-slate-400 font-medium transition-colors duration-300">
                             Ви збираєтесь видалити офіцера <strong>{deleteOfficer?.lastName} {deleteOfficer?.firstName}</strong>. Ця дія незворотна.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl font-bold">Скасувати</AlertDialogCancel>
+                        <AlertDialogCancel className="rounded-xl font-bold dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">Скасувати</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => {
                                 if (deleteOfficer) {
@@ -684,7 +686,7 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+        </div >
     )
 }
 

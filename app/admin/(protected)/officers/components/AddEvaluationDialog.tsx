@@ -111,12 +111,12 @@ export function AddEvaluationDialog({ officerId, onSuccess, open, setOpen, varia
             <DialogTrigger asChild>
                 {triggerButton}
             </DialogTrigger>
-            <DialogContent className="w-[95%] sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-[3rem] border-0 shadow-2xl p-8 sm:p-10">
+            <DialogContent className="w-[95%] sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-[3rem] border-0 shadow-2xl p-8 sm:p-10 bg-white dark:bg-slate-900 transition-colors duration-300">
                 <DialogHeader className="mb-8">
-                    <DialogTitle className="text-3xl font-black uppercase tracking-tight text-slate-900 italic">
+                    <DialogTitle className="text-3xl font-black uppercase tracking-tight text-slate-900 dark:text-white italic transition-colors duration-300">
                         Професійна атестація
                     </DialogTitle>
-                    <p className="text-slate-500 font-medium text-sm">Встановіть бали за ключовими компетенціями</p>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium text-sm transition-colors duration-300">Встановіть бали за ключовими компетенціями</p>
                 </DialogHeader>
                 <div className="space-y-8 py-2">
                     <div className="space-y-5">
@@ -164,9 +164,9 @@ export function AddEvaluationDialog({ officerId, onSuccess, open, setOpen, varia
 
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Примітки / Резюме</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-2 transition-colors duration-300">Примітки / Резюме</Label>
                             <Textarea
-                                className="rounded-[1.5rem] border-slate-200 bg-slate-50 focus:bg-white transition-all min-h-[100px] resize-none text-base p-5"
+                                className="rounded-[1.5rem] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-slate-200 transition-all min-h-[100px] resize-none text-base p-5"
                                 placeholder="Додайте короткий коментар до оцінки..."
                                 value={evalData.notes}
                                 onChange={e => setEvalData({ ...evalData, notes: e.target.value })}
@@ -175,7 +175,7 @@ export function AddEvaluationDialog({ officerId, onSuccess, open, setOpen, varia
                     </div>
 
                     <Button
-                        className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-900/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs bg-slate-900 dark:bg-primary dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-primary/90 shadow-xl shadow-slate-900/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleSubmit}
                         disabled={isUploading}
                     >
@@ -214,8 +214,8 @@ function RatingInput({ label, value, onChange, category, lowRatingData, onLowRat
 
     return (
         <div className="flex flex-col gap-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 gap-4">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-700 sm:w-1/2 leading-tight">{label}</Label>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 gap-4 transition-colors duration-300">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 sm:w-1/2 leading-tight transition-colors duration-300">{label}</Label>
                 <div className="flex gap-2 justify-end">
                     {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -223,7 +223,7 @@ function RatingInput({ label, value, onChange, category, lowRatingData, onLowRat
                             onClick={() => onChange(star)}
                             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${value >= star
                                 ? 'bg-amber-400 text-white shadow-lg shadow-amber-400/30 scale-105'
-                                : 'bg-white text-slate-300 border border-slate-200 hover:border-amber-200'}`}
+                                : 'bg-white dark:bg-slate-700 text-slate-300 dark:text-slate-500 border border-slate-200 dark:border-slate-600 hover:border-amber-200 dark:hover:border-amber-400/50'}`}
                         >
                             <Star className={`w-4 h-4 ${value >= star ? 'fill-current' : ''}`} />
                         </button>

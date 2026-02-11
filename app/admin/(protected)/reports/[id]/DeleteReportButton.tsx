@@ -49,20 +49,20 @@ export default function DeleteReportButton({ id }: DeleteReportButtonProps) {
                     Видалити цей звіт
                 </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="rounded-[2rem] border-rose-100 p-8">
+            <AlertDialogContent className="rounded-[2rem] border-rose-100 dark:border-rose-900/30 p-8 bg-white dark:bg-slate-900 transition-colors duration-300">
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="text-xl font-black uppercase text-rose-600 flex items-center gap-2">
+                    <AlertDialogTitle className="text-xl font-black uppercase text-rose-600 dark:text-rose-500 flex items-center gap-2 transition-colors duration-300">
                         <AlertTriangle className="w-6 h-6" />
                         Видалення звіту
                     </AlertDialogTitle>
-                    <AlertDialogDescription className="text-slate-600 font-medium pt-2">
+                    <AlertDialogDescription className="text-slate-600 dark:text-slate-400 font-medium pt-2 transition-colors duration-300">
                         Ви впевнені, що хочете безповоротно видалити цей звіт?
                         <br />
                         Всі пов'язані дані (фото, локація, коментарі) будуть знищені.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="mt-6 gap-2">
-                    <AlertDialogCancel className="rounded-2xl h-12 font-bold">Скасувати</AlertDialogCancel>
+                    <AlertDialogCancel className="rounded-2xl h-12 font-bold dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors duration-300">Скасувати</AlertDialogCancel>
                     <AlertDialogAction
                         onClick={handleDelete}
                         className="rounded-2xl h-12 bg-rose-600 hover:bg-rose-700 font-black uppercase tracking-widest shadow-lg shadow-rose-500/20"

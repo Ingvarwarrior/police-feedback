@@ -57,13 +57,13 @@ export default function AddressResolver({ lat, lon }: AddressResolverProps) {
     }
 
     return (
-        <div className="p-5 space-y-2 bg-white border-t border-slate-100">
+        <div className="p-5 space-y-2 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 transition-colors duration-300">
             <div>
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 flex items-center gap-2">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest mb-1 flex items-center gap-2 transition-colors duration-300">
                     <MapPin className="w-3 h-3 text-primary" />
                     Адреса події
                 </p>
-                <p className="text-sm font-bold text-slate-900 leading-relaxed">
+                <p className="text-sm font-bold text-slate-900 dark:text-white leading-relaxed transition-colors duration-300">
                     {address || 'Адреса відсутня'}
                 </p>
             </div>

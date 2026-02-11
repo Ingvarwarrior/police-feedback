@@ -318,22 +318,22 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
     return (
         <div className="space-y-6">
             {/* Main Tabs (Simpler) */}
-            <div className="flex bg-slate-100 p-1 rounded-2xl w-full max-w-sm mx-auto lg:mx-0 shadow-inner">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl w-full max-w-sm mx-auto lg:mx-0 shadow-inner transition-colors duration-300">
                 <button
                     onClick={() => { setMainTab('all'); setStatusFilter('ALL'); }}
-                    className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${mainTab === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${mainTab === 'all' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400 dark:text-slate-500'}`}
                 >
                     Все
                 </button>
                 <button
                     onClick={() => { setMainTab('active'); setStatusFilter('ALL'); }}
-                    className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${mainTab === 'active' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${mainTab === 'active' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400 dark:text-slate-500'}`}
                 >
                     Активні
                 </button>
                 <button
                     onClick={() => { setMainTab('processed'); setStatusFilter('ALL'); }}
-                    className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${mainTab === 'processed' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${mainTab === 'processed' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400 dark:text-slate-500'}`}
                 >
                     Опрацьовані
                 </button>
@@ -355,21 +355,21 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                 {/* Search & Sort Row */}
                 <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
                     <div className="relative flex-1 w-full">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                         <Input
                             placeholder="Пошук звіту..."
-                            className="pl-11 h-12 rounded-2xl border-slate-200 bg-white shadow-sm"
+                            className="pl-11 h-12 rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm dark:text-white transition-colors duration-300"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <div className="flex items-center gap-3 w-full lg:w-auto">
                         <Select value={sortBy} onValueChange={setSortBy}>
-                            <SelectTrigger className="w-[180px] h-12 rounded-2xl border-slate-200 bg-white shadow-sm font-bold text-xs uppercase tracking-tight">
+                            <SelectTrigger className="w-[180px] h-12 rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm font-bold text-xs uppercase tracking-tight dark:text-slate-200 transition-colors duration-300">
                                 <ArrowUpDown className="w-3.5 h-3.5 mr-2 text-primary" />
                                 <SelectValue placeholder="Сортування" />
                             </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-slate-200 shadow-xl">
+                            <SelectContent className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900 dark:text-slate-200">
                                 <SelectItem value="newest" className="font-bold text-xs uppercase tracking-tight">Спочатку нові</SelectItem>
                                 <SelectItem value="oldest" className="font-bold text-xs uppercase tracking-tight">Спочатку старі</SelectItem>
                                 <SelectItem value="rating-high" className="font-bold text-xs uppercase tracking-tight">Найвищий рейтинг</SelectItem>
@@ -382,7 +382,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                 <Button
                                     onClick={() => exportToCSV()}
                                     variant="outline"
-                                    className="h-12 gap-2 rounded-2xl font-bold border-slate-200 bg-white hover:bg-slate-50 px-6 shrink-0"
+                                    className="h-12 gap-2 rounded-2xl font-bold border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 dark:text-slate-200 px-6 shrink-0 transition-colors duration-300"
                                 >
                                     <Download className="w-4 h-4" />
                                     <span className="hidden sm:inline">CSV</span>
@@ -401,8 +401,8 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                 </div>
 
                 {/* Quick Filters */}
-                <div className="flex flex-wrap items-center gap-2 py-3 border-b border-slate-100">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 w-full mb-1 lg:w-auto lg:mb-0 lg:mr-2 shrink-0">Швидкі фільтри:</p>
+                <div className="flex flex-wrap items-center gap-2 py-3 border-b border-slate-100 dark:border-slate-800 transition-colors duration-300">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 w-full mb-1 lg:w-auto lg:mb-0 lg:mr-2 shrink-0">Швидкі фільтри:</p>
 
                     <Popover>
                         <PopoverTrigger asChild>
@@ -427,7 +427,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                 )}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 rounded-[2rem] border-slate-200 shadow-2xl" align="start">
+                        <PopoverContent className="w-auto p-0 rounded-[2rem] border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900" align="start">
                             <Calendar
                                 initialFocus
                                 mode="range"
@@ -438,7 +438,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                 locale={uk}
                             />
                             {dateRange?.from && (
-                                <div className="p-3 border-t border-slate-100 flex justify-end">
+                                <div className="p-3 border-t border-slate-100 dark:border-slate-800 flex justify-end transition-colors duration-300">
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -566,17 +566,17 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden lg:block relative w-full overflow-x-auto rounded-3xl border border-slate-100 shadow-sm bg-white">
+            <div className="hidden lg:block relative w-full overflow-x-auto rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 transition-colors duration-300">
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="border-b bg-slate-50/50">
+                        <tr className="border-b bg-slate-50/50 dark:bg-slate-800/50 dark:border-slate-800 transition-colors duration-300">
                             <th className="px-8 py-4 text-left align-middle">
                                 <button
                                     onClick={() => {
                                         if (selectedIds.length === processedResponses.length) setSelectedIds([])
                                         else setSelectedIds(processedResponses.map(r => r.id))
                                     }}
-                                    className={`w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center ${selectedIds.length === processedResponses.length ? 'bg-primary border-primary' : 'bg-white border-slate-300'}`}
+                                    className={`w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center ${selectedIds.length === processedResponses.length ? 'bg-primary border-primary' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}
                                 >
                                     {selectedIds.length === processedResponses.length && <Check className="w-3.5 h-3.5 text-white" />}
                                 </button>
@@ -592,14 +592,14 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                             <th className="h-12 px-6 text-right align-middle font-black text-slate-400 uppercase text-[9px] tracking-widest">Дії</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-300">
                         {processedResponses.map((resp: any) => {
                             const priority = getPriority(resp)
                             return (
                                 <tr
                                     key={resp.id}
                                     onClick={() => router.push(`/admin/reports/${resp.id}`)}
-                                    className={`transition-colors group cursor-pointer ${selectedIds.includes(resp.id) ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-slate-100/80'}`}
+                                    className={`transition-colors group cursor-pointer ${selectedIds.includes(resp.id) ? 'bg-primary/5 dark:bg-blue-900/20 hover:bg-primary/10 dark:hover:bg-blue-900/30' : 'hover:bg-slate-100/80 dark:hover:bg-slate-800/80'}`}
                                 >
                                     <td className="px-8 py-4 align-middle" onClick={(e) => e.stopPropagation()}>
                                         <button
@@ -607,15 +607,15 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                                 if (selectedIds.includes(resp.id)) setSelectedIds(selectedIds.filter(id => id !== resp.id))
                                                 else setSelectedIds([...selectedIds, resp.id])
                                             }}
-                                            className={`w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center ${selectedIds.includes(resp.id) ? 'bg-primary border-primary' : 'bg-white border-slate-200 group-hover:border-slate-400'}`}
+                                            className={`w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center ${selectedIds.includes(resp.id) ? 'bg-primary border-primary' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 group-hover:border-slate-400 dark:group-hover:border-slate-500'}`}
                                         >
                                             {selectedIds.includes(resp.id) && <Check className="w-3.5 h-3.5 text-white" />}
                                         </button>
                                     </td>
-                                    <td className="px-8 py-4 align-middle font-bold text-slate-900 whitespace-nowrap">
+                                    <td className="px-8 py-4 align-middle font-bold text-slate-900 dark:text-white whitespace-nowrap">
                                         <div className="flex flex-col">
                                             <span>{new Date(resp.createdAt).toLocaleDateString('uk-UA')}</span>
-                                            <span className="text-[10px] font-medium text-slate-400">{new Date(resp.createdAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</span>
+                                            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">{new Date(resp.createdAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
                                     </td>
                                     <td className="px-8 py-4 align-middle truncate max-w-[180px]">
@@ -626,11 +626,11 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                             {priority === 'important' && (
                                                 <span className="shrink-0 w-2 h-2 rounded-full bg-yellow-500" title="Важливо" />
                                             )}
-                                            <span className="text-slate-600 font-medium truncate">{resp.districtOrCity || '-'}</span>
+                                            <span className="text-slate-600 dark:text-slate-300 font-medium truncate">{resp.districtOrCity || '-'}</span>
                                         </div>
                                     </td>
                                     <td className="px-8 py-4 align-middle">
-                                        <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight">
+                                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight transition-colors duration-300">
                                             {resp.patrolRef || '-'}
                                         </span>
                                     </td>
@@ -643,7 +643,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                     </td>
                                     <td className="px-8 py-4 align-middle text-center">
                                         {resp.assignedTo ? (
-                                            <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">
+                                            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md transition-colors duration-300">
                                                 {resp.assignedTo.firstName || resp.assignedTo.lastName
                                                     ? `${resp.assignedTo.firstName || ''} ${resp.assignedTo.lastName || ''}`.trim()
                                                     : resp.assignedTo.email.split('@')[0]}
@@ -653,14 +653,14 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                         )}
                                     </td>
                                     <td className="px-8 py-4 align-middle text-center">
-                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full font-black text-xs ring-1 ring-amber-200/50">
+                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full font-black text-xs ring-1 ring-amber-200/50 dark:ring-amber-800/50 transition-colors duration-300">
                                             {resp.rateOverall}
                                             <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                                         </div>
                                     </td>
                                     <td className="px-8 py-4 align-middle text-center">
                                         {(resp._count?.attachments || 0) > 0 ? (
-                                            <span className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl text-[10px] font-black">
+                                            <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-xl text-[10px] font-black transition-colors duration-300">
                                                 {resp._count.attachments}
                                             </span>
                                         ) : (
@@ -669,12 +669,12 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                     </td>
                                     <td className="px-8 py-4 align-middle">
                                         <div className="flex flex-col group/name">
-                                            <span className="text-[10px] font-black uppercase tracking-tight text-slate-400 mb-0.5">Від</span>
+                                            <span className="text-[10px] font-black uppercase tracking-tight text-slate-400 dark:text-slate-500 mb-0.5">Від</span>
                                             <div className="flex items-center gap-2">
-                                                <span className="font-bold text-slate-800 text-sm">{maskSensitive(resp.contact?.name || 'Анонімно', canViewSensitive)}</span>
+                                                <span className="font-bold text-slate-800 dark:text-slate-200 text-sm transition-colors duration-300">{maskSensitive(resp.contact?.name || 'Анонімно', canViewSensitive)}</span>
                                                 <Link
                                                     href={resp.citizenId ? `/admin/citizens/${resp.citizenId}` : (resp.contact ? `/admin/citizens?q=${encodeURIComponent(resp.contact.phone)}` : `/admin/citizens?q=${encodeURIComponent(resp.ipHash)}`)}
-                                                    className="opacity-0 group-hover/name:opacity-100 transition-opacity p-1 bg-slate-100 rounded hover:bg-primary hover:text-white"
+                                                    className="opacity-0 group-hover/name:opacity-100 transition-opacity p-1 bg-slate-100 dark:bg-slate-800 rounded hover:bg-primary dark:hover:bg-blue-600 hover:text-white"
                                                     title="Досьє"
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
@@ -692,7 +692,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                     <td className="px-8 py-4 align-middle text-right" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center justify-end gap-2">
                                             <Link href={`/admin/reports/${resp.id}`}>
-                                                <Button variant="outline" size="sm" className="rounded-xl font-black text-[10px] uppercase tracking-wider h-9 px-4 hover:bg-slate-900 hover:text-white transition-all shadow-sm">
+                                                <Button variant="outline" size="sm" className="rounded-xl font-black text-[10px] uppercase tracking-wider h-9 px-4 hover:bg-slate-900 dark:hover:bg-slate-700 hover:text-white dark:border-slate-700 transition-all shadow-sm">
                                                     <FileText className="w-3.5 h-3.5 mr-2" />
                                                     Деталі
                                                 </Button>
@@ -750,12 +750,12 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
             < div className="lg:hidden space-y-4" >
                 {
                     processedResponses.length === 0 ? (
-                        <div className="px-8 py-16 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
+                        <div className="px-8 py-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm transition-colors duration-300">
                             <div className="flex flex-col items-center gap-4">
-                                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                                    <FileText className="w-8 h-8 text-slate-400" />
+                                <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition-colors duration-300">
+                                    <FileText className="w-8 h-8 text-slate-400 dark:text-slate-500" />
                                 </div>
-                                <p className="text-slate-900 font-bold text-lg">Немає звітів</p>
+                                <p className="text-slate-900 dark:text-white font-bold text-lg transition-colors duration-300">Немає звітів</p>
                             </div>
                         </div>
                     ) : (
@@ -765,7 +765,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                 return (
                                     <div
                                         key={resp.id}
-                                        className="bg-white rounded-3xl p-5 border-2 border-slate-100 shadow-sm active:scale-[0.98] transition-all relative overflow-hidden"
+                                        className="bg-white dark:bg-slate-900 rounded-3xl p-5 border-2 border-slate-100 dark:border-slate-800 shadow-sm active:scale-[0.98] transition-all relative overflow-hidden"
                                     >
                                         {/* Priority indicator */}
                                         {priority === 'urgent' && (
@@ -776,7 +776,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-slate-900 font-black text-lg">
+                                                    <span className="text-slate-900 dark:text-white font-black text-lg transition-colors duration-300">
                                                         {resp.districtOrCity || 'Без локації'}
                                                     </span>
                                                     {priority === 'urgent' && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />}

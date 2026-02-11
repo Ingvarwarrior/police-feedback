@@ -53,15 +53,15 @@ export default function CitizensList({ citizens, currentUser }: { citizens: any[
     return (
         <>
             {/* Desktop Table */}
-            <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden hidden sm:block">
-                <CardHeader className="bg-slate-50/50 border-b px-8 py-6">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Усього в базі: {citizens.length}</CardTitle>
+            <Card className="border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden hidden sm:block bg-white dark:bg-slate-900 transition-colors duration-300">
+                <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 border-b dark:border-slate-800 px-8 py-6 transition-colors duration-300">
+                    <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Усього в базі: {citizens.length}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b bg-slate-50/10">
+                                <tr className="border-b dark:border-slate-800 bg-slate-50/10 dark:bg-slate-900/50 transition-colors duration-300">
                                     {canDelete && (
                                         <th className="h-12 px-6 text-left align-middle">
                                             <Checkbox
@@ -70,13 +70,13 @@ export default function CitizensList({ citizens, currentUser }: { citizens: any[
                                             />
                                         </th>
                                     )}
-                                    <th className="h-12 px-8 text-left align-middle font-black text-slate-400 uppercase text-[10px] tracking-widest">Громадянин</th>
-                                    <th className="h-12 px-6 text-center align-middle font-black text-slate-400 uppercase text-[10px] tracking-widest">Звітів</th>
-                                    <th className="h-12 px-6 text-center align-middle font-black text-slate-400 uppercase text-[10px] tracking-widest">Статус</th>
-                                    <th className="h-12 px-8 text-right align-middle font-black text-slate-400 uppercase text-[10px] tracking-widest">Дії</th>
+                                    <th className="h-12 px-8 text-left align-middle font-black text-slate-400 dark:text-slate-500 uppercase text-[10px] tracking-widest">Громадянин</th>
+                                    <th className="h-12 px-6 text-center align-middle font-black text-slate-400 dark:text-slate-500 uppercase text-[10px] tracking-widest">Звітів</th>
+                                    <th className="h-12 px-6 text-center align-middle font-black text-slate-400 dark:text-slate-500 uppercase text-[10px] tracking-widest">Статус</th>
+                                    <th className="h-12 px-8 text-right align-middle font-black text-slate-400 dark:text-slate-500 uppercase text-[10px] tracking-widest">Дії</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-300">
                                 {citizens.length === 0 && (
                                     <tr>
                                         <td colSpan={canDelete ? 5 : 4} className="px-8 py-12 text-center text-slate-400 font-medium uppercase text-xs tracking-widest italic opacity-50">
@@ -85,7 +85,7 @@ export default function CitizensList({ citizens, currentUser }: { citizens: any[
                                     </tr>
                                 )}
                                 {citizens.map((citizen: any) => (
-                                    <tr key={citizen?.id || Math.random()} className="hover:bg-slate-50/50 transition-colors group">
+                                    <tr key={citizen?.id || Math.random()} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                                         {canDelete && (
                                             <td className="px-6 py-5">
                                                 <Checkbox
@@ -97,15 +97,15 @@ export default function CitizensList({ citizens, currentUser }: { citizens: any[
                                         )}
                                         <td className="px-8 py-5">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 font-black shadow-sm ring-1 ring-slate-200/50">
+                                                <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 font-black shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-700/50 transition-colors duration-300">
                                                     {citizen?.fullName?.[0]?.toUpperCase() || <Users className="w-5 h-5" />}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-slate-900 group-hover:text-primary transition-colors">{citizen?.fullName || 'Громадянин'}</p>
+                                                    <p className="font-bold text-slate-900 dark:text-white group-hover:text-primary dark:group-hover:text-blue-400 transition-colors">{citizen?.fullName || 'Громадянин'}</p>
                                                     {citizen?.phone ? (
                                                         <a
                                                             href={`tel:${formatPhoneNumberForCall(citizen.phone)}`}
-                                                            className="text-xs text-primary hover:underline flex items-center gap-1 font-bold"
+                                                            className="text-xs text-primary dark:text-blue-400 hover:underline flex items-center gap-1 font-bold transition-colors duration-300"
                                                         >
                                                             <Phone className="w-3.5 h-3.5 stroke-[2.5px]" />
                                                             {maskPhone(citizen.phone)}
@@ -120,19 +120,19 @@ export default function CitizensList({ citizens, currentUser }: { citizens: any[
                                             </div>
                                         </td>
                                         <td className="px-6 py-5 text-center">
-                                            <span className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-black shadow-sm ring-1 ring-blue-200/50">
+                                            <span className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-xl text-xs font-black shadow-sm ring-1 ring-blue-200/50 dark:ring-blue-800/50 transition-colors duration-300">
                                                 {citizen?._count?.responses || 0}
                                             </span>
                                         </td>
                                         <td className="px-6 py-5 text-center">
                                             <div className="flex justify-center gap-2">
                                                 {citizen?.isVip && (
-                                                    <span className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-[9px] font-black uppercase tracking-wider">VIP</span>
+                                                    <span className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors duration-300">VIP</span>
                                                 )}
                                                 {citizen?.isSuspicious ? (
-                                                    <span className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-xl text-[9px] font-black uppercase tracking-wider animate-pulse">⚠️ ПІДОЗРА</span>
+                                                    <span className="px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl text-[9px] font-black uppercase tracking-wider animate-pulse transition-colors duration-300">⚠️ ПІДОЗРА</span>
                                                 ) : (
-                                                    !citizen?.isVip && <span className="px-3 py-1.5 bg-slate-100 text-slate-500 rounded-xl text-[9px] font-black uppercase tracking-wider">Норма</span>
+                                                    !citizen?.isVip && <span className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors duration-300">Норма</span>
                                                 )}
                                             </div>
                                         </td>
@@ -159,19 +159,19 @@ export default function CitizensList({ citizens, currentUser }: { citizens: any[
             {/* Mobile Cards */}
             <div className="block sm:hidden space-y-4">
                 {citizens.map((citizen: any) => (
-                    <div key={citizen?.id || Math.random()} className="bg-white border-2 border-slate-100 shadow-sm rounded-3xl overflow-hidden">
+                    <div key={citizen?.id || Math.random()} className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 shadow-sm rounded-3xl overflow-hidden transition-colors duration-300">
                         <div className="p-5">
                             <div className="flex items-start justify-between gap-4 mb-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 font-black text-lg shadow-sm">
+                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 font-black text-lg shadow-sm transition-colors duration-300">
                                         {citizen?.fullName?.[0]?.toUpperCase() || <Users className="w-6 h-6" />}
                                     </div>
                                     <div>
-                                        <p className="font-black text-slate-900 text-base leading-tight mb-1">{citizen?.fullName || 'Громадянин'}</p>
+                                        <p className="font-black text-slate-900 dark:text-white text-base leading-tight mb-1 transition-colors duration-300">{citizen?.fullName || 'Громадянин'}</p>
                                         {citizen?.phone ? (
                                             <a
                                                 href={`tel:${formatPhoneNumberForCall(citizen.phone)}`}
-                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/5 text-primary rounded-lg text-xs font-bold active:scale-95 transition-transform"
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/5 dark:bg-blue-900/20 text-primary dark:text-blue-400 rounded-lg text-xs font-bold active:scale-95 transition-transform"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 <Phone className="w-3.5 h-3.5" />
@@ -199,16 +199,16 @@ export default function CitizensList({ citizens, currentUser }: { citizens: any[
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 transition-colors duration-300">
                                 <span className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-black shadow-sm ring-1 ring-blue-200/50">
                                     {citizen?._count?.responses || 0} звітів
                                 </span>
                                 <div className="flex gap-2">
                                     {citizen?.isVip && (
-                                        <span className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-[9px] font-black uppercase tracking-wider">VIP</span>
+                                        <span className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors duration-300">VIP</span>
                                     )}
                                     {citizen?.isSuspicious && (
-                                        <span className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-xl text-[9px] font-black uppercase tracking-wider animate-pulse">⚠️ ПІДОЗРА</span>
+                                        <span className="px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl text-[9px] font-black uppercase tracking-wider animate-pulse transition-colors duration-300">⚠️ ПІДОЗРА</span>
                                     )}
                                 </div>
                             </div>

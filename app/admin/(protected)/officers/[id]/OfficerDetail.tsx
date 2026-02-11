@@ -164,9 +164,9 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
             )}
 
             {/* Redesigned Header - Vertical Schematic */}
-            <div className={`no-print ${printMode === 'DOSSIER' ? 'hidden' : ''} bg-white rounded-[3rem] p-10 shadow-sm border border-slate-100 flex flex-col items-center text-center`}>
+            <div className={`no-print ${printMode === 'DOSSIER' ? 'hidden' : ''} bg-white dark:bg-slate-900 rounded-[3rem] p-10 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center text-center transition-colors duration-300`}>
                 <div className="w-full flex justify-start mb-6">
-                    <Link href="/admin/officers" className="inline-flex items-center text-sm text-slate-500 hover:text-slate-900 font-bold uppercase tracking-widest text-[10px]">
+                    <Link href="/admin/officers" className="inline-flex items-center text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-bold uppercase tracking-widest text-[10px] transition-colors duration-300">
                         <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
                         Назад до списку
                     </Link>
@@ -175,7 +175,7 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                 {/* Vertical Stack */}
                 <div className="flex flex-col items-center max-w-2xl w-full">
                     {/* Large Photo */}
-                    <div className="relative w-48 h-60 md:w-64 md:h-80 rounded-[2.5rem] overflow-hidden bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xl border-[6px] border-white ring-1 ring-slate-100 mb-8 transform hover:scale-[1.02] transition-transform duration-500">
+                    <div className="relative w-48 h-60 md:w-64 md:h-80 rounded-[2.5rem] overflow-hidden bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center shrink-0 shadow-2xl border-[6px] border-white dark:border-slate-700 ring-1 ring-slate-100 dark:ring-slate-600 mb-8 transform hover:scale-[1.02] transition-all duration-500">
                         {officer.imageUrl ? (
                             <img src={officer.imageUrl} alt="Officer" className="w-full h-full object-cover" />
                         ) : (
@@ -186,16 +186,16 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                     {/* ПІБ and Details */}
                     <div className="space-y-6 w-full">
                         <div>
-                            <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight tracking-tight uppercase italic mb-2">
+                            <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white leading-tight tracking-tight uppercase italic mb-2 transition-colors duration-300">
                                 {officer.lastName} <br />
                                 {officer.firstName} {officer.middleName}
                             </h1>
-                            <p className="text-primary font-black uppercase tracking-[0.3em] text-sm">
+                            <p className="text-primary dark:text-blue-400 font-black uppercase tracking-[0.3em] text-sm transition-colors duration-300">
                                 {officer.department || officer.district || 'УПП Хмільницький район'}
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6 pt-10 border-t border-slate-100 text-left">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6 pt-10 border-t border-slate-100 dark:border-slate-800 text-left transition-colors duration-300">
                             <DetailRow label="Звання" value={officer.rank || 'Офіцер'} icon={<Award className="w-5 h-5 text-primary" />} />
                             <DetailRow label="Жетон" value={officer.badgeNumber} icon={<Shield className="w-5 h-5 text-primary" />} />
                             <DetailRow label="Дата народження" value={officer.birthDate ? new Date(officer.birthDate).toLocaleDateString() : '—'} icon={<Star className="w-5 h-5 text-primary" />} />
@@ -206,13 +206,13 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
 
                         {/* Service History Section */}
                         {officer.serviceHistory && (
-                            <div className="w-full mt-8 pt-8 border-t border-slate-100 text-left">
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                            <div className="w-full mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 text-left transition-colors duration-300">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3 flex items-center gap-2 transition-colors duration-300">
                                     <Activity className="w-3.5 h-3.5 text-primary" />
                                     Служба в ОВС
                                 </h3>
-                                <div className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100/50">
-                                    <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                <div className="p-5 bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl border border-slate-100/50 dark:border-slate-700/50 transition-colors duration-300">
+                                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap transition-colors duration-300">
                                         {officer.serviceHistory}
                                     </p>
                                 </div>
@@ -220,13 +220,13 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                         )}
 
                         {/* Top Actions */}
-                        <div className="flex flex-wrap items-center justify-center gap-4 pt-8 border-t border-slate-50">
+                        <div className="flex flex-wrap items-center justify-center gap-4 pt-8 border-t border-slate-50 dark:border-slate-800 transition-colors duration-300">
                             {canEdit && <EditOfficerDialog officer={officer} />}
                             {canExport && (
                                 <Button
                                     onClick={() => handlePrint('DOSSIER')}
                                     variant="outline"
-                                    className="rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 border-slate-200 hover:bg-slate-50 gap-2 px-6"
+                                    className="rounded-2xl font-black uppercase tracking-widest text-[10px] h-12 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:text-slate-300 gap-2 px-6 transition-colors duration-300"
                                 >
                                     <FileText className="w-4 h-4" />
                                     Експорт досьє
@@ -240,15 +240,15 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                             Видалити
                                         </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent className="rounded-[3rem] border-0 shadow-2xl">
+                                    <AlertDialogContent className="rounded-[3rem] border-0 shadow-2xl bg-white dark:bg-slate-900">
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle className="text-2xl font-black uppercase text-slate-900 italic">Видалити офіцера?</AlertDialogTitle>
-                                            <AlertDialogDescription className="text-slate-500 font-medium pb-4 leading-relaxed">
+                                            <AlertDialogTitle className="text-2xl font-black uppercase text-slate-900 dark:text-white italic">Видалити офіцера?</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-slate-500 dark:text-slate-400 font-medium pb-4 leading-relaxed">
                                                 Це повністю видалить картку офіцера та всю його історію. Відгуки громадян будуть відв'язані. Цю дію неможливо скасувати.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                            <AlertDialogCancel className="rounded-2xl font-bold border-slate-200 h-12 px-8 uppercase tracking-widest text-xs">Скасувати</AlertDialogCancel>
+                                            <AlertDialogCancel className="rounded-2xl font-bold border-slate-200 dark:border-slate-700 h-12 px-8 uppercase tracking-widest text-xs dark:text-slate-300 dark:hover:bg-slate-800">Скасувати</AlertDialogCancel>
                                             <AlertDialogAction onClick={handleDeleteOfficer} className="rounded-2xl bg-rose-500 hover:bg-rose-600 font-black px-10 h-12 uppercase tracking-widest text-xs">
                                                 ТАК, ВИДАЛИТИ
                                             </AlertDialogAction>
@@ -276,10 +276,10 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                         </div>
                         <div className="space-y-4">
                             <div>
-                                <h1 className="text-4xl font-black uppercase text-slate-900 leading-none">{officer.lastName}</h1>
-                                <h1 className="text-4xl font-black uppercase text-slate-900">{officer.firstName} {officer.middleName}</h1>
+                                <h1 className="text-4xl font-black uppercase text-slate-900 dark:text-white leading-none transition-colors duration-300">{officer.lastName}</h1>
+                                <h1 className="text-4xl font-black uppercase text-slate-900 dark:text-white transition-colors duration-300">{officer.firstName} {officer.middleName}</h1>
                             </div>
-                            <p className="text-xl font-bold text-slate-600">{officer.department || 'УПП Хмільницький район'}</p>
+                            <p className="text-xl font-bold text-slate-600 dark:text-slate-300 transition-colors duration-300">{officer.department || 'УПП Хмільницький район'}</p>
 
                             <div className="grid grid-cols-2 gap-x-12 gap-y-3 mt-8">
                                 <div className="text-sm"><span className="font-black uppercase text-[10px] text-slate-400 block mb-1">Звання:</span> <span className="font-bold">{officer.rank || '—'}</span></div>
@@ -313,9 +313,9 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
             {canViewStats ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 no-print">
                     {/* Radar Chart */}
-                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden leading-none h-[400px]">
-                        <CardHeader className="bg-slate-50/50 border-b px-8 py-6">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden leading-none h-[400px] bg-white dark:bg-slate-900 transition-colors duration-300">
+                        <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 border-b dark:border-slate-800 px-8 py-6 transition-colors duration-300">
+                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 dark:text-slate-200">
                                 <Activity className="w-4 h-4 text-indigo-500" />
                                 Профіль компетенцій
                             </CardTitle>
@@ -339,9 +339,9 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                     </Card>
 
                     {/* Trend Chart */}
-                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden h-[400px]">
-                        <CardHeader className="bg-slate-50/50 border-b px-8 py-6">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden h-[400px] bg-white dark:bg-slate-900 transition-colors duration-300">
+                        <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 border-b dark:border-slate-800 px-8 py-6 transition-colors duration-300">
+                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 dark:text-slate-200">
                                 <TrendingUp className="w-4 h-4 text-emerald-500" />
                                 Динаміка рейтингу
                             </CardTitle>
@@ -418,7 +418,7 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
             {/* Summary Stats Cards */}
             {canViewStats && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 no-print">
-                    <Card className="bg-slate-900 text-white border-none shadow-xl rounded-[2rem] overflow-hidden relative">
+                    <Card className="bg-slate-900 dark:bg-slate-800 text-white border-none shadow-xl rounded-[2rem] overflow-hidden relative transition-colors duration-300">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2" />
                         <CardContent className="pt-8 pb-8 relative z-10">
                             <div className="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-4">Середній рейтинг</div>
@@ -442,20 +442,20 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 no-print">
                 {/* Evaluations History */}
                 <div className="lg:col-span-2 space-y-6">
-                    <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 italic">
+                    <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 italic text-slate-900 dark:text-white transition-colors duration-300">
                         <div className="w-1.5 h-6 bg-primary" />
                         Атестаційний журнал
                     </h2>
                     <div className="space-y-4">
                         {stats.recentEvaluations.length === 0 ? (
-                            <div className="text-center py-20 bg-white rounded-[2.5rem] border border-dashed border-slate-200 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+                            <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[10px] transition-colors duration-300">
                                 Офіційні оцінки відсутні
                             </div>
                         ) : (
                             stats.recentEvaluations.map((ev: any) => (
-                                <Card key={ev.id} className="overflow-hidden group rounded-[2rem] border-0 shadow-sm ring-1 ring-slate-100">
-                                    <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between py-4 px-8">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                <Card key={ev.id} className="overflow-hidden group rounded-[2rem] border-0 shadow-sm ring-1 ring-slate-100 dark:ring-slate-800 bg-white dark:bg-slate-900 transition-colors duration-300">
+                                    <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 flex flex-row items-center justify-between py-4 px-8 transition-colors duration-300">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
                                             {new Date(ev.createdAt).toLocaleDateString()} • {ev.type}
                                         </div>
                                         <div className="flex items-center gap-4">
@@ -545,12 +545,12 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                             );
                                         })()}
 
-                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                            <div>Знання: <span className="text-slate-900 block text-sm mt-1">{ev.scoreKnowledge || '-'}</span></div>
-                                            <div>Тактика: <span className="text-slate-900 block text-sm mt-1">{ev.scoreTactics || '-'}</span></div>
-                                            <div>Комунікація: <span className="text-slate-900 block text-sm mt-1">{ev.scoreCommunication || '-'}</span></div>
-                                            <div>Профі: <span className="text-slate-900 block text-sm mt-1">{ev.scoreProfessionalism || '-'}</span></div>
-                                            <div>Фіз: <span className="text-slate-900 block text-sm mt-1">{ev.scorePhysical || '-'}</span></div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-6 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 transition-colors duration-300">
+                                            <div>Знання: <span className="text-slate-900 dark:text-slate-200 block text-sm mt-1">{ev.scoreKnowledge || '-'}</span></div>
+                                            <div>Тактика: <span className="text-slate-900 dark:text-slate-200 block text-sm mt-1">{ev.scoreTactics || '-'}</span></div>
+                                            <div>Комунікація: <span className="text-slate-900 dark:text-slate-200 block text-sm mt-1">{ev.scoreCommunication || '-'}</span></div>
+                                            <div>Профі: <span className="text-slate-900 dark:text-slate-200 block text-sm mt-1">{ev.scoreProfessionalism || '-'}</span></div>
+                                            <div>Фіз: <span className="text-slate-900 dark:text-slate-200 block text-sm mt-1">{ev.scorePhysical || '-'}</span></div>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -571,7 +571,7 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                             </h2>
                             <div className="space-y-4">
                                 {stats.taggedFeedback.map((fb: any) => (
-                                    <div key={fb.id} className={`p-6 rounded-[2rem] border shadow-sm group hover:shadow-md transition-all ${fb.isConfirmed === false ? 'bg-slate-50 border-slate-200 grayscale opacity-70' : 'bg-amber-50/30 border-amber-100'}`}>
+                                    <div key={fb.id} className={`p-6 rounded-[2rem] border shadow-sm group hover:shadow-md transition-all ${fb.isConfirmed === false ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 grayscale opacity-70' : 'bg-amber-50/30 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20'}`}>
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
                                                 <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest block mb-1">{new Date(fb.createdAt).toLocaleDateString()}</span>
@@ -581,11 +581,11 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                                     </span>
                                                 )}
                                             </div>
-                                            <span className="flex items-center gap-1.5 font-black text-amber-500 bg-white px-3 py-1 rounded-full text-xs italic border border-amber-100">
+                                            <span className="flex items-center gap-1.5 font-black text-amber-500 bg-white dark:bg-slate-800 px-3 py-1 rounded-full text-xs italic border border-amber-100 dark:border-amber-900/30 transition-colors duration-300">
                                                 {fb.rateOverall} <Star className="w-3 h-3 fill-current" />
                                             </span>
                                         </div>
-                                        <p className="text-slate-600 text-sm line-clamp-3 italic leading-relaxed">"{fb.comment || 'Без коментаря'}"</p>
+                                        <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-3 italic leading-relaxed transition-colors duration-300">"{fb.comment || 'Без коментаря'}"</p>
                                         <Link href={`/admin/reports/${fb.id}`} className="text-[10px] font-black uppercase text-amber-600 hover:underline mt-4 inline-flex items-center gap-2 tracking-[0.2em]">
                                             Детальніше <ArrowLeft className="w-3 h-3 rotate-180" />
                                         </Link>
@@ -603,7 +603,7 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                         </h2>
                         <div className="space-y-4">
                             {stats.recentFeedback.map((fb: any) => (
-                                <div key={fb.id} className={`p-6 rounded-[2rem] border shadow-sm group hover:shadow-md transition-all ${fb.isConfirmed === false ? 'bg-slate-50 border-slate-200 grayscale opacity-70' : 'bg-white border-slate-100'}`}>
+                                <div key={fb.id} className={`p-6 rounded-[2rem] border shadow-sm group hover:shadow-md transition-all ${fb.isConfirmed === false ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 grayscale opacity-70' : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800'}`}>
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{new Date(fb.createdAt).toLocaleDateString()}</span>
@@ -613,18 +613,18 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                                 </span>
                                             )}
                                         </div>
-                                        <span className="flex items-center gap-1.5 font-black text-amber-500 bg-amber-50 px-3 py-1 rounded-full text-xs italic">
+                                        <span className="flex items-center gap-1.5 font-black text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-3 py-1 rounded-full text-xs italic transition-colors duration-300">
                                             {fb.rateOverall} <Star className="w-3 h-3 fill-current" />
                                         </span>
                                     </div>
-                                    <p className="text-slate-600 text-sm line-clamp-3 italic leading-relaxed">"{fb.comment || 'Коментар не залишено'}"</p>
+                                    <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-3 italic leading-relaxed transition-colors duration-300">"{fb.comment || 'Коментар не залишено'}"</p>
                                     <Link href={`/admin/reports/${fb.id}`} className="text-[10px] font-black uppercase text-primary hover:underline mt-4 inline-flex items-center gap-2 tracking-[0.2em]">
                                         Переглянути звіт <ArrowLeft className="w-3 h-3 rotate-180" />
                                     </Link>
                                 </div>
                             ))}
                             {stats.recentFeedback.length === 0 && (
-                                <div className="text-center py-10 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+                                <div className="text-center py-10 bg-slate-50 dark:bg-slate-800 rounded-[2rem] border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[10px] transition-colors duration-300">
                                     Прямих відгуків немає
                                 </div>
                             )}
@@ -635,16 +635,16 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
 
             {/* Consolidated Unified Records & Appeals Table - FULL WIDTH NOW */}
             {stats.unifiedRecords && stats.unifiedRecords.length > 0 && (
-                <div className="space-y-6 pt-12 border-t border-slate-100">
-                    <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3 italic">
+                <div className="space-y-6 pt-12 border-t border-slate-100 dark:border-slate-800 transition-colors duration-300">
+                    <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3 italic text-slate-900 dark:text-white transition-colors duration-300">
                         <div className="w-2 h-8 bg-blue-600" />
                         <ClipboardList className="w-6 h-6 text-blue-600" />
                         Згадки у ЄО та Зверненнях (Детальна таблиця)
                     </h2>
-                    <div className="overflow-hidden rounded-[3rem] border border-blue-100 shadow-xl bg-white">
+                    <div className="overflow-hidden rounded-[3rem] border border-blue-100 dark:border-blue-900/30 shadow-xl bg-white dark:bg-slate-900 transition-colors duration-300">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-blue-50/50 border-b border-blue-100 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                                <tr className="bg-blue-50/50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-900/30 text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 transition-colors duration-300">
                                     <th className="px-8 py-6">Дата</th>
                                     <th className="px-8 py-6">Тип</th>
                                     <th className="px-8 py-6">Номер</th>
@@ -654,9 +654,9 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                     <th className="px-8 py-6 text-right">Дія</th>
                                 </tr>
                             </thead>
-                            <tbody className="text-sm font-bold text-slate-700">
+                            <tbody className="text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors duration-300">
                                 {stats.unifiedRecords.map((rec: any) => (
-                                    <tr key={rec.id} className="border-b border-blue-50 last:border-0 hover:bg-blue-50/30 transition-all group">
+                                    <tr key={rec.id} className="border-b border-blue-50 dark:border-blue-900/10 last:border-0 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-all group">
                                         <td className="px-8 py-6 whitespace-nowrap">
                                             {(() => {
                                                 if (!rec.eoDate) return '—';
@@ -731,8 +731,8 @@ function DetailRow({ label, value, icon }: { label: string, value: string, icon:
                 {icon}
             </div>
             <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1">{label}:</p>
-                <p className="text-sm font-bold text-slate-900 leading-none">{value}</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 leading-none mb-1 transition-colors duration-300">{label}:</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-200 leading-none transition-colors duration-300">{value}</p>
             </div>
         </div>
     )
@@ -740,16 +740,16 @@ function DetailRow({ label, value, icon }: { label: string, value: string, icon:
 
 function StatsCard({ title, value, icon }: any) {
     return (
-        <Card className="rounded-[2rem] border-0 shadow-sm ring-1 ring-slate-100 overflow-hidden bg-white">
+        <Card className="rounded-[2rem] border-0 shadow-sm ring-1 ring-slate-100 dark:ring-slate-800 overflow-hidden bg-white dark:bg-slate-900 transition-colors duration-300">
             <CardContent className="pt-8 pb-8">
                 <div className="flex justify-between items-start mb-6">
-                    <div className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">{title}</div>
+                    <div className="text-slate-400 dark:text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] transition-colors duration-300">{title}</div>
                     <div className="text-2xl">{icon}</div>
                 </div>
-                <div className="text-3xl font-black text-slate-900 italic">
-                    {value || '0'} <span className="text-xs text-slate-400 font-medium not-italic">/ 5.0</span>
+                <div className="text-3xl font-black text-slate-900 dark:text-white italic transition-colors duration-300">
+                    {value || '0'} <span className="text-xs text-slate-400 dark:text-slate-600 font-medium not-italic">/ 5.0</span>
                 </div>
-                <div className="w-full bg-slate-100 h-1.5 mt-6 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 mt-6 rounded-full overflow-hidden transition-colors duration-300">
                     <div
                         className="h-full bg-primary rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(var(--primary),0.3)]"
                         style={{ width: `${(value / 5) * 100}%` }}
