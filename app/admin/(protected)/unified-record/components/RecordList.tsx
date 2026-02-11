@@ -41,6 +41,7 @@ import {
 import { format } from "date-fns"
 import { uk } from "date-fns/locale"
 import { toast } from "sonner"
+import * as Papa from "papaparse"
 import {
     Tabs,
     TabsContent,
@@ -357,6 +358,38 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         "Списано в справу"
     ]
 
+    const handleExport = () => {
+        const itemsToExport = selectedIds.length > 0
+            ? records.filter(r => selectedIds.includes(r.id))
+            : filteredRecords
+
+        if (itemsToExport.length === 0) {
+            toast.error("Немає записів для експорту")
+            return
+        }
+
+        const csvData = itemsToExport.map(r => ({
+            "Дата звернення": format(new Date(r.eoDate), 'dd.MM.yyyy', { locale: uk }),
+            "№ ЄО/Звернення": r.eoNumber || '-',
+            "Заявник": r.applicant || '-',
+            "Виконавець": r.assignedUser ? `${r.assignedUser.lastName} ${r.assignedUser.firstName || ''}`.trim() : (r.assignedUserId === 'unassigned' ? 'Не призначено' : '—'),
+            "Тип": r.recordType === 'EO' ? 'ЄО' : 'Звернення',
+            "Категорія": r.category || '-',
+            "Статус": r.status === 'PROCESSED' ? 'Опрацьовано' : 'В роботі',
+            "Рішення": r.resolution || '-'
+        }))
+
+        const csvString = Papa.unparse(csvData)
+        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvString], { type: 'text/csv;charset=utf-8;' })
+        const link = document.createElement("a")
+        link.href = URL.createObjectURL(blob)
+        link.download = `export_records_${format(new Date(), 'dd_MM_yyyy')}.csv`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        toast.success(`Експортовано ${itemsToExport.length} записів`)
+    }
+
     return (
         <div className="space-y-6">
             {/* Tabs & Actions Bar */}
@@ -626,9 +659,13 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         Вибрати всі
                     </Button>
 
-                    <Button variant="outline" className="h-12 rounded-xl px-4 border-slate-300 hover:bg-slate-100 text-slate-700 font-bold gap-2">
+                    <Button
+                        variant="outline"
+                        className="h-12 rounded-xl px-4 border-slate-300 hover:bg-slate-100 text-slate-700 font-bold gap-2"
+                        onClick={handleExport}
+                    >
                         <Download className="w-4 h-4" />
-                        Експорт
+                        Експорт {selectedIds.length > 0 && `(${selectedIds.length})`}
                     </Button>
                 </div>
             </div>
