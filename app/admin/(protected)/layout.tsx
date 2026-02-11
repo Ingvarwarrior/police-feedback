@@ -12,6 +12,7 @@ import BirthdayNotifications from "@/components/admin/BirthdayNotifications"
 import { UserLocationTracker } from "@/components/UserLocationTracker"
 import { Providers } from "@/components/Providers"
 import { IdleTimer } from "@/components/admin/IdleTimer"
+import { ThemeToggle } from "@/components/ThemeToggle"
 
 export default async function AdminLayout({
     children,
@@ -127,6 +128,10 @@ export default async function AdminLayout({
                     </nav>
 
                     <div className="p-4 border-t border-slate-800">
+                        <div className="flex items-center justify-between mb-4 px-1">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Тема</span>
+                            <ThemeToggle />
+                        </div>
                         <div className="mb-4 px-3 py-2 bg-slate-800/50 rounded-xl border border-slate-700/50">
                             <p className="text-[10px] font-black uppercase tracking-wider text-blue-400 mb-1">Користувач</p>
                             <p className="text-sm font-bold text-white truncate">{displayName}</p>

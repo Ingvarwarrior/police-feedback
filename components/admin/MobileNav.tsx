@@ -6,6 +6,7 @@ import { Menu, X, LayoutDashboard, FileText, Users, Settings, LogOut, ShieldChec
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
+import { ThemeToggle } from "@/components/ThemeToggle"
 
 interface MobileNavProps {
     user: {
@@ -127,6 +128,13 @@ export default function MobileNav({ user }: MobileNavProps) {
                     </nav>
 
                     <div className="p-6 border-t border-slate-800 bg-slate-900">
+                        <div className="flex items-center justify-between mb-6 px-2">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">Тема</p>
+                                <p className="text-xs font-bold text-slate-500">Змінити вигляд</p>
+                            </div>
+                            <ThemeToggle />
+                        </div>
                         <div className="mb-6 px-2">
                             <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">Користувач</p>
                             <p className="font-bold text-white truncate">{displayName}</p>
