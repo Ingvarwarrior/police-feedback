@@ -5,6 +5,22 @@ import bcrypt from 'bcryptjs'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     trustHost: true,
+    session: {
+        strategy: "jwt",
+        maxAge: 1200, // 20 minutes in seconds
+        updateAge: 0, // Ensure the session is updated on every interaction
+    },
+    cookies: {
+        sessionToken: {
+            name: `next-auth.session-token`,
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_VERSION === "production",
+            },
+        },
+    },
     providers: [
         Credentials({
             name: "Credentials",
