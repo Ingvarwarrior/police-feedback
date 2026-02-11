@@ -54,7 +54,7 @@ export default async function AdminLayout({
     return (
         <Providers>
             <IdleTimer />
-            <div className="min-h-screen flex bg-neutral-50 print:block print:bg-white">
+            <div className="min-h-screen flex bg-neutral-50 dark:bg-slate-950 print:block print:bg-white transition-colors duration-300">
                 {/* Sidebar */}
                 <aside className="w-64 bg-slate-900 border-r border-slate-800 hidden md:flex flex-col no-print shadow-2xl relative z-20">
                     <div className="p-6 border-b border-slate-800 flex items-center gap-3 font-bold text-sm text-white uppercase tracking-tighter">
@@ -144,20 +144,20 @@ export default async function AdminLayout({
                 {/* Main Content */}
                 <main className="flex-1 flex flex-col h-screen overflow-hidden print:h-auto print:overflow-visible">
                     {/* Desktop Top Header */}
-                    <header className="h-16 bg-white border-b border-slate-100 hidden md:flex items-center justify-between px-8 no-print shadow-sm relative z-30">
+                    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 hidden md:flex items-center justify-between px-8 no-print shadow-sm relative z-30 transition-colors duration-300">
                         <div className="flex items-center gap-4">
-                            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 italic">Система оперативного моніторингу</h2>
+                            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 italic">Система оперативного моніторингу</h2>
                         </div>
                         <div className="flex items-center gap-6">
                             <BirthdayNotifications />
                             <NotificationCenter />
-                            <div className="h-8 w-px bg-slate-100" />
+                            <div className="h-8 w-px bg-slate-100 dark:bg-slate-800" />
                             <div className="flex items-center gap-3 group cursor-pointer">
                                 <div className="text-right">
-                                    <p className="text-xs font-black text-slate-900 group-hover:text-primary transition-colors">{displayName}</p>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">{user.role}</p>
+                                    <p className="text-xs font-black text-slate-900 dark:text-white group-hover:text-primary transition-colors">{displayName}</p>
+                                    <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight">{user.role}</p>
                                 </div>
-                                <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 font-black text-xs border border-transparent group-hover:border-primary/20 group-hover:bg-primary/5 group-hover:text-primary transition-all">
+                                <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 font-black text-xs border border-transparent group-hover:border-primary/20 group-hover:bg-primary/5 group-hover:text-primary transition-all">
                                     {(user.lastName?.[0] || user.firstName?.[0] || user.username?.[0] || 'A').toUpperCase()}
                                 </div>
                             </div>
@@ -165,12 +165,12 @@ export default async function AdminLayout({
                     </header>
 
                     {/* Mobile Header */}
-                    <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-4 md:hidden no-print shadow-sm relative z-30">
+                    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 md:hidden no-print shadow-sm relative z-30 transition-colors duration-300">
                         <div className="flex items-center gap-3">
                             <Image src="/emblem.jpg" alt="Logo" width={32} height={40} className="w-8 h-auto" />
                             <div>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Центр керування</p>
-                                <p className="text-xs font-black text-slate-900">Моніторинг</p>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Центр керування</p>
+                                <p className="text-xs font-black text-slate-900 dark:text-white">Моніторинг</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">

@@ -9,6 +9,7 @@ import {
 import DashboardMapWrapper from "./DashboardMapWrapper"
 
 import { useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
 
 interface DashboardChartsProps {
     trendData: { date: string, count: number, fullDate?: string }[]
@@ -26,15 +27,27 @@ export default function DashboardCharts({
     timeDistributionData
 }: DashboardChartsProps) {
     const router = useRouter()
+    const { theme } = useTheme()
+    const isDark = theme === 'dark'
+
     const COLORS = ['#1e293b', '#2563eb', '#4f46e5', '#7c3aed', '#9333ea']
+    const axisColor = isDark ? '#94a3b8' : '#64748b'
+    const gridColor = isDark ? '#334155' : '#e2e8f0'
+    const tooltipStyle = {
+        backgroundColor: isDark ? '#0f172a' : '#fff',
+        borderColor: isDark ? '#1e293b' : '#e2e8f0',
+        color: isDark ? '#cbd5e1' : '#0f172a',
+        borderRadius: '16px',
+        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'
+    }
 
     return (
         <div className="space-y-6">
             {/* ... previous grid ... */}
             <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-                <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden">
-                    <CardHeader className="border-b bg-slate-50/50 px-6 sm:px-8 py-4 sm:py-6">
-                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                <Card className="border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300">
+                    <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 px-6 sm:px-8 py-4 sm:py-6 transition-colors duration-300">
+                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-900 dark:text-slate-200">
                             <TrendingUp className="w-4 h-4 text-primary" />
                             Динаміка відгуків
                         </CardTitle>
@@ -59,23 +72,23 @@ export default function DashboardCharts({
                                         <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                                 <XAxis
                                     dataKey="date"
                                     fontSize={10}
                                     tickLine={false}
                                     axisLine={false}
-                                    tick={{ fill: '#94a3b8', fontWeight: 700 }}
+                                    tick={{ fill: axisColor, fontWeight: 700 }}
                                 />
                                 <YAxis
                                     fontSize={10}
                                     tickLine={false}
                                     axisLine={false}
-                                    tick={{ fill: '#94a3b8', fontWeight: 700 }}
+                                    tick={{ fill: axisColor, fontWeight: 700 }}
                                 />
                                 <Tooltip
-                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                    itemStyle={{ fontWeight: 900, color: '#0f172a' }}
+                                    contentStyle={tooltipStyle}
+                                    itemStyle={{ fontWeight: 900, color: isDark ? '#fff' : '#0f172a' }}
                                 />
                                 <Area
                                     type="monotone"
@@ -91,9 +104,9 @@ export default function DashboardCharts({
                     </CardContent>
                 </Card>
 
-                <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden">
-                    <CardHeader className="border-b bg-slate-50/50 px-6 sm:px-8 py-4 sm:py-6">
-                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                <Card className="border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300">
+                    <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 px-6 sm:px-8 py-4 sm:py-6 transition-colors duration-300">
+                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-900 dark:text-slate-200">
                             <BarChart2 className="w-4 h-4 text-primary" />
                             Топ локацій
                         </CardTitle>
@@ -111,7 +124,7 @@ export default function DashboardCharts({
                                 }}
                                 className="cursor-pointer"
                             >
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={gridColor} />
                                 <XAxis type="number" hide />
                                 <YAxis
                                     dataKey="name"
@@ -120,11 +133,11 @@ export default function DashboardCharts({
                                     width={80}
                                     tickLine={false}
                                     axisLine={false}
-                                    tick={{ fill: '#475569', fontWeight: 800 }}
+                                    tick={{ fill: axisColor, fontWeight: 800 }}
                                 />
                                 <Tooltip
-                                    cursor={{ fill: '#f8fafc' }}
-                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                    cursor={{ fill: isDark ? '#1e293b' : '#f8fafc' }}
+                                    contentStyle={tooltipStyle}
                                 />
                                 <Bar dataKey="count" radius={[0, 8, 8, 0]}>
                                     {districtData.map((entry, index) => (
@@ -138,9 +151,9 @@ export default function DashboardCharts({
             </div>
 
             <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-                <Card className="lg:col-span-2 border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden">
-                    <CardHeader className="border-b bg-slate-50/50 px-5 sm:px-8 py-4 sm:py-6">
-                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                <Card className="lg:col-span-2 border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300">
+                    <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 px-5 sm:px-8 py-4 sm:py-6 transition-colors duration-300">
+                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-900 dark:text-slate-200">
                             <MapIcon className="w-4 h-4 text-primary" />
                             Теплова карта активності
                         </CardTitle>
@@ -151,9 +164,9 @@ export default function DashboardCharts({
                 </Card>
 
                 <div className="space-y-6">
-                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden">
-                        <CardHeader className="border-b bg-slate-50/50 px-5 sm:px-8 py-4 sm:py-6">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300">
+                        <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 px-5 sm:px-8 py-4 sm:py-6 transition-colors duration-300">
+                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-900 dark:text-slate-200">
                                 <Clock className="w-4 h-4 text-indigo-500" />
                                 Час інцидентів
                             </CardTitle>
@@ -164,11 +177,11 @@ export default function DashboardCharts({
                                     <XAxis
                                         dataKey="name"
                                         fontSize={8}
-                                        tick={{ fill: '#94a3b8', fontWeight: 800 }}
+                                        tick={{ fill: axisColor, fontWeight: 800 }}
                                         tickFormatter={(val) => val.split('-')[0]}
                                     />
                                     <Tooltip
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                        contentStyle={tooltipStyle}
                                     />
                                     <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
                                 </BarChart>
@@ -176,9 +189,9 @@ export default function DashboardCharts({
                         </CardContent>
                     </Card>
 
-                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden">
-                        <CardHeader className="border-b bg-slate-50/50 px-5 sm:px-8 py-4 sm:py-6">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                    <Card className="border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300">
+                        <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 px-5 sm:px-8 py-4 sm:py-6 transition-colors duration-300">
+                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-900 dark:text-slate-200">
                                 <Sun className="w-4 h-4 text-amber-500" />
                                 Аналіз змін
                             </CardTitle>
@@ -196,11 +209,11 @@ export default function DashboardCharts({
                                         dataKey="value"
                                     >
                                         {shiftData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                            <Cell key={`cell-${index}`} fill={entry.color} stroke={isDark ? '#0f172a' : '#fff'} />
                                         ))}
                                     </Pie>
                                     <Tooltip
-                                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                        contentStyle={tooltipStyle}
                                     />
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                                 </RePieChart>

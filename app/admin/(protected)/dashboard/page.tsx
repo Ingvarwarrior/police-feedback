@@ -237,9 +237,9 @@ export default async function DashboardPage() {
 
     return (
         <div className="space-y-8 pb-12">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 pb-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 dark:border-slate-800 pb-8 transition-colors duration-300">
                 <div>
-                    <h1 className="text-4xl font-black tracking-tighter text-slate-900 uppercase">
+                    <h1 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white uppercase transition-colors duration-300">
                         Центр <span className="text-blue-600">Керування</span>
                     </h1>
                     <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 flex items-center gap-2">
@@ -256,19 +256,19 @@ export default async function DashboardPage() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 {stats.map((stat) => (
                     <div key={stat.title} className="relative group">
-                        <Card className={`border-0 shadow-lg ring-1 ring-slate-200 rounded-[2rem] overflow-hidden transition-all hover:ring-blue-400/50 hover:shadow-2xl hover:shadow-blue-100 ${stat.alert ? 'ring-rose-500 ring-2' : ''}`}>
+                        <Card className={`border-0 shadow-lg ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2rem] overflow-hidden transition-all hover:ring-blue-400/50 hover:shadow-2xl hover:shadow-blue-100 dark:hover:shadow-blue-900/20 bg-white dark:bg-slate-900/50 backdrop-blur-sm ${stat.alert ? 'ring-rose-500 ring-2 dark:ring-rose-500' : ''}`}>
                             {'href' in stat && <Link href={stat.href as string} className="absolute inset-0 z-10" />}
                             <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6 px-5 sm:px-6">
-                                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 transition-colors duration-300">
                                     {stat.title}
                                 </CardTitle>
-                                <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} group-hover:rotate-12 transition-transform shadow-inner`}>
+                                <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} dark:bg-slate-800 dark:text-slate-200 group-hover:rotate-12 transition-transform shadow-inner`}>
                                     <stat.icon className="h-5 w-5" />
                                 </div>
                             </CardHeader>
                             <CardContent className="pb-8 px-5 sm:px-6">
                                 <div className="flex items-end justify-between">
-                                    <div className="text-4xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</div>
+                                    <div className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter leading-none transition-colors duration-300">{stat.value}</div>
                                     {stat.trend !== undefined && (
                                         <div className={`text-[10px] font-black px-3 py-1 rounded-full flex items-center gap-1 shadow-sm ${stat.trend >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                                             <TrendingUp className="w-3 h-3" />
@@ -293,8 +293,8 @@ export default async function DashboardPage() {
 
             <div className="grid gap-8 lg:grid-cols-12 items-start">
                 {/* Live Feed Component */}
-                <Card className="lg:col-span-8 border-0 shadow-xl ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden bg-slate-50/30 backdrop-blur-sm">
-                    <CardHeader className="border-b bg-white px-5 sm:px-8 py-4 sm:py-6">
+                <Card className="lg:col-span-8 border-0 shadow-xl ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-slate-50/30 dark:bg-slate-900/30 backdrop-blur-sm transition-all duration-300">
+                    <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 sm:px-8 py-4 sm:py-6 transition-colors duration-300">
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-3">
                                 <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
@@ -307,41 +307,41 @@ export default async function DashboardPage() {
                             </Link>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-0 bg-white">
-                        <div className="divide-y divide-slate-100">
+                    <CardContent className="p-0 bg-white dark:bg-slate-900 transition-colors duration-300">
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
                             {recentResponses.map((res: any) => (
-                                <div key={res.id} className="group relative px-5 sm:px-8 py-4 sm:py-6 hover:bg-slate-50 transition-all flex flex-col sm:flex-row gap-6">
+                                <div key={res.id} className="group relative px-5 sm:px-8 py-4 sm:py-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all flex flex-col sm:flex-row gap-6">
                                     <div className="flex-1 space-y-3">
                                         <div className="flex items-center gap-3">
-                                            <span className={`w-2 h-2 rounded-full ${res.status === 'NEW' ? 'bg-blue-500 animate-pulse' : 'bg-slate-200'}`} />
-                                            <p className="font-black text-slate-900 text-sm tracking-tight">#{res.id.slice(-8).toUpperCase()}</p>
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">• {new Date(res.createdAt).toLocaleDateString('uk-UA')} {new Date(res.createdAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</span>
+                                            <span className={`w-2 h-2 rounded-full ${res.status === 'NEW' ? 'bg-blue-500 animate-pulse' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                                            <p className="font-black text-slate-900 dark:text-slate-100 text-sm tracking-tight">#{res.id.slice(-8).toUpperCase()}</p>
+                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">• {new Date(res.createdAt).toLocaleDateString('uk-UA')} {new Date(res.createdAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
-                                        <p className="text-sm text-slate-600 font-medium leading-relaxed line-clamp-2 italic">
+                                        <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed line-clamp-2 italic transition-colors duration-300">
                                             "{res.comment || 'Без коментаря'}"
                                         </p>
                                         <div className="flex flex-wrap gap-2 pt-1">
-                                            <span className="bg-slate-100 text-slate-500 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight border border-slate-200">
+                                            <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight border border-slate-200 dark:border-slate-700 transition-colors duration-300">
                                                 {res.districtOrCity || 'Локація н/в'}
                                             </span>
                                             {res._count?.attachments > 0 && (
-                                                <span className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight border border-blue-100 flex items-center gap-1">
+                                                <span className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight border border-blue-100 dark:border-blue-800 flex items-center gap-1 transition-colors duration-300">
                                                     📸 {res._count.attachments}
                                                 </span>
                                             )}
                                             {res.incidentCategory && (
-                                                <span className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight border border-blue-100">
+                                                <span className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight border border-blue-100 dark:border-blue-800 transition-colors duration-300">
                                                     {res.incidentCategory}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4 border-t sm:border-0 pt-4 sm:pt-0 border-slate-100">
-                                        <div className={`px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm border ${res.rateOverall >= 4 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : res.rateOverall <= 2 ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                                    <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4 border-t sm:border-0 pt-4 sm:pt-0 border-slate-100 dark:border-slate-800">
+                                        <div className={`px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm border ${res.rateOverall >= 4 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : res.rateOverall <= 2 ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-800' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-800'}`}>
                                             <span className="text-xl font-black">{res.rateOverall}</span>
                                             <Star className={`w-4 h-4 ${res.rateOverall >= 4 ? 'fill-emerald-500' : 'fill-current'}`} />
                                         </div>
-                                        <Link href={`/admin/reports/${res.id}`} className="p-3 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200 group-hover:scale-110">
+                                        <Link href={`/admin/reports/${res.id}`} className="p-3 bg-slate-900 dark:bg-blue-600 text-white rounded-xl hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors shadow-lg shadow-slate-200 dark:shadow-blue-900/20 group-hover:scale-110">
                                             <TrendingUp className="w-4 h-4 rotate-90" />
                                         </Link>
                                     </div>
@@ -353,7 +353,7 @@ export default async function DashboardPage() {
 
                 {/* Performance & Categories Column */}
                 <div className="lg:col-span-4 space-y-8">
-                    <Card className="border-0 shadow-xl ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden bg-slate-900 text-white">
+                    <Card className="border-0 shadow-xl ring-1 ring-slate-200 dark:ring-slate-700/50 rounded-[2.5rem] overflow-hidden bg-slate-900 dark:bg-slate-950 text-white transition-all duration-300">
                         <CardHeader className="border-b border-white/10 px-5 sm:px-8 py-4 sm:py-6">
                             <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-3">
                                 <Award className="w-4 h-4 text-yellow-500" />
@@ -365,7 +365,7 @@ export default async function DashboardPage() {
                                 {topOfficers.map((o: any, idx: number) => (
                                     <div key={o.id} className="flex items-center justify-between group">
                                         <div className="flex items-center gap-4">
-                                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm shadow-inner transition-transform group-hover:-rotate-12 ${idx === 0 ? 'bg-yellow-500 text-slate-900' : 'bg-white/10 text-white'}`}>
+                                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm shadow-inner transition-transform group-hover:-rotate-12 ${idx === 0 ? 'bg-yellow-500 text-slate-900' : 'bg-white/10 text-white dark:bg-slate-800 dark:text-slate-200'}`}>
                                                 {idx + 1}
                                             </div>
                                             <div>
@@ -385,8 +385,8 @@ export default async function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="border-0 shadow-xl ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden">
-                        <CardHeader className="border-b bg-slate-50/50 px-5 sm:px-8 py-4 sm:py-6">
+                    <Card className="border-0 shadow-xl ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 transition-all duration-300">
+                        <CardHeader className="border-b bg-slate-50/50 dark:bg-slate-800/50 px-5 sm:px-8 py-4 sm:py-6 transition-colors duration-300">
                             <CardTitle className="text-xs font-black uppercase tracking-widest">Якість за напрямками</CardTitle>
                         </CardHeader>
                         <CardContent className="px-5 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
@@ -396,11 +396,11 @@ export default async function DashboardPage() {
                                 { label: "Ефективність", val: avgRatings._avg.rateEffectiveness, tint: "from-emerald-600 to-teal-600" },
                             ].map((row) => (
                                 <div key={row.label} className="space-y-3">
-                                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+                                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 transition-colors duration-300">
                                         <span>{row.label}</span>
-                                        <span className="text-slate-900 font-black">{(row.val || 0).toFixed(2)}</span>
+                                        <span className="text-slate-900 dark:text-slate-200 font-black">{(row.val || 0).toFixed(2)}</span>
                                     </div>
-                                    <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                    <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner transition-colors duration-300">
                                         <div
                                             className={`h-full bg-gradient-to-r ${row.tint} rounded-full transition-all duration-1000 shadow-lg`}
                                             style={{ width: `${((row.val || 0) / 5) * 100}%` }}

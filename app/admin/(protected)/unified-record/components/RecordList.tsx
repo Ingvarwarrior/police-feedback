@@ -497,8 +497,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         >
                             Всі
                             <span className={cn(
-                                "px-2 py-0.5 rounded-xl text-[9px] font-black min-w-[20px] shadow-xs",
-                                filterAssignment === 'ALL' ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
+                                "px-2 py-0.5 rounded-xl text-[9px] font-black min-w-[20px] shadow-xs transition-colors duration-300",
+                                filterAssignment === 'ALL' ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
                             )}>
                                 {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && (filterStatus === 'ALL' || (filterStatus === 'PENDING' ? r.status !== 'PROCESSED' : r.status === 'PROCESSED'))).length}
                             </span>
@@ -507,7 +507,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             onClick={() => setFilterAssignment('ASSIGNED')}
                             className={cn(
                                 "flex-1 sm:flex-none px-6 sm:px-7 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all gap-2.5 flex items-center justify-center border-none",
-                                filterAssignment === 'ASSIGNED' ? "bg-gradient-to-r from-indigo-500 to-blue-700 text-white shadow-md ring-2 ring-blue-100" : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
+                                filterAssignment === 'ASSIGNED' ? "bg-gradient-to-r from-indigo-500 to-blue-700 text-white shadow-md ring-2 ring-blue-100 dark:ring-blue-900" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             )}
                         >
                             <User className={cn("w-3.5 h-3.5", filterAssignment === 'ASSIGNED' ? "text-white" : "text-indigo-500")} />
@@ -523,7 +523,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             onClick={() => setFilterAssignment('UNASSIGNED')}
                             className={cn(
                                 "flex-1 sm:flex-none px-6 sm:px-7 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all gap-2.5 flex items-center justify-center border-none",
-                                filterAssignment === 'UNASSIGNED' ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md ring-2 ring-amber-100" : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
+                                filterAssignment === 'UNASSIGNED' ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md ring-2 ring-amber-100 dark:ring-amber-900" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             )}
                         >
                             <UserPlus className={cn("w-3.5 h-3.5", filterAssignment === 'UNASSIGNED' ? "text-white" : "text-amber-500")} />
@@ -539,13 +539,13 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 )
             }
             {/* Filters Bar */}
-            <div className="bg-white/90 backdrop-blur-sm p-5 md:p-7 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 flex flex-col xl:flex-row gap-5 items-center justify-between transition-all hover:shadow-2xl hover:shadow-slate-300/50">
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-5 md:p-7 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col xl:flex-row gap-5 items-center justify-between transition-all hover:shadow-2xl hover:shadow-slate-300/50 dark:hover:shadow-slate-900/50">
                 <div className="flex flex-col md:flex-row gap-5 w-full xl:w-auto flex-1">
                     <div className="relative group flex-1 md:max-w-xs transition-all">
                         <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <Input
                             placeholder="№ ЄО..."
-                            className="pl-12 bg-slate-50 border-slate-200 rounded-2xl h-14 focus-visible:ring-4 focus-visible:ring-blue-500/10 focus-visible:border-blue-500 font-bold text-slate-900 placeholder:text-slate-400 border-2 transition-all"
+                            className="pl-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl h-14 focus-visible:ring-4 focus-visible:ring-blue-500/10 dark:focus-visible:ring-blue-500/20 focus-visible:border-blue-500 font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 border-2 transition-all"
                             value={filterEoNumber}
                             onChange={(e) => setFilterEoNumber(e.target.value)}
                         />
@@ -555,7 +555,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <Input
                             placeholder="Пошук за подією або прізвищем..."
-                            className="pl-12 bg-slate-50 border-slate-200 rounded-2xl h-14 focus-visible:ring-4 focus-visible:ring-blue-500/10 focus-visible:border-blue-500 text-slate-900 placeholder:text-slate-400 border-2 transition-all font-medium"
+                            className="pl-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl h-14 focus-visible:ring-4 focus-visible:ring-blue-500/10 dark:focus-visible:ring-blue-500/20 focus-visible:border-blue-500 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 border-2 transition-all font-medium"
                             value={filterSearch}
                             onChange={(e) => setFilterSearch(e.target.value)}
                         />
@@ -565,7 +565,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
                     {currentUser.role === 'ADMIN' && (
                         <Select value={filterInspector} onValueChange={setFilterInspector}>
-                            <SelectTrigger className="flex-1 md:w-[220px] rounded-2xl border-2 border-slate-200 bg-slate-50 h-14 font-black uppercase tracking-widest text-[10px] text-slate-700 hover:bg-white hover:border-blue-400 transition-all">
+                            <SelectTrigger className="flex-1 md:w-[220px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 h-14 font-black uppercase tracking-widest text-[10px] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-400 transition-all">
                                 <User className="w-4 h-4 mr-2 text-slate-400" />
                                 <SelectValue placeholder="Інспектор" />
                             </SelectTrigger>
@@ -581,7 +581,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     )}
 
                     <Select value={filterCategory} onValueChange={setFilterCategory}>
-                        <SelectTrigger className="flex-1 md:w-[200px] rounded-2xl border-2 border-slate-200 bg-slate-50 h-14 font-black uppercase tracking-widest text-[10px] text-slate-700 hover:bg-white hover:border-blue-400 transition-all">
+                        <SelectTrigger className="flex-1 md:w-[200px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 h-14 font-black uppercase tracking-widest text-[10px] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-400 transition-all">
                             <Filter className="w-4 h-4 mr-2 text-slate-400" />
                             <SelectValue placeholder="Категорія" />
                         </SelectTrigger>
@@ -596,7 +596,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     </Select>
 
                     <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger className="flex-1 md:w-[200px] rounded-2xl border-2 border-slate-200 bg-slate-50 h-14 font-black uppercase tracking-widest text-[10px] text-slate-700 hover:bg-white hover:border-blue-400 transition-all">
+                        <SelectTrigger className="flex-1 md:w-[200px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 h-14 font-black uppercase tracking-widest text-[10px] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-400 transition-all">
                             <ArrowUpDown className="w-4 h-4 mr-2 text-slate-400" />
                             <SelectValue placeholder="Сортування" />
                         </SelectTrigger>
@@ -697,20 +697,20 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             <div className="space-y-4">
                 {filteredRecords.length === 0 ? (
                     <div className="bg-white border-2 border-dashed border-slate-200 rounded-[3rem] p-20 text-center space-y-4">
-                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300">
+                        <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-slate-300 dark:text-slate-600 transition-colors duration-300">
                             <FileText className="w-10 h-10" />
                         </div>
                         <div className="space-y-1">
-                            <h3 className="text-xl font-bold text-slate-900 uppercase tracking-tight">Записів не знайдено</h3>
-                            <p className="text-slate-500">Завантажте Excel-файл або змініть параметри пошуку</p>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight transition-colors duration-300">Записів не знайдено</h3>
+                            <p className="text-slate-500 dark:text-slate-400 transition-colors duration-300">Завантажте Excel-файл або змініть параметри пошуку</p>
                         </div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
                         {filteredRecords.map((record) => (
                             <Card key={record.id} className={cn(
-                                "border-0 shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden group border border-transparent",
-                                selectedIds.includes(record.id) ? "border-blue-200 ring-2 ring-blue-500/10" : "hover:border-blue-100"
+                                "border-0 shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden group border border-transparent bg-white dark:bg-slate-900/50 backdrop-blur-sm",
+                                selectedIds.includes(record.id) ? "border-blue-200 dark:border-blue-800 ring-2 ring-blue-500/10 dark:ring-blue-500/20" : "hover:border-blue-100 dark:hover:border-blue-900"
                             )}>
                                 <CardContent className="p-0">
                                     <div className="flex flex-col lg:flex-row relative">
@@ -719,7 +719,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                             onClick={() => toggleSelect(record.id)}
                                             className={cn(
                                                 "absolute left-4 top-4 z-10 w-6 h-6 rounded-lg flex items-center justify-center transition-all",
-                                                selectedIds.includes(record.id) ? "bg-blue-600 text-white" : "bg-white/80 border border-slate-200 text-slate-400 opacity-0 group-hover:opacity-100"
+                                                selectedIds.includes(record.id) ? "bg-blue-600 text-white" : "bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-400 opacity-0 group-hover:opacity-100"
                                             )}
                                         >
                                             <CheckSquare className="w-4 h-4" />
@@ -732,7 +732,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
                                                 <div className="space-y-1">
                                                     <div className="flex items-center gap-3">
-                                                        <span className="text-[10px] md:text-sm font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full shrink-0">
+                                                        <span className="text-[10px] md:text-sm font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-50 dark:bg-blue-900/40 px-3 py-1 rounded-full shrink-0 transition-colors duration-300">
                                                             {record.eoNumber}
                                                         </span>
                                                         <div className="flex items-center gap-1.5 text-slate-400">
@@ -747,7 +747,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             setViewRecord(record)
                                                             setIsViewOpen(true)
                                                         }}
-                                                        className="text-base md:text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight leading-tight mt-2 break-words cursor-pointer"
+                                                        className="text-base md:text-lg font-black text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase tracking-tight leading-tight mt-2 break-words cursor-pointer"
                                                     >
                                                         {record.description || 'Без опису'}
                                                     </h3>
@@ -757,7 +757,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="h-9 md:h-8 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all flex-1 md:flex-none"
+                                                        className="h-9 md:h-8 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex-1 md:flex-none"
                                                         onClick={() => {
                                                             setViewRecord(record)
                                                             setIsViewOpen(true)
@@ -811,8 +811,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
 
                                                     {record.deadline && record.status !== 'PROCESSED' && (
                                                         <div className={cn(
-                                                            "px-2 md:px-3 py-1 flex items-center gap-1.5 rounded-lg border text-[8px] md:text-[9px] font-black uppercase tracking-wider",
-                                                            new Date(record.deadline) < new Date() ? "bg-red-50 text-red-600 border-red-100" : "bg-slate-50 text-slate-600 border-slate-100"
+                                                            "px-2 md:px-3 py-1 flex items-center gap-1.5 rounded-lg border text-[8px] md:text-[9px] font-black uppercase tracking-wider transition-colors duration-300",
+                                                            new Date(record.deadline) < new Date() ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900" : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-700"
                                                         )}>
                                                             <Clock className="w-3 h-3" />
                                                             До: {format(new Date(record.deadline), 'dd.MM.yy')}
@@ -821,13 +821,13 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-6 border-t border-slate-200">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-6 border-t border-slate-200 dark:border-slate-800 transition-colors duration-300">
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-slate-500">
                                                         <User className="w-4 h-4 shrink-0" />
                                                         <span className="text-xs font-black uppercase tracking-widest">Заявник</span>
                                                     </div>
-                                                    <p className="text-sm font-black text-slate-900">
+                                                    <p className="text-sm font-black text-slate-900 dark:text-white transition-colors duration-300">
                                                         <span className="text-slate-400 text-[10px] mr-1">Гр.</span> {record.applicant || '—'}
                                                     </p>
                                                 </div>
@@ -840,8 +840,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
 
                                                     <div className="space-y-1">
                                                         <div className={cn(
-                                                            "text-sm font-bold italic",
-                                                            record.status === 'PROCESSED' ? "text-emerald-700" : (record.assignedUserId ? "text-blue-600" : "text-amber-600")
+                                                            "text-sm font-bold italic transition-colors duration-300",
+                                                            record.status === 'PROCESSED' ? "text-emerald-700 dark:text-emerald-400" : (record.assignedUserId ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")
                                                         )}>
                                                             {record.status === 'PROCESSED' ? (record.resolution || 'Виконано') : (record.assignedUserId ? (record.resolution ? 'Потребує доопрацювання/В процесі...' : 'В процесі розгляду...') : 'Не призначено')}
                                                         </div>
