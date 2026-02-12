@@ -408,8 +408,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     return (
         <div className="space-y-6">
             {/* Tabs & Actions Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <Tabs defaultValue="EO" className="w-full sm:w-auto" onValueChange={(v) => setActiveTab(v as any)}>
+            <div className="space-y-3">
+                <Tabs defaultValue="EO" className="w-full" onValueChange={(v) => setActiveTab(v as any)}>
                     <TabsList className="bg-white/80 backdrop-blur-md p-1.5 rounded-[2rem] border border-slate-300 shadow-xl h-16 flex items-center justify-start w-full sm:w-fit overflow-x-auto no-scrollbar gap-1">
                         <TabsTrigger
                             value="ALL"
@@ -460,7 +460,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 </Tabs>
 
                 {currentUser.role === 'ADMIN' && (
-                    <div className="flex items-center gap-3 p-2 bg-white/90 backdrop-blur-md rounded-[2rem] border border-slate-200 shadow-xl w-full sm:w-auto justify-center sm:justify-start h-16 overflow-x-auto no-scrollbar transition-all hover:shadow-2xl">
+                    <div className="flex flex-wrap items-center gap-3 p-2 bg-white/90 backdrop-blur-md rounded-[2rem] border border-slate-200 shadow-xl w-full justify-start min-h-16 transition-all hover:shadow-2xl">
                         <CreateRecordDialog
                             users={users}
                             initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }}
