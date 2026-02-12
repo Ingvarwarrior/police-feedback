@@ -98,7 +98,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const [records, setRecords] = useState(initialRecords.filter(r => r.recordType !== 'RAPORT'))
     const [filterSearch, setFilterSearch] = useState("")
     const [filterCategory, setFilterCategory] = useState("ALL")
-    const [activeTab, setActiveTab] = useState("ALL")
+    const [activeTab, setActiveTab] = useState("EO")
     const [filterStatus, setFilterStatus] = useState("PENDING") // Default to pending for better focus
     const [filterAssignment, setFilterAssignment] = useState("ALL") // ALL, ASSIGNED, UNASSIGNED
     const [filterEoNumber, setFilterEoNumber] = useState("")
@@ -409,7 +409,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         <div className="space-y-6">
             {/* Tabs & Actions Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <Tabs defaultValue="ALL" className="w-full sm:w-auto" onValueChange={(v) => setActiveTab(v as any)}>
+                <Tabs defaultValue="EO" className="w-full sm:w-auto" onValueChange={(v) => setActiveTab(v as any)}>
                     <TabsList className="bg-white/80 backdrop-blur-md p-1.5 rounded-[2rem] border border-slate-300 shadow-xl h-16 flex items-center justify-start w-full sm:w-fit overflow-x-auto no-scrollbar gap-1">
                         <TabsTrigger
                             value="ALL"
@@ -461,7 +461,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
 
                 {currentUser.role === 'ADMIN' && (
                     <div className="flex items-center gap-3 p-2 bg-white/90 backdrop-blur-md rounded-[2rem] border border-slate-200 shadow-xl w-full sm:w-auto justify-center sm:justify-start h-16 overflow-x-auto no-scrollbar transition-all hover:shadow-2xl">
-                        <CreateRecordDialog users={users} initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }} />
+                        <CreateRecordDialog
+                            users={users}
+                            initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }}
+                            lockRecordType={activeTab === 'EO'}
+                        />
                         {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}
                         {(activeTab === 'ZVERN') && <ImportDialog defaultRecordType="ZVERN" />}
                     </div>

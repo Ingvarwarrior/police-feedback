@@ -97,10 +97,11 @@ const getInitialLegalBasis = (): LegalBasisState => ({
 interface CreateRecordDialogProps {
     initialData?: Partial<FormValues>
     users?: { id: string, firstName: string | null, lastName: string | null, username: string }[]
+    lockRecordType?: boolean
     trigger?: React.ReactNode
 }
 
-export default function CreateRecordDialog({ initialData, users = [], trigger }: CreateRecordDialogProps) {
+export default function CreateRecordDialog({ initialData, users = [], lockRecordType = false, trigger }: CreateRecordDialogProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -822,6 +823,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                             <Select
                                 onValueChange={(val) => form.setValue("recordType", val)}
                                 defaultValue={form.getValues("recordType")}
+                                disabled={lockRecordType}
                             >
                                 <SelectTrigger className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-xs md:text-sm">
                                     <SelectValue placeholder="Тип" />
