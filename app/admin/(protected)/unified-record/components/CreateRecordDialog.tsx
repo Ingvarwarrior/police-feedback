@@ -362,6 +362,10 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                         toast.error('Для протоколу "ТАК" вкажіть повний період затримання (з/до)')
                         return
                     }
+                    if (!detentionPurpose.trim()) {
+                        toast.error('Вкажіть мету затримання')
+                        return
+                    }
                     if (!detentionMaterials.trim()) {
                         toast.error('Вкажіть, які матеріали складалися')
                         return
@@ -538,18 +542,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         }
 
         if (protocolPrepared === "YES") {
-            const firstSentenceParts = [
-                "Складався",
-                "відповідно до статей 261, 262, 263 КУпАП",
-                detentionFromDate && detentionFromTime && detentionToDate && detentionToTime
-                    ? `затриманий з ${formatTimeUa(detentionFromTime)} ${formatDateUa(detentionFromDate)} р. до ${formatTimeUa(detentionToTime)} ${formatDateUa(detentionToDate)} р.`
-                    : "",
-                detentionPurpose.trim(),
-            ].filter(Boolean)
-
-            const secondSentence = `${detentionMaterials.trim() || "Складено постанову/протокол"} серії ${protocolSeries || "___"} номер ${protocolNumber || "___"}`
-
-            generated = `${firstSentenceParts.join(", ")}. ${secondSentence}`
+            generated = `Складався, відповідно до статей 261, 262, 263 КУпАП, затриманий з ${formatTimeUa(detentionFromTime)} ${formatDateUa(detentionFromDate)} р. до ${formatTimeUa(detentionToTime)} ${formatDateUa(detentionToDate)} р., ${detentionPurpose.trim()}. ${detentionMaterials.trim() || "Складено постанову/протокол"} серії ${protocolSeries || "___"} номер ${protocolNumber || "___"}`
         }
 
         const current = form.getValues("applicant") || ""
@@ -1010,19 +1003,12 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                                 />
                                             </div>
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                <Input
-                                                    value="КУпАП: статті 261, 262, 263"
-                                                    readOnly
-                                                    className="rounded-lg bg-slate-100 border-slate-200 h-10 text-xs font-bold text-slate-700"
-                                                />
-                                                <Input
-                                                    value={detentionPurpose}
-                                                    onChange={(e) => setDetentionPurpose(e.target.value)}
-                                                    placeholder="Мета затримання"
-                                                    className="rounded-lg bg-white border-slate-200 h-10"
-                                                />
-                                            </div>
+                                            <Input
+                                                value={detentionPurpose}
+                                                onChange={(e) => setDetentionPurpose(e.target.value)}
+                                                placeholder="Мета затримання"
+                                                className="rounded-lg bg-white border-slate-200 h-10"
+                                            />
 
                                             <Input
                                                 value={detentionMaterials}
