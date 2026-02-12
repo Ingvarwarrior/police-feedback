@@ -422,10 +422,6 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     toast.error('Поле "Дата народження" є обовʼязковим')
                     return
                 }
-                if (!data.assignedUserId) {
-                    toast.error('Оберіть виконавця')
-                    return
-                }
                 raportDescription = "Застосування"
                 payloadAddress = `DOB:${applicationBirthDate}`
                 payloadCategory = "Застосування"
