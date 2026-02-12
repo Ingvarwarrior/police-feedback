@@ -382,8 +382,17 @@ export async function upsertUnifiedRecordAction(data: any) {
     const isRaport = payload.recordType === "RAPORT"
     const isCreate = !payload.id
 
-    if (isRaport && (isCreate || !payload.eoNumber || !String(payload.eoNumber).trim())) {
+    if (isRaport && isCreate) {
         payload.eoNumber = await generateNextRaportNumber()
+    }
+
+    if (isRaport && !isCreate && (!payload.eoNumber || !String(payload.eoNumber).trim()) && payload.id) {
+        const existingById = await prisma.unifiedRecord.findUnique({
+            where: { id: payload.id },
+            select: { eoNumber: true }
+        })
+
+        payload.eoNumber = existingById?.eoNumber || await generateNextRaportNumber()
     }
 
     const validated = UnifiedRecordSchema.parse(payload)
