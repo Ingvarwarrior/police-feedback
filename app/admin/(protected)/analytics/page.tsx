@@ -48,7 +48,8 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
         categoryStats,
         resolutionStats,
         unifiedRecordStats,
-        unifiedRecordsByInspector
+        unifiedRecordsByInspector,
+        applicationDetentionRecords
     ] = await Promise.all([
         prisma.response.findMany({
             where: { createdAt: { gte: startDate, lte: endDate } },
@@ -125,6 +126,22 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
                     select: { firstName: true, lastName: true }
                 },
                 recordType: true
+            }
+        }),
+        (prisma as any).unifiedRecord.findMany({
+            where: {
+                eoDate: { gte: startDate, lte: endDate },
+                recordType: { in: ['APPLICATION', 'DETENTION_PROTOCOL'] }
+            },
+            select: {
+                eoDate: true,
+                recordType: true,
+                status: true,
+                resolution: true,
+                assignedUserId: true,
+                assignedUser: {
+                    select: { firstName: true, lastName: true }
+                }
             }
         })
     ]) as any[]
@@ -306,6 +323,103 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
             return levelOrder[b!.alertLevel] - levelOrder[a!.alertLevel]
         })
 
+    const appDetentionTrendMap: Record<string, {
+        date: string
+        total: number
+        applications: number
+        detentions: number
+    }> = {}
+    for (let i = 0; i <= diffDays; i++) {
+        const d = subDays(endDate, i)
+        const dateStr = d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' })
+        appDetentionTrendMap[dateStr] = { date: dateStr, total: 0, applications: 0, detentions: 0 }
+    }
+
+    const appDetentionStatusMap: Record<string, number> = {
+        "Очікує": 0,
+        "В роботі": 0,
+        "Опрацьовано": 0,
+        "Інше": 0
+    }
+    const appDetentionResolutionMap: Record<string, number> = {}
+    const appDetentionInspectorMap: Record<string, {
+        id: string
+        name: string
+        assigned: number
+        processed: number
+        pending: number
+        applications: number
+        detentions: number
+    }> = {}
+
+    const normalizeResolution = (value?: string | null) => {
+        if (!value || !value.trim()) return "Не вказано"
+        const raw = value.trim()
+        const lowered = raw.toLowerCase()
+        if (lowered.includes('списано')) return "Списано до справи"
+        if (lowered.includes('ініційовано') || lowered.includes('ср')) return "Ініційовано СР"
+        if (lowered.includes('письмов') && lowered.includes('відповід')) return "Надано письмову відповідь"
+        if (lowered.includes('до іншого органу') || lowered.includes('надіслано')) return "Надіслано до іншого органу"
+        return raw.length > 70 ? `${raw.slice(0, 70)}...` : raw
+    }
+
+    applicationDetentionRecords.forEach((record: any) => {
+        const dateStr = new Date(record.eoDate).toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' })
+        if (appDetentionTrendMap[dateStr]) {
+            appDetentionTrendMap[dateStr].total++
+            if (record.recordType === 'APPLICATION') appDetentionTrendMap[dateStr].applications++
+            if (record.recordType === 'DETENTION_PROTOCOL') appDetentionTrendMap[dateStr].detentions++
+        }
+
+        const status = record.status === 'PROCESSED'
+            ? 'Опрацьовано'
+            : record.status === 'IN_PROGRESS'
+                ? 'В роботі'
+                : record.status === 'PENDING'
+                    ? 'Очікує'
+                    : 'Інше'
+        appDetentionStatusMap[status] = (appDetentionStatusMap[status] || 0) + 1
+
+        const resolution = normalizeResolution(record.resolution)
+        appDetentionResolutionMap[resolution] = (appDetentionResolutionMap[resolution] || 0) + 1
+
+        const inspectorId = record.assignedUserId || 'unassigned'
+        if (!appDetentionInspectorMap[inspectorId]) {
+            appDetentionInspectorMap[inspectorId] = {
+                id: inspectorId,
+                name: record.assignedUser
+                    ? `${record.assignedUser.lastName} ${record.assignedUser.firstName || ''}`.trim()
+                    : 'Не призначено',
+                assigned: 0,
+                processed: 0,
+                pending: 0,
+                applications: 0,
+                detentions: 0
+            }
+        }
+
+        appDetentionInspectorMap[inspectorId].assigned++
+        if (record.status === 'PROCESSED') {
+            appDetentionInspectorMap[inspectorId].processed++
+        } else {
+            appDetentionInspectorMap[inspectorId].pending++
+        }
+        if (record.recordType === 'APPLICATION') {
+            appDetentionInspectorMap[inspectorId].applications++
+        } else if (record.recordType === 'DETENTION_PROTOCOL') {
+            appDetentionInspectorMap[inspectorId].detentions++
+        }
+    })
+
+    const appDetentionTrendData = Object.values(appDetentionTrendMap).reverse()
+    const appDetentionStatusData = Object.entries(appDetentionStatusMap).map(([name, value]) => ({ name, value }))
+    const appDetentionResolutionData = Object.entries(appDetentionResolutionMap)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 8)
+    const appDetentionInspectors = Object.values(appDetentionInspectorMap)
+        .sort((a, b) => b.assigned - a.assigned)
+
     const displayPeriod = fromParam && toParam
         ? `${new Date(fromParam).toLocaleDateString('uk-UA')} - ${new Date(toParam).toLocaleDateString('uk-UA')}`
         : `останні ${searchParams.period || '30'} днів`
@@ -344,6 +458,19 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
                 unifiedRecordStats={{
                     totalByType: unifiedRecordStats as any,
                     inspectorPerformance
+                }}
+                applicationDetentionStats={{
+                    totals: {
+                        total: applicationDetentionRecords.length,
+                        applications: applicationDetentionRecords.filter((r: any) => r.recordType === 'APPLICATION').length,
+                        detentions: applicationDetentionRecords.filter((r: any) => r.recordType === 'DETENTION_PROTOCOL').length,
+                        processed: applicationDetentionRecords.filter((r: any) => r.status === 'PROCESSED').length,
+                        pending: applicationDetentionRecords.filter((r: any) => r.status !== 'PROCESSED').length
+                    },
+                    trendData: appDetentionTrendData,
+                    statusData: appDetentionStatusData,
+                    resolutionData: appDetentionResolutionData,
+                    inspectors: appDetentionInspectors
                 }}
             />
         </div>

@@ -68,6 +68,27 @@ interface AnalyticsClientProps {
             pending: number
         }[]
     }
+    applicationDetentionStats: {
+        totals: {
+            total: number
+            applications: number
+            detentions: number
+            processed: number
+            pending: number
+        }
+        trendData: { date: string, total: number, applications: number, detentions: number }[]
+        statusData: { name: string, value: number }[]
+        resolutionData: { name: string, value: number }[]
+        inspectors: {
+            id: string
+            name: string
+            assigned: number
+            processed: number
+            pending: number
+            applications: number
+            detentions: number
+        }[]
+    }
 }
 
 const COLORS = ['#0f172a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444']
@@ -87,9 +108,10 @@ export default function AnalyticsClient({
     correlationData,
     timePatterns,
     unifiedRecordStats,
+    applicationDetentionStats,
 }: AnalyticsClientProps) {
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState<'feedback' | 'personnel' | 'citizens' | 'efficiency' | 'time' | 'geo' | 'predictions' | 'unified' | 'appeals'>('feedback')
+    const [activeTab, setActiveTab] = useState<'feedback' | 'personnel' | 'citizens' | 'efficiency' | 'time' | 'geo' | 'predictions' | 'unified' | 'appeals' | 'applications'>('feedback')
     const [selectedInspectorId, setSelectedInspectorId] = useState<string | 'all'>('all')
 
     const avgRating = ratingsData.reduce((acc, curr, idx) => acc + (curr.value * (idx + 1)), 0) / (totalReports || 1)
@@ -103,6 +125,7 @@ export default function AnalyticsClient({
         { id: 'feedback', label: 'Відгуки', icon: MessageSquare },
         { id: 'appeals', label: 'Звернення', icon: MessageSquare },
         { id: 'unified', label: 'ЄО (Єдиний облік)', icon: ClipboardList },
+        { id: 'applications', label: 'Застосування/Затримання', icon: Shield },
         { id: 'personnel', label: 'Особовий склад', icon: Shield },
         { id: 'citizens', label: 'Громадяни', icon: Users },
         { id: 'efficiency', label: 'Ефективність', icon: TrendingUp },
@@ -679,6 +702,192 @@ export default function AnalyticsClient({
                                 </div>
                             </CardContent>
                         </Card>
+                    </div>
+                )}
+
+                {activeTab === 'applications' && (
+                    <div className="space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-rose-50 to-white">
+                                <CardContent className="p-5 sm:p-8">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-1">Застосування</p>
+                                            <h3 className="text-4xl font-black text-slate-900">{applicationDetentionStats.totals.applications}</h3>
+                                        </div>
+                                        <div className="p-3 bg-rose-100 rounded-2xl text-rose-600">
+                                            <Shield className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-fuchsia-50 to-white">
+                                <CardContent className="p-5 sm:p-8">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-fuchsia-600 mb-1">Затримання</p>
+                                            <h3 className="text-4xl font-black text-slate-900">{applicationDetentionStats.totals.detentions}</h3>
+                                        </div>
+                                        <div className="p-3 bg-fuchsia-100 rounded-2xl text-fuchsia-600">
+                                            <FileText className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-emerald-50 to-white">
+                                <CardContent className="p-5 sm:p-8">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1">Опрацьовано</p>
+                                            <h3 className="text-4xl font-black text-slate-900">{applicationDetentionStats.totals.processed}</h3>
+                                        </div>
+                                        <div className="p-3 bg-emerald-100 rounded-2xl text-emerald-600">
+                                            <CheckCircle className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-amber-50 to-white">
+                                <CardContent className="p-5 sm:p-8">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1">В роботі</p>
+                                            <h3 className="text-4xl font-black text-slate-900">{applicationDetentionStats.totals.pending}</h3>
+                                        </div>
+                                        <div className="p-3 bg-amber-100 rounded-2xl text-amber-600">
+                                            <Clock3 className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-blue-50 to-white">
+                                <CardContent className="p-5 sm:p-8">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Всього записів</p>
+                                            <h3 className="text-4xl font-black text-slate-900">{applicationDetentionStats.totals.total}</h3>
+                                        </div>
+                                        <div className="p-3 bg-blue-100 rounded-2xl text-blue-600">
+                                            <ClipboardList className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:p-8">
+                            <Card className="lg:col-span-2 border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
+                                <CardHeader className="p-5 sm:p-8 pb-0">
+                                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                        <TrendingUp className="w-4 h-4 text-blue-500" /> Динаміка по днях
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-5 sm:p-8 h-[350px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={applicationDetentionStats.trendData}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
+                                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
+                                            <Tooltip contentStyle={{ borderRadius: '16px', border: 'none' }} />
+                                            <Legend />
+                                            <Line type="monotone" dataKey="applications" name="Застосування" stroke="#e11d48" strokeWidth={3} dot={false} />
+                                            <Line type="monotone" dataKey="detentions" name="Затримання" stroke="#c026d3" strokeWidth={3} dot={false} />
+                                            <Line type="monotone" dataKey="total" name="Разом" stroke="#1d4ed8" strokeWidth={2} dot={false} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
+                                <CardHeader className="p-5 sm:p-8 pb-0">
+                                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                        <PieIcon className="w-4 h-4 text-emerald-500" /> Статуси
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-5 sm:p-8 h-[350px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={applicationDetentionStats.statusData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={100} paddingAngle={4}>
+                                                {applicationDetentionStats.statusData.map((entry, index) => (
+                                                    <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip />
+                                            <Legend verticalAlign="bottom" height={36} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:p-8">
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
+                                <CardHeader className="p-5 sm:p-8 pb-0">
+                                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                        <BarChart3 className="w-4 h-4 text-amber-500" /> Рішення (топ)
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-5 sm:p-8 h-[360px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={applicationDetentionStats.resolutionData}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} interval={0} angle={-15} textAnchor="end" height={70} />
+                                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
+                                            <Tooltip contentStyle={{ borderRadius: '16px', border: 'none' }} />
+                                            <Bar dataKey="value" name="Кількість" fill="#f59e0b" radius={[8, 8, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem]">
+                                <CardHeader className="p-5 sm:p-8 pb-0">
+                                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                        <ListTodo className="w-4 h-4 text-blue-500" /> Виконавці (топ)
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-5 sm:p-8">
+                                    <div className="space-y-3 max-h-[330px] overflow-y-auto pr-1">
+                                        {applicationDetentionStats.inspectors.length === 0 && (
+                                            <p className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 py-12">Дані за період відсутні</p>
+                                        )}
+                                        {applicationDetentionStats.inspectors.map((item) => {
+                                            const progress = item.assigned > 0 ? Math.round((item.processed / item.assigned) * 100) : 0
+                                            return (
+                                                <div key={item.id} className="rounded-2xl border border-slate-100 bg-white p-4 space-y-2">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <p className="font-bold text-slate-900">{item.name}</p>
+                                                        <span className="text-xs font-black text-slate-500">{item.assigned}</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-4 gap-2 text-center">
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Разом</p>
+                                                            <p className="text-sm font-black text-slate-700">{item.assigned}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Опрац.</p>
+                                                            <p className="text-sm font-black text-emerald-600">{item.processed}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Застос.</p>
+                                                            <p className="text-sm font-black text-rose-600">{item.applications}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Затрим.</p>
+                                                            <p className="text-sm font-black text-fuchsia-600">{item.detentions}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${progress}%` }} />
+                                                        </div>
+                                                        <span className="w-10 text-right text-xs font-black">{progress}%</span>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 )}
 
