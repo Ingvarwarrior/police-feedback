@@ -146,6 +146,20 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         return `${day}.${month}.${year}`
     }
 
+    const isTimeEarlier = (left: string, right: string) => {
+        if (!left || !right) return false
+        const [lh, lm] = left.split(":").map(Number)
+        const [rh, rm] = right.split(":").map(Number)
+        return lh * 60 + lm < rh * 60 + rm
+    }
+
+    const addOneDay = (isoDate: string) => {
+        const date = new Date(`${isoDate}T00:00:00`)
+        if (Number.isNaN(date.getTime())) return isoDate
+        date.setDate(date.getDate() + 1)
+        return date.toISOString().slice(0, 10)
+    }
+
     const updateForceUsage = (key: ForceKey, patch: Partial<ForceUsage[ForceKey]>) => {
         setForceUsage(prev => ({
             ...prev,
@@ -279,7 +293,8 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                             toast.error(`Для "${label}" потрібно вказати період часу з-по`)
                             return
                         }
-                        lines.push(`${label.toLowerCase()} — ${formatDateUa(item.date)} з ${item.from} по ${item.to}`)
+                        const endDate = isTimeEarlier(item.to, item.from) ? addOneDay(item.date) : item.date
+                        lines.push(`${label.toLowerCase()} — з ${item.from} ${formatDateUa(item.date)} по ${item.to} ${formatDateUa(endDate)}`)
                     } else {
                         if (!item.time) {
                             toast.error(`Для "${label}" потрібно вказати час`)
@@ -649,6 +664,9 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                                                 onChange={(e) => updateForceUsage(key, { to: e.target.value })}
                                                                 className="rounded-lg bg-white border-slate-200 h-10"
                                                             />
+                                                            <p className="text-[10px] text-slate-500 sm:col-span-3">
+                                                                Якщо час "по" менший за "з", система вважає завершення наступного дня.
+                                                            </p>
                                                         </>
                                                     ) : (
                                                         <Input
