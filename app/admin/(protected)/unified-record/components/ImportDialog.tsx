@@ -87,8 +87,8 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
                     {recordType === 'EO' ? 'Імпорт ЄО' : 'Імпорт Звернень'}
                 </Button>
             </DialogTrigger>
-            <DialogContent className={`${step === 'preview' ? 'sm:max-w-4xl' : 'sm:max-w-md'} rounded-[2rem] sm:rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl`}>
-                <DialogHeader className="p-4 sm:p-8 pb-0">
+            <DialogContent className={`${step === 'preview' ? 'sm:max-w-4xl' : 'sm:max-w-md'} rounded-[2rem] sm:rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl flex flex-col max-h-[90dvh]`}>
+                <DialogHeader className="p-4 sm:p-8 pb-0 shrink-0">
                     <DialogTitle className="text-2xl font-black uppercase italic tracking-tight flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
                             {step === 'upload' ? <Upload className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
@@ -101,7 +101,7 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="p-4 sm:p-8">
+                <div className="p-4 sm:p-8 overflow-y-auto flex-1 min-h-0">
                     {step === 'upload' ? (
                         <div className="space-y-6">
                             <div

@@ -410,10 +410,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             {/* Tabs & Actions Bar */}
             <div className="space-y-3">
                 <Tabs defaultValue="EO" className="w-full" onValueChange={(v) => setActiveTab(v as any)}>
-                    <TabsList className="bg-white/80 backdrop-blur-md p-1.5 rounded-[2rem] border border-slate-300 shadow-xl h-16 flex items-center justify-start w-full sm:w-fit overflow-x-auto no-scrollbar gap-1">
+                    <TabsList className="bg-white/80 backdrop-blur-md p-1.5 rounded-[2rem] border border-slate-300 shadow-xl min-h-16 h-auto flex flex-wrap items-stretch justify-start w-full gap-1">
                         <TabsTrigger
                             value="ALL"
-                            className="rounded-[1.5rem] px-6 md:px-10 h-full font-black uppercase tracking-widestr text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-800 data-[state=active]:to-slate-950 data-[state=active]:text-white transition-all duration-300 gap-3 shrink-0 shadow-sm"
+                            className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-800 data-[state=active]:to-slate-950 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
                         >
                             Всі записи
                             <span className="bg-slate-200/50 text-slate-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
@@ -422,7 +422,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         </TabsTrigger>
                         <TabsTrigger
                             value="EO"
-                            className="rounded-[1.5rem] px-6 md:px-10 h-full font-black uppercase tracking-widest text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-800 data-[state=active]:text-white transition-all duration-300 gap-3 shrink-0 shadow-sm"
+                            className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-800 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
                         >
                             Єдиний облік
                             <span className="bg-blue-50/50 text-blue-600 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
@@ -431,7 +431,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         </TabsTrigger>
                         <TabsTrigger
                             value="ZVERN"
-                            className="rounded-[1.5rem] px-6 md:px-10 h-full font-black uppercase tracking-widest text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white transition-all duration-300 gap-3 shrink-0 shadow-sm"
+                            className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
                         >
                             Звернення
                             <span className="bg-amber-50/50 text-amber-600 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
@@ -440,7 +440,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         </TabsTrigger>
                         <TabsTrigger
                             value="APPLICATION"
-                            className="rounded-[1.5rem] px-6 md:px-10 h-full font-black uppercase tracking-widest text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-600 data-[state=active]:to-red-700 data-[state=active]:text-white transition-all duration-300 gap-3 shrink-0 shadow-sm"
+                            className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-600 data-[state=active]:to-red-700 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
                         >
                             Застосування сили/спецзасобів
                             <span className="bg-rose-50/50 text-rose-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
@@ -449,7 +449,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         </TabsTrigger>
                         <TabsTrigger
                             value="DETENTION_PROTOCOL"
-                            className="rounded-[1.5rem] px-6 md:px-10 h-full font-black uppercase tracking-widest text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-fuchsia-600 data-[state=active]:to-violet-700 data-[state=active]:text-white transition-all duration-300 gap-3 shrink-0 shadow-sm"
+                            className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-fuchsia-600 data-[state=active]:to-violet-700 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
                         >
                             Протоколи затримання
                             <span className="bg-fuchsia-50/50 text-fuchsia-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">

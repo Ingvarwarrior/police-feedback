@@ -75,8 +75,8 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95%] sm:w-full sm:max-w-[700px] bg-white rounded-[2rem] sm:rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
-                <DialogHeader className="p-5 sm:p-8 md:p-10 bg-slate-900 text-white relative">
+            <DialogContent className="w-[95%] sm:w-full sm:max-w-[700px] bg-white rounded-[2rem] sm:rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden flex flex-col max-h-[90dvh]">
+                <DialogHeader className="p-5 sm:p-8 md:p-10 bg-slate-900 text-white relative shrink-0">
                     <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12">
                         <FileText className="w-40 h-40" />
                     </div>
@@ -107,7 +107,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                     </div>
                 </DialogHeader>
 
-                <div className="p-4 sm:p-8 md:p-10 space-y-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div className="p-4 sm:p-8 md:p-10 space-y-8 overflow-y-auto custom-scrollbar flex-1 min-h-0">
                     {/* Basic Info Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-6">
@@ -289,7 +289,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                     </div>
                 </div>
 
-                <DialogFooter className="p-4 sm:p-8 bg-slate-50 border-t border-slate-100">
+                <DialogFooter className="p-4 sm:p-8 bg-slate-50 border-t border-slate-100 shrink-0 sticky bottom-0">
                     <Button
                         onClick={() => onOpenChange(false)}
                         className="w-full h-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 transition-all hover:scale-[1.01]"
