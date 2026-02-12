@@ -193,6 +193,25 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const onSubmit = async (data: FormValues) => {
         setIsLoading(true)
         try {
+            if (data.recordType === "RAPORT") {
+                if (!data.officerName?.trim()) {
+                    toast.error('Поле "Ким застосовано..." є обовʼязковим')
+                    return
+                }
+                if (!data.description?.trim()) {
+                    toast.error('Поле "Дата застосування..." є обовʼязковим')
+                    return
+                }
+                if (!data.address?.trim()) {
+                    toast.error('Поле "Підстава застосування..." є обовʼязковим')
+                    return
+                }
+                if (!data.applicant?.trim()) {
+                    toast.error('Поле "Дані про оформлення протоколу..." є обовʼязковим')
+                    return
+                }
+            }
+
             const result = await upsertUnifiedRecordAction({
                 ...data,
                 officerIds: taggedOfficers.map((o: any) => o.id)
@@ -302,7 +321,9 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                 <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 md:p-8 space-y-5 md:space-y-6 max-h-[50vh] md:max-h-[70vh] overflow-y-auto custom-scrollbar">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="eoNumber" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Номер ЄО</Label>
+                            <Label htmlFor="eoNumber" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                {recordType === "RAPORT" ? "Номер рапорту / ЄО" : "Номер ЄО"}
+                            </Label>
                             <Input
                                 id="eoNumber"
                                 {...form.register("eoNumber")}
@@ -460,28 +481,94 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                         )}
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Подія</Label>
-                        <Input
-                            id="description"
-                            {...form.register("description")}
-                            placeholder="Напр. ІНШІ СКАРГИ..."
-                            className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold uppercase"
-                        />
-                        {form.formState.errors.description && (
-                            <p className="text-[10px] text-red-500 font-bold">{form.formState.errors.description.message}</p>
-                        )}
-                    </div>
+                    {recordType === "RAPORT" ? (
+                        <div className="space-y-5">
+                            <div className="space-y-2">
+                                <Label htmlFor="officerName" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    Ким застосовано зброю, фізичну силу чи спеціальні засоби *
+                                </Label>
+                                <p className="text-xs italic underline text-slate-600">
+                                    Приклад: Інспектором (поліцейським) взводу 2 роти 1 батальйону...
+                                </p>
+                                <Textarea
+                                    id="officerName"
+                                    {...form.register("officerName")}
+                                    placeholder="Ваша відповідь"
+                                    className="rounded-xl border-slate-100 bg-slate-50 min-h-[90px]"
+                                />
+                            </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="address" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Адреса</Label>
-                        <Input
-                            id="address"
-                            {...form.register("address")}
-                            placeholder="Місце події"
-                            className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                        />
-                    </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    Дата застосування зброї, фізичної сили чи спеціальних засобів (що саме застосовано, період) *
+                                </Label>
+                                <p className="text-xs italic underline text-slate-600">
+                                    Приклад: фізична сила з 23:42 10.03.2023, кайданки з 23:42 по 23:58...
+                                </p>
+                                <Textarea
+                                    id="description"
+                                    {...form.register("description")}
+                                    placeholder="Ваша відповідь"
+                                    className="rounded-xl border-slate-100 bg-slate-50 min-h-[90px]"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="address" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    Підстава застосування, до кого застосовано *
+                                </Label>
+                                <p className="text-xs italic underline text-slate-600">
+                                    Приклад: відповідно до ч.1 ст.44 ЗУ "Про Національну Поліцію"...
+                                </p>
+                                <Textarea
+                                    id="address"
+                                    {...form.register("address")}
+                                    placeholder="Ваша відповідь"
+                                    className="rounded-xl border-slate-100 bg-slate-50 min-h-[90px]"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="applicant" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    Дані про оформлення протоколу про затримання (згідно КУпАП чи КПК), строки затримання *
+                                </Label>
+                                <p className="text-xs italic underline text-slate-600">
+                                    Приклад: складався згідно ст.261-263 КУпАП, затриманий з ... по ...
+                                </p>
+                                <Textarea
+                                    id="applicant"
+                                    {...form.register("applicant")}
+                                    placeholder="Ваша відповідь"
+                                    className="rounded-xl border-slate-100 bg-slate-50 min-h-[90px]"
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Подія</Label>
+                                <Input
+                                    id="description"
+                                    {...form.register("description")}
+                                    placeholder="Напр. ІНШІ СКАРГИ..."
+                                    className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold uppercase"
+                                />
+                                {form.formState.errors.description && (
+                                    <p className="text-[10px] text-red-500 font-bold">{form.formState.errors.description.message}</p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="address" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Адреса</Label>
+                                <Input
+                                    id="address"
+                                    {...form.register("address")}
+                                    placeholder="Місце події"
+                                    className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                />
+                            </div>
+                        </>
+                    )}
                 </form>
 
                 <DialogFooter className="p-4 md:p-8 bg-slate-50 border-t border-slate-100 flex flex-row gap-2 md:gap-4 items-center justify-between">
