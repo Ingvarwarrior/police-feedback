@@ -464,7 +464,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <CreateRecordDialog
                             users={users}
                             initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }}
-                            lockRecordType={activeTab === 'EO'}
+                            lockRecordType={activeTab !== 'ALL'}
                         />
                         {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}
                         {(activeTab === 'ZVERN') && <ImportDialog defaultRecordType="ZVERN" />}

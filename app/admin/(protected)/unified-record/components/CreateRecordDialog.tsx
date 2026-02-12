@@ -818,24 +818,25 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                             </>
                         )}
 
-                        <div className="space-y-2">
-                            <Label htmlFor="recordType" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Тип запису</Label>
-                            <Select
-                                onValueChange={(val) => form.setValue("recordType", val)}
-                                defaultValue={form.getValues("recordType")}
-                                disabled={lockRecordType}
-                            >
-                                <SelectTrigger className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-xs md:text-sm">
-                                    <SelectValue placeholder="Тип" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-none shadow-2xl">
-                                    <SelectItem value="EO">Єдиний облік (ЄО)</SelectItem>
-                                    <SelectItem value="ZVERN">Звернення</SelectItem>
-                                    <SelectItem value="APPLICATION">Застосування сили/спецзасобів</SelectItem>
-                                    <SelectItem value="DETENTION_PROTOCOL">Протоколи затримання</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        {!lockRecordType && (
+                            <div className="space-y-2">
+                                <Label htmlFor="recordType" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Тип запису</Label>
+                                <Select
+                                    onValueChange={(val) => form.setValue("recordType", val)}
+                                    defaultValue={form.getValues("recordType")}
+                                >
+                                    <SelectTrigger className="w-full min-w-0 rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-xs md:text-sm [&>span]:truncate">
+                                        <SelectValue placeholder="Тип" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-none shadow-2xl">
+                                        <SelectItem value="EO">Єдиний облік (ЄО)</SelectItem>
+                                        <SelectItem value="ZVERN">Звернення</SelectItem>
+                                        <SelectItem value="APPLICATION">Застосування сили/спецзасобів</SelectItem>
+                                        <SelectItem value="DETENTION_PROTOCOL">Протоколи затримання</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
 
                         <div className="space-y-2">
                             <Label htmlFor="assignedUserId" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Виконавець (хто розгляне)</Label>
@@ -843,7 +844,7 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                                 onValueChange={(val) => form.setValue("assignedUserId", val)}
                                 defaultValue={form.getValues("assignedUserId") || undefined}
                             >
-                                <SelectTrigger className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs md:text-sm">
+                                <SelectTrigger className="w-full min-w-0 rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs md:text-sm [&>span]:truncate">
                                     <SelectValue placeholder="Оберіть інспектора" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none shadow-2xl">
