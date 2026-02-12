@@ -53,6 +53,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const [officerSearchQuery, setOfficerSearchQuery] = useState("")
     const [officerSearchResults, setOfficerSearchResults] = useState<any[]>([])
     const [isSearchingOfficers, setIsSearchingOfficers] = useState(false)
+    const autoOfficerNameRef = useRef("")
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const isEdit = !!initialData?.id
@@ -233,6 +234,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             setTaggedOfficers((initialData as any)?.officers || [])
             setOfficerSearchQuery("")
             setOfficerSearchResults([])
+            autoOfficerNameRef.current = ""
         }
     }, [initialData, isOpen])
 
@@ -265,6 +267,27 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
 
         return () => clearTimeout(timer)
     }, [officerSearchQuery, taggedOfficers, recordType])
+
+    useEffect(() => {
+        if (recordType !== "RAPORT") return
+
+        const generated = taggedOfficers
+            .map((o: any) => `${o.lastName} ${o.firstName} (${o.badgeNumber})`)
+            .join(", ")
+
+        const current = form.getValues("officerName") || ""
+        const prevGenerated = autoOfficerNameRef.current
+
+        // Autocomplete officerName from selected officers only if:
+        // 1) field is empty, or 2) field still contains previous auto-generated value
+        if (!current.trim() || current === prevGenerated) {
+            form.setValue("officerName", generated, { shouldDirty: true })
+            autoOfficerNameRef.current = generated
+            return
+        }
+
+        // User edited manually; keep user text untouched.
+    }, [taggedOfficers, recordType, form])
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => {
