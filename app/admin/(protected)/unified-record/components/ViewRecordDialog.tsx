@@ -47,6 +47,31 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
     }
 
     const currentStatus = statusMap[record.status] || { label: record.status, color: "text-slate-600 bg-slate-50", icon: Info }
+    const isApplication = record.recordType === "APPLICATION"
+    const isDetentionProtocol = record.recordType === "DETENTION_PROTOCOL"
+    const isSpecialCard = isApplication || isDetentionProtocol
+
+    const getBirthDateFromAddress = () => {
+        if (!record.address || typeof record.address !== "string") return "Не вказано"
+        if (!record.address.startsWith("DOB:")) return record.address
+        const iso = record.address.replace("DOB:", "")
+        const [y, m, d] = iso.split("-")
+        if (!y || !m || !d) return iso
+        return `${d}.${m}.${y}`
+    }
+
+    const getProtocolNumberFormatted = () => {
+        const val = String(record.eoNumber || "").trim()
+        const match = val.match(/^Серія\s+(.+?)\s+№\s*(.+)$/i)
+        if (match) return `серія ${match[1]} №${match[2]}`
+        return val || "—"
+    }
+
+    const headerTitle = isApplication
+        ? `Рапорт №${record.eoNumber || "—"}`
+        : isDetentionProtocol
+            ? `Протокол ${getProtocolNumberFormatted()}`
+            : `№${record.eoNumber || "—"}`
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -76,7 +101,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                         <div>
                             <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Картка реєстру</p>
                             <DialogTitle className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter leading-none">
-                                №{record.eoNumber}
+                                {headerTitle}
                             </DialogTitle>
                         </div>
                     </div>
@@ -91,7 +116,9 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                     <Calendar className="w-5 h-5" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Дата реєстрації</p>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                        {isDetentionProtocol ? "Дата протоколу" : isApplication ? "Дата рапорту" : "Дата реєстрації"}
+                                    </p>
                                     <p className="font-bold text-slate-900">
                                         {safeFormat(record.eoDate, "PPP")}
                                     </p>
@@ -103,7 +130,9 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                     <User className="w-5 h-5" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Заявник</p>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                        {isDetentionProtocol ? "ПІБ кого затримали" : isApplication ? "ПІБ до кого застосовано" : "Заявник"}
+                                    </p>
                                     <p className="font-bold text-slate-900">{record.applicant || "Не вказано"}</p>
                                 </div>
                             </div>
@@ -112,12 +141,14 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                         <div className="space-y-6">
                             <div className="flex gap-4">
                                 <div className="p-3 bg-slate-50 rounded-2xl text-slate-600">
-                                    <MapPin className="w-5 h-5" />
+                                    {isSpecialCard ? <Calendar className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Місце події (Адреса)</p>
-                                    <p className="font-bold text-slate-900">{record.address || "Не вказано"}</p>
-                                    {record.district && (
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                        {isSpecialCard ? "Дата народження" : "Місце події (Адреса)"}
+                                    </p>
+                                    <p className="font-bold text-slate-900">{isSpecialCard ? getBirthDateFromAddress() : (record.address || "Не вказано")}</p>
+                                    {!isSpecialCard && record.district && (
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter italic">{record.district} район</p>
                                     )}
                                 </div>
@@ -252,7 +283,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                         {record.importedAt && (
                             <div className="flex items-center gap-2 text-slate-400">
                                 <Building2 className="w-3.5 h-3.5" />
-                                <span className="text-[10px] font-bold">Імпортовано: {safeFormat(record.createdAt, "dd.MM.yyyy HH:mm")}</span>
+                                <span className="text-[10px] font-bold">Імпортовано: {safeFormat(record.importedAt, "dd.MM.yyyy HH:mm")}</span>
                             </div>
                         )}
                     </div>
