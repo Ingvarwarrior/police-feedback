@@ -36,10 +36,11 @@ jobs:
             cd /opt/police-feedback || { echo "Directory /opt/police-feedback NOT FOUND"; exit 1; }
             echo "--- STARTING DEPLOY ---"
             git fetch origin main
-            git reset --hard origin/main
+            git checkout main
+            git pull --ff-only origin main
             npm install
+            npx prisma migrate deploy
             npx prisma generate
-            npx prisma db push --accept-data-loss
             export NODE_OPTIONS="--max-old-space-size=1536"
             export CI=true
             npm run build

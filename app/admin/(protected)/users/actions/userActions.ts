@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/auth"
 import bcrypt from 'bcryptjs'
+import { PERMISSIONS_CONFIG, type PermissionId } from "@/lib/permissions-config"
 
-type CreateUserInput = {
+type BaseUserInput = {
     username: string;
     email?: string;
     passwordHash: string;
@@ -13,43 +14,25 @@ type CreateUserInput = {
     lastName?: string;
     badgeNumber?: string;
     role: string;
-    permViewReports: boolean;
-    permAssignReports: boolean;
-    permViewSensitiveData: boolean;
-    permBulkActionReports: boolean;
-    permManageUsers: boolean;
-    permViewUsers: boolean;
-    permCreateUsers: boolean;
-    permEditUsers: boolean;
-    permDeleteUsers: boolean;
-    permResetUserPasswords: boolean;
-    permEditNotes: boolean;
-    permChangeStatus: boolean;
-    permExportData: boolean;
-    permDeleteReports: boolean;
-    permCreateOfficers: boolean;
-    permEditOfficers: boolean;
-    permDeleteOfficers: boolean;
-    permViewOfficerStats: boolean;
-    permCreateEvaluations: boolean;
-    permManageOfficerStatus: boolean;
-    permManageUnifiedRecords: boolean;
-    permViewUnifiedRecords: boolean;
-    permProcessUnifiedRecords: boolean;
-    permAssignUnifiedRecords: boolean;
-    permManageExtensions: boolean;
-    permEditCitizens: boolean;
-    permDeleteCitizens: boolean;
-    permMarkSuspicious: boolean;
-    permViewAnalytics: boolean;
-    permViewMap: boolean;
-    permViewAudit: boolean;
-    permManageSettings: boolean;
-    permManageMailAlerts: boolean;
-    permImportUnifiedRecords: boolean;
-    permDeleteUnifiedRecords: boolean;
-    permReturnUnifiedRecords: boolean;
-    permUseAiExtraction: boolean;
+}
+
+type PermissionsPayload = Record<PermissionId, boolean>
+type CreateUserInput = BaseUserInput & PermissionsPayload
+type UpdateUserInput = Partial<Omit<BaseUserInput, "passwordHash">> & {
+    passwordHash?: string;
+} & Partial<PermissionsPayload>
+
+const PERMISSION_IDS = PERMISSIONS_CONFIG.map((perm) => perm.id)
+
+function extractPermissionData(data: Record<string, unknown>) {
+    const permissions: Partial<PermissionsPayload> = {}
+    PERMISSION_IDS.forEach((id) => {
+        const value = data[id]
+        if (typeof value === "boolean") {
+            permissions[id] = value
+        }
+    })
+    return permissions
 }
 
 export async function createUser(data: CreateUserInput) {
@@ -60,7 +43,8 @@ export async function createUser(data: CreateUserInput) {
         throw new Error('У вас немає прав для створення користувачів')
     }
 
-    const { username, email, passwordHash, firstName, lastName, badgeNumber, role, ...permissions } = data
+    const { username, email, passwordHash, firstName, lastName, badgeNumber, role, ...rawPermissions } = data
+    const permissions = extractPermissionData(rawPermissions as Record<string, unknown>)
 
     // Check if username exists
     const existingUser = await prisma.user.findUnique({
@@ -102,59 +86,26 @@ export async function createUser(data: CreateUserInput) {
     revalidatePath('/admin/users')
 }
 
-export async function updateUser(id: string, data: {
-    username?: string;
-    email?: string;
-    passwordHash?: string;
-    firstName?: string;
-    lastName?: string;
-    badgeNumber?: string;
-    role?: string;
-    permViewReports?: boolean;
-    permAssignReports?: boolean;
-    permViewSensitiveData?: boolean;
-    permBulkActionReports?: boolean;
-    permManageUsers?: boolean;
-    permViewUsers?: boolean;
-    permCreateUsers?: boolean;
-    permEditUsers?: boolean;
-    permDeleteUsers?: boolean;
-    permResetUserPasswords?: boolean;
-    permEditNotes?: boolean;
-    permChangeStatus?: boolean;
-    permExportData?: boolean;
-    permDeleteReports?: boolean;
-    permCreateOfficers?: boolean;
-    permEditOfficers?: boolean;
-    permDeleteOfficers?: boolean;
-    permViewOfficerStats?: boolean;
-    permCreateEvaluations?: boolean;
-    permManageOfficerStatus?: boolean;
-    permManageUnifiedRecords?: boolean;
-    permViewUnifiedRecords?: boolean;
-    permProcessUnifiedRecords?: boolean;
-    permAssignUnifiedRecords?: boolean;
-    permManageExtensions?: boolean;
-    permEditCitizens?: boolean;
-    permDeleteCitizens?: boolean;
-    permMarkSuspicious?: boolean;
-    permViewAnalytics?: boolean;
-    permViewMap?: boolean;
-    permViewAudit?: boolean;
-    permManageSettings?: boolean;
-    permManageMailAlerts?: boolean;
-    permImportUnifiedRecords?: boolean;
-    permDeleteUnifiedRecords?: boolean;
-    permReturnUnifiedRecords?: boolean;
-    permUseAiExtraction?: boolean;
-}) {
+export async function updateUser(id: string, data: UpdateUserInput) {
     const session = await auth()
     const currentUser = session?.user as any
     if (currentUser?.role !== 'ADMIN' && !currentUser?.permEditUsers && !currentUser?.permManageUsers) {
         throw new Error("У вас немає прав для редагування користувачів")
     }
 
-    const updateData: any = { ...data }
+    const { username, email, firstName, lastName, badgeNumber, role, passwordHash } = data
+    const permissionData = extractPermissionData(data as Record<string, unknown>)
+
+    const updateData: any = {
+        ...permissionData,
+        username,
+        email,
+        firstName,
+        lastName,
+        badgeNumber,
+        role,
+        passwordHash,
+    }
     // Remove undefined fields
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key])
 

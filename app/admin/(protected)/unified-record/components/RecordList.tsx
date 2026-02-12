@@ -64,6 +64,11 @@ import {
     returnForRevisionAction
 } from "../actions/recordActions"
 import {
+    getApplicationBirthDate,
+    getAssignedInspectorName,
+    isApplicationLike,
+} from "./unifiedRecord.helpers"
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -121,24 +126,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     useEffect(() => {
         setRecords(initialRecords.filter(r => r.recordType !== 'RAPORT'))
     }, [initialRecords])
-
-    const getApplicationBirthDate = (record: any) => {
-        const val = record?.address || ""
-        if (typeof val !== "string") return "—"
-        if (!val.startsWith("DOB:")) return "—"
-        const iso = val.replace("DOB:", "")
-        if (!iso) return "—"
-        const [y, m, d] = iso.split("-")
-        if (!y || !m || !d) return iso
-        return `${d}.${m}.${y}`
-    }
-
-    const isApplicationLike = (record: any) => record.recordType === "APPLICATION" || record.recordType === "DETENTION_PROTOCOL"
-
-    const getAssignedInspectorName = (record: any) => {
-        if (!record.assignedUser) return "Не призначено"
-        return `${record.assignedUser.lastName || ""} ${record.assignedUser.firstName || ""}`.trim() || record.assignedUser.username || "Призначено"
-    }
 
     // Auto-view record if recordId is in URL
     useEffect(() => {

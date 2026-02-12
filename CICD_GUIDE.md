@@ -10,9 +10,12 @@
 3. У чорне вікно, що відкрилося, вставте цей текст:
    ```bash
    #!/bin/bash
+   set -e
    cd /opt/police-feedback
-   git pull origin main
+   git pull --ff-only origin main
    npm install
+   npx prisma migrate deploy
+   npx prisma generate
    npm run build
    sudo systemctl restart police-feedback
    ```

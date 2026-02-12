@@ -30,7 +30,7 @@
    ```
 
 3. **Налаштування змінних оточення:**
-   Створіть файл `.env` в корені проєкту та додайте необхідні змінні (див. `.env.example` якщо є, або використовуйте змінні за замовчуванням для розробки).
+   Створіть файл `.env` в корені проєкту та додайте необхідні змінні.
    
    Приклад `.env`:
    ```env
@@ -46,9 +46,9 @@
 4. **Підготовка бази даних:**
    ```bash
    npx prisma generate
-   npx prisma db push
+   npx prisma migrate deploy
    # Опціонально: заповнення тестовими даними
-   npm run prisma:seed 
+   npx prisma db seed
    ```
 
 5. **Запуск режиму розробки:**
@@ -65,6 +65,32 @@
 - `/components` - React компоненти
 - `/lib` - Утиліти та конфігурації (Prisma, Utils)
 - `/prisma` - Схема бази даних та міграції
+
+## Скрипти
+
+```bash
+npm run dev        # локальна розробка
+npm run build      # production build
+npm run start      # запуск production build
+npm run lint       # eslint
+npm run test       # jest
+```
+
+## Деплой (production)
+
+Рекомендований процес на сервері:
+
+```bash
+cd /opt/police-feedback
+git pull --ff-only origin main
+npm install
+npx prisma migrate deploy
+npx prisma generate
+npm run build
+sudo systemctl restart police-feedback
+```
+
+Важливо: для production використовуйте `prisma migrate deploy`, а не `prisma db push --accept-data-loss`.
 
 ---
 

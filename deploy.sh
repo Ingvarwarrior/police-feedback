@@ -1,10 +1,11 @@
 #!/bin/bash
+set -e
 
 echo "🚀 Starting deployment..."
 
 # 1. Pull latest changes
 echo "📥 Pulling from git..."
-git pull origin main
+git pull --ff-only origin main
 
 # 2. Install dependencies (in case of new packages)
 echo "📦 Installing dependencies..."

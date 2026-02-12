@@ -20,6 +20,20 @@ import { toast } from "sonner"
 import { upsertUnifiedRecordAction } from "../actions/recordActions"
 import { analyzeRecordImageAction } from "../actions/aiActions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+    addOneDay,
+    forceLabels,
+    formatBirthDateUa,
+    formatDateUa,
+    formatOfficerForRaport,
+    formatTimeUa,
+    getInitialForceUsage,
+    getInitialLegalBasis,
+    isTimeEarlier,
+    type ForceKey,
+    type ForceUsage,
+    type LegalBasisState,
+} from "./unifiedRecord.helpers"
 
 const formSchema = z.object({
     id: z.string().optional(),
@@ -39,60 +53,6 @@ const formSchema = z.object({
 })
 
 type FormValues = z.infer<typeof formSchema>
-
-type ForceKey = "weapon" | "tearGas" | "baton" | "handcuffs" | "force"
-type ForceUsage = Record<ForceKey, {
-    enabled: boolean
-    date: string
-    time: string
-    from: string
-    to: string
-}>
-
-const forceLabels: Record<ForceKey, string> = {
-    weapon: "Зброя",
-    tearGas: "Засоби, споряджені речовинами сльозогінної та дратівної дії",
-    baton: "Гумовий кийок",
-    handcuffs: "Кайданки",
-    force: "Фізична сила",
-}
-
-const getInitialForceUsage = (): ForceUsage => ({
-    weapon: { enabled: false, date: "", time: "", from: "", to: "" },
-    tearGas: { enabled: false, date: "", time: "", from: "", to: "" },
-    baton: { enabled: false, date: "", time: "", from: "", to: "" },
-    handcuffs: { enabled: false, date: "", time: "", from: "", to: "" },
-    force: { enabled: false, date: "", time: "", from: "", to: "" },
-})
-
-type LegalKey =
-    | "art44_p1_force"
-    | "art45_p1_a_handcuffs"
-    | "art45_p1_b_handcuffs"
-    | "art45_p1_v_handcuffs"
-    | "art45_p1_g_handcuffs"
-    | "art45_p1_gg_handcuffs"
-    | "art45_p2_a_baton"
-    | "art45_p2_b_baton"
-    | "art45_p2_v_baton"
-    | "art45_p3_a_teargas"
-    | "art45_p3_b_teargas"
-
-type LegalBasisState = Record<LegalKey, boolean>
-
-const getInitialLegalBasis = (): LegalBasisState => ({
-    art44_p1_force: false,
-    art45_p1_a_handcuffs: false,
-    art45_p1_b_handcuffs: false,
-    art45_p1_v_handcuffs: false,
-    art45_p1_g_handcuffs: false,
-    art45_p1_gg_handcuffs: false,
-    art45_p2_a_baton: false,
-    art45_p2_b_baton: false,
-    art45_p2_v_baton: false,
-    art45_p3_a_teargas: false,
-    art45_p3_b_teargas: false,
-})
 
 interface CreateRecordDialogProps {
     initialData?: Partial<FormValues>
@@ -179,52 +139,11 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
     const eoDate = form.watch("eoDate")
     const recordType = form.watch("recordType")
 
-    const formatOfficerForRaport = (o: any) => {
-        const position = (o.department || "").trim()
-        const rank = (o.rank || "").trim()
-        const fullName = [o.lastName, o.firstName].filter(Boolean).join(" ").trim()
-
-        const header = [position, rank].filter(Boolean).join(", ")
-        if (header && fullName) return `${header} — ${fullName}`
-        return fullName || header
-    }
-
-    const formatDateUa = (isoDate: string) => {
-        const [year, month, day] = isoDate.split("-")
-        if (!year || !month || !day) return isoDate
-        return `${day}.${month}.${year}`
-    }
-
-    const isTimeEarlier = (left: string, right: string) => {
-        if (!left || !right) return false
-        const [lh, lm] = left.split(":").map(Number)
-        const [rh, rm] = right.split(":").map(Number)
-        return lh * 60 + lm < rh * 60 + rm
-    }
-
-    const addOneDay = (isoDate: string) => {
-        const date = new Date(`${isoDate}T00:00:00`)
-        if (Number.isNaN(date.getTime())) return isoDate
-        date.setDate(date.getDate() + 1)
-        return date.toISOString().slice(0, 10)
-    }
-
     const updateForceUsage = (key: ForceKey, patch: Partial<ForceUsage[ForceKey]>) => {
         setForceUsage(prev => ({
             ...prev,
             [key]: { ...prev[key], ...patch }
         }))
-    }
-
-    const formatBirthDateUa = (isoDate: string) => {
-        if (!isoDate) return ""
-        return formatDateUa(isoDate)
-    }
-
-    const formatTimeUa = (hhmm: string) => {
-        if (!hhmm || !hhmm.includes(":")) return hhmm
-        const [hh, mm] = hhmm.split(":")
-        return `${hh} год. ${mm} хв.`
     }
 
     const onAiScan = () => {
