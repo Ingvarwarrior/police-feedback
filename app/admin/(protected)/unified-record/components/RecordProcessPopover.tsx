@@ -28,6 +28,7 @@ interface RecordProcessPopoverProps {
     initialResolution?: string
     initialOfficers?: any[]
     initialConcernsBpp?: boolean
+    mode?: "default" | "application"
     trigger?: React.ReactNode
 }
 
@@ -37,8 +38,10 @@ export default function RecordProcessPopover({
     initialResolution = "",
     initialOfficers = [],
     initialConcernsBpp = true,
+    mode = "default",
     trigger
 }: RecordProcessPopoverProps) {
+    const isApplicationMode = mode === "application"
     const [concernsBpp, setConcernsBpp] = useState(initialConcernsBpp)
     const [taggedOfficers, setTaggedOfficers] = useState<any[]>(initialOfficers)
     const [officerSearchQuery, setOfficerSearchQuery] = useState("")
@@ -75,7 +78,7 @@ export default function RecordProcessPopover({
         if (isProcessing) return
         setIsProcessing(true)
         try {
-            await onProcess(recordId, resolution, taggedOfficers, concernsBpp)
+            await onProcess(recordId, resolution, taggedOfficers, isApplicationMode ? true : concernsBpp)
         } finally {
             setIsProcessing(false)
         }
@@ -93,38 +96,40 @@ export default function RecordProcessPopover({
             </PopoverTrigger>
             <PopoverContent className="p-4 rounded-[2rem] w-80 shadow-2xl border-none space-y-4 bg-white" align="end">
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-2xl border border-blue-100">
-                        <div className="flex items-center gap-3">
-                            <div className={cn(
-                                "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
-                                concernsBpp ? "bg-blue-600/10 text-blue-600" : "bg-slate-200 text-slate-400"
-                            )}>
-                                <Briefcase className="w-5 h-5" />
+                    {!isApplicationMode && (
+                        <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-2xl border border-blue-100">
+                            <div className="flex items-center gap-3">
+                                <div className={cn(
+                                    "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                                    concernsBpp ? "bg-blue-600/10 text-blue-600" : "bg-slate-200 text-slate-400"
+                                )}>
+                                    <Briefcase className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black uppercase text-slate-900 leading-none mb-1">Стосується поліцейських БПП</p>
+                                    <p className="text-[10px] text-slate-600 font-medium">Вимкніть, якщо виклик не за адресою БПП</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xs font-black uppercase text-slate-900 leading-none mb-1">Стосується поліцейських БПП</p>
-                                <p className="text-[10px] text-slate-600 font-medium">Вимкніть, якщо виклик не за адресою БПП</p>
+                            <div
+                                onClick={() => {
+                                    const newValue = !concernsBpp
+                                    setConcernsBpp(newValue)
+                                    if (!newValue) setTaggedOfficers([])
+                                }}
+                                className={cn(
+                                    "w-12 h-6 rounded-full cursor-pointer transition-all p-1 relative",
+                                    concernsBpp ? "bg-blue-600" : "bg-slate-200"
+                                )}
+                            >
+                                <div className={cn(
+                                    "w-4 h-4 rounded-full bg-white shadow-sm transition-all absolute top-1",
+                                    concernsBpp ? "left-7" : "left-1"
+                                )} />
                             </div>
                         </div>
-                        <div
-                            onClick={() => {
-                                const newValue = !concernsBpp
-                                setConcernsBpp(newValue)
-                                if (!newValue) setTaggedOfficers([])
-                            }}
-                            className={cn(
-                                "w-12 h-6 rounded-full cursor-pointer transition-all p-1 relative",
-                                concernsBpp ? "bg-blue-600" : "bg-slate-200"
-                            )}
-                        >
-                            <div className={cn(
-                                "w-4 h-4 rounded-full bg-white shadow-sm transition-all absolute top-1",
-                                concernsBpp ? "left-7" : "left-1"
-                            )} />
-                        </div>
-                    </div>
+                    )}
 
-                    {concernsBpp && (
+                    {(isApplicationMode || concernsBpp) && (
                         <div className="space-y-3">
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 px-2">
                                 Виберіть поліцейських:
@@ -188,66 +193,93 @@ export default function RecordProcessPopover({
                         </div>
                     )}
 
-                    {!concernsBpp && (
+                    {!isApplicationMode && !concernsBpp && (
                         <p className="text-center text-[10px] font-bold text-slate-400 py-4 italic">Не стосується БПП</p>
                     )}
 
                     <div className="pt-2 border-t border-slate-100 space-y-3">
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">Виберіть результат:</p>
                         <div className="grid gap-2">
-                            <Button
-                                variant="ghost"
-                                disabled={isProcessing}
-                                className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 transition-all"
-                                onClick={() => handleProcessClick("Списано до справи")}
-                            >
-                                <CheckCircle2 className="w-4 h-4 mr-2 shrink-0" />
-                                Списано до справи
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                disabled={isProcessing}
-                                className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-blue-50 hover:text-blue-700 transition-all"
-                                onClick={() => handleProcessClick("Надано письмову відповідь")}
-                            >
-                                <FileText className="w-4 h-4 mr-2 shrink-0" />
-                                Надано письмову відповідь
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                disabled={isProcessing}
-                                className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-amber-50 hover:text-amber-700 transition-all"
-                                onClick={() => handleProcessClick("Надіслано до іншого органу/підрозділу")}
-                            >
-                                <MoreVertical className="w-4 h-4 mr-2 shrink-0" />
-                                Надіслано до іншого органу
-                            </Button>
+                            {isApplicationMode ? (
+                                <>
+                                    <Button
+                                        variant="ghost"
+                                        disabled={isProcessing}
+                                        className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 transition-all"
+                                        onClick={() => handleProcessClick("дії правомірні - списано в справу")}
+                                    >
+                                        <CheckCircle2 className="w-4 h-4 mr-2 shrink-0" />
+                                        дії правомірні - списано в справу
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        disabled={isProcessing}
+                                        className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-rose-50 hover:text-rose-700 transition-all"
+                                        onClick={() => handleProcessClick("дії не правомірні - ініційовано проведення СР")}
+                                    >
+                                        <FileText className="w-4 h-4 mr-2 shrink-0" />
+                                        дії не правомірні - ініційовано проведення СР
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Button
+                                        variant="ghost"
+                                        disabled={isProcessing}
+                                        className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 transition-all"
+                                        onClick={() => handleProcessClick("Списано до справи")}
+                                    >
+                                        <CheckCircle2 className="w-4 h-4 mr-2 shrink-0" />
+                                        Списано до справи
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        disabled={isProcessing}
+                                        className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-blue-50 hover:text-blue-700 transition-all"
+                                        onClick={() => handleProcessClick("Надано письмову відповідь")}
+                                    >
+                                        <FileText className="w-4 h-4 mr-2 shrink-0" />
+                                        Надано письмову відповідь
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        disabled={isProcessing}
+                                        className="justify-start h-auto py-3 px-4 rounded-xl text-left font-bold text-sm bg-slate-50 hover:bg-amber-50 hover:text-amber-700 transition-all"
+                                        onClick={() => handleProcessClick("Надіслано до іншого органу/підрозділу")}
+                                    >
+                                        <MoreVertical className="w-4 h-4 mr-2 shrink-0" />
+                                        Надіслано до іншого органу
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-100 space-y-3">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 px-2">Свій варіант:</p>
-                        <Textarea
-                            placeholder="Вкажіть рішення..."
-                            disabled={isProcessing}
-                            className="rounded-xl bg-slate-50 border-none min-h-[100px] font-medium"
-                            value={customResolution}
-                            onChange={(e) => setCustomResolution(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && e.ctrlKey && !isProcessing) {
-                                    handleProcessClick(customResolution)
-                                }
-                            }}
-                        />
-                        <Button
-                            disabled={isProcessing || !customResolution.trim()}
-                            className="w-full bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-xs h-10 gap-2"
-                            onClick={() => handleProcessClick(customResolution)}
-                        >
-                            {isProcessing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                            Зберегти свій варіант
-                        </Button>
-                    </div>
+                    {!isApplicationMode && (
+                        <div className="pt-2 border-t border-slate-100 space-y-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 px-2">Свій варіант:</p>
+                            <Textarea
+                                placeholder="Вкажіть рішення..."
+                                disabled={isProcessing}
+                                className="rounded-xl bg-slate-50 border-none min-h-[100px] font-medium"
+                                value={customResolution}
+                                onChange={(e) => setCustomResolution(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && e.ctrlKey && !isProcessing) {
+                                        handleProcessClick(customResolution)
+                                    }
+                                }}
+                            />
+                            <Button
+                                disabled={isProcessing || !customResolution.trim()}
+                                className="w-full bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-xs h-10 gap-2"
+                                onClick={() => handleProcessClick(customResolution)}
+                            >
+                                {isProcessing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                Зберегти свій варіант
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </PopoverContent>
         </Popover>

@@ -967,7 +967,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             </Select>
                                                         )}
 
-                                                        {!isApplicationLike(record) && record.status === 'PROCESSED' && (
+                                                        {record.status === 'PROCESSED' && (
                                                             <div className="mt-4">
                                                                 <RecordProcessPopover
                                                                     recordId={record.id}
@@ -975,6 +975,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                     initialResolution={record.resolution || ""}
                                                                     initialOfficers={record.officers || []}
                                                                     initialConcernsBpp={record.concernsBpp}
+                                                                    mode={isApplicationLike(record) ? "application" : "default"}
                                                                     trigger={
                                                                         <Button variant="outline" className="w-full border-slate-200 text-slate-600 rounded-xl font-bold h-9 gap-2 hover:bg-slate-50 transition-all">
                                                                             <Edit2 className="w-3.5 h-3.5" />
@@ -986,14 +987,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         )}
 
                                                         {/* Single "DONE" Button for assigned user */}
-                                                        {!isApplicationLike(record) && record.assignedUserId === currentUser.id && record.status !== 'PROCESSED' && (
+                                                        {record.assignedUserId === currentUser.id && record.status !== 'PROCESSED' && (
                                                             <div className="flex flex-col gap-2 mt-4">
                                                                 <RecordProcessPopover
                                                                     recordId={record.id}
                                                                     onProcess={handleProcess}
+                                                                    mode={isApplicationLike(record) ? "application" : "default"}
                                                                 />
 
-                                                                {record.extensionStatus !== 'PENDING' ? (
+                                                                {!isApplicationLike(record) && (record.extensionStatus !== 'PENDING' ? (
                                                                     <Popover>
                                                                         <PopoverTrigger asChild>
                                                                             <Button variant="outline" className="w-full border-slate-200 text-slate-600 rounded-xl font-bold h-9 gap-2">
@@ -1019,10 +1021,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                         </PopoverContent>
                                                                     </Popover>
                                                                 ) : (
-                                                                    <div className="bg-amber-50 text-amber-700 text-[10px] font-bold p-2 rounded-xl text-center border border-amber-100">
-                                                                        Запит на продовження очікує розгляду
-                                                                    </div>
-                                                                )}
+                                                                        <div className="bg-amber-50 text-amber-700 text-[10px] font-bold p-2 rounded-xl text-center border border-amber-100">
+                                                                            Запит на продовження очікує розгляду
+                                                                        </div>
+                                                                ))}
                                                             </div>
                                                         )}
 
