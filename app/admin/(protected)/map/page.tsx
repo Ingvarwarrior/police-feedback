@@ -32,34 +32,9 @@ export default async function MapPage() {
         )
     }
 
-    const isAdmin = currentUser?.role === 'ADMIN'
-
-    // Fetch users with location data (Admins only)
-    let userLocations = []
-    if (isAdmin) {
-        userLocations = await prisma.user.findMany({
-            where: {
-                active: true,
-                lastLat: { not: null },
-                lastLon: { not: null }
-            },
-            select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                badgeNumber: true,
-                email: true,
-                lastLat: true,
-                lastLon: true,
-                lastLocationAt: true,
-                role: true
-            }
-        })
-    }
-
     return (
         <div className="h-full w-full relative">
-            <MapWrapper initialUsers={userLocations} isAdmin={isAdmin} />
+            <MapWrapper />
         </div>
     )
 }

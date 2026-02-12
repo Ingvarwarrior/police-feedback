@@ -7,6 +7,6 @@ const MapClient = dynamic(() => import("./MapClient"), {
     loading: () => <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-400 font-bold uppercase tracking-widest">Завантаження карти...</div>
 })
 
-export default function MapWrapper({ initialUsers, isAdmin }: { initialUsers: any[], isAdmin: boolean }) {
-    return <MapClient initialUsers={initialUsers} isAdmin={isAdmin} />
+export default function MapWrapper() {
+    return <MapClient />
 }

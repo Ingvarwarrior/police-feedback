@@ -4,10 +4,8 @@ import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { formatDistanceToNow } from 'date-fns'
-import { uk } from 'date-fns/locale'
 import { Card } from "@/components/ui/card"
-import { Map as MapIcon, Calendar, Info, Layers } from "lucide-react"
+import { Map as MapIcon, Calendar } from "lucide-react"
 
 // Fix for default Leaflet markers in Next.js
 const setupMarkers = () => {
@@ -19,36 +17,22 @@ const setupMarkers = () => {
     })
 }
 
-const policeIcon = (initials: string) => L.divIcon({
-    className: 'custom-div-icon',
-    html: `<div style="background-color: #0f172a; color: white; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 900; font-size: 10px; border: 2px solid white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">${initials}</div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16]
-})
-
-function MapController({ points, userLocations }: { points: any[], userLocations: any[] }) {
+function MapController({ points }: { points: any[] }) {
     const map = useMap()
     useEffect(() => {
-        if (points.length > 0 || userLocations.length > 0) {
-            const allPoints = [
-                ...points.map(p => [p.lat, p.lon] as [number, number]),
-                ...userLocations.map(u => [u.lastLat, u.lastLon] as [number, number])
-            ]
-            if (allPoints.length > 0) {
-                const bounds = L.latLngBounds(allPoints)
-                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 })
-            }
+        if (points.length > 0) {
+            const allPoints = points.map(p => [p.lat, p.lon] as [number, number])
+            const bounds = L.latLngBounds(allPoints)
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 })
         }
-    }, [points, userLocations, map])
+    }, [points, map])
     return null
 }
 
-export default function MapClient({ initialUsers, isAdmin }: { initialUsers: any[], isAdmin: boolean }) {
+export default function MapClient() {
     const [reportPoints, setReportPoints] = useState<any[]>([])
-    const [onlineUsers, setOnlineUsers] = useState(initialUsers)
     const [loadingReports, setLoadingReports] = useState(true)
     const [filter, setFilter] = useState<'ALL' | 'POSITIVE' | 'CRITICAL'>('ALL')
-    const [showOnline, setShowOnline] = useState(true)
 
     useEffect(() => {
         setupMarkers()
@@ -64,27 +48,7 @@ export default function MapClient({ initialUsers, isAdmin }: { initialUsers: any
                 console.error("Reports fetch failed", err)
                 setLoadingReports(false)
             })
-
-        // Poll Online Users (GPS) if Admin
-        let interval: any
-        if (isAdmin) {
-            interval = setInterval(async () => {
-                try {
-                    const res = await fetch('/api/admin/locations')
-                    if (res.ok) {
-                        const data = await res.json()
-                        setOnlineUsers(data)
-                    }
-                } catch (e) {
-                    console.error("Online users fetch failed", e)
-                }
-            }, 30000)
-        }
-
-        return () => {
-            if (interval) clearInterval(interval)
-        }
-    }, [isAdmin])
+    }, [])
 
     const filteredReports = reportPoints.filter(p => {
         if (filter === 'ALL') return true
@@ -101,9 +65,9 @@ export default function MapClient({ initialUsers, isAdmin }: { initialUsers: any
                 <div>
                     <h1 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tighter flex items-center gap-2">
                         <MapIcon className="w-5 h-5 md:w-6 md:h-6 text-blue-600 shrink-0" />
-                        Гео-аналітика {isAdmin ? '& Моніторинг' : ''}
+                        Гео-аналітика
                     </h1>
-                    <p className="text-slate-500 font-bold text-[10px] md:text-xs">Всього відгуків: {reportPoints.length} {isAdmin ? `• Онлайн: ${onlineUsers.length}` : ''}</p>
+                    <p className="text-slate-500 font-bold text-[10px] md:text-xs">Всього відгуків: {reportPoints.length}</p>
                 </div>
 
                 <div className="flex flex-wrap gap-2 items-center">
@@ -129,16 +93,6 @@ export default function MapClient({ initialUsers, isAdmin }: { initialUsers: any
                         </button>
                     </div>
 
-                    {/* Admin GPS Toggle */}
-                    {isAdmin && (
-                        <button
-                            onClick={() => setShowOnline(!showOnline)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[10px] font-black uppercase tracking-tight shadow-sm transition-all ${showOnline ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200'}`}
-                        >
-                            <Layers className="w-3 h-3" />
-                            Екіпажі {showOnline ? 'ON' : 'OFF'}
-                        </button>
-                    )}
                 </div>
             </div>
 
@@ -172,38 +126,7 @@ export default function MapClient({ initialUsers, isAdmin }: { initialUsers: any
                         </Marker>
                     ))}
 
-                    {/* Online User Markers (GPS) */}
-                    {isAdmin && showOnline && onlineUsers.map(user => {
-                        if (!user.lastLat || !user.lastLon) return null
-                        const initials = (user.lastName?.[0] || user.firstName?.[0] || user.email?.[0] || '?').toUpperCase()
-                        return (
-                            <Marker
-                                key={user.id}
-                                position={[user.lastLat, user.lastLon]}
-                                icon={policeIcon(initials)}
-                            >
-                                <Popup>
-                                    <div className="p-2 min-w-[150px]">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                            <p className="font-black text-slate-900 uppercase text-xs">
-                                                {user.lastName} {user.firstName || ''}
-                                            </p>
-                                        </div>
-                                        <p className="text-[10px] text-slate-500 font-bold mb-2">
-                                            {user.badgeNumber || 'No Badge'} • {user.role}
-                                        </p>
-                                        <div className="flex items-center gap-1 text-[9px] text-slate-400 font-medium">
-                                            <Info className="w-3 h-3" />
-                                            Оновлено {user.lastLocationAt ? formatDistanceToNow(new Date(user.lastLocationAt), { addSuffix: true, locale: uk }) : '-'}
-                                        </div>
-                                    </div>
-                                </Popup>
-                            </Marker>
-                        )
-                    })}
-
-                    <MapController points={filteredReports} userLocations={isAdmin && showOnline ? onlineUsers : []} />
+                    <MapController points={filteredReports} />
                 </MapContainer>
             </Card>
         </div>
