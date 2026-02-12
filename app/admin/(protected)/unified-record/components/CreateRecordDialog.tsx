@@ -103,6 +103,16 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const eoDate = form.watch("eoDate")
     const recordType = form.watch("recordType")
 
+    const formatOfficerForRaport = (o: any) => {
+        const position = (o.department || "").trim()
+        const rank = (o.rank || "").trim()
+        const fullName = [o.lastName, o.firstName].filter(Boolean).join(" ").trim()
+
+        const header = [position, rank].filter(Boolean).join(", ")
+        if (header && fullName) return `${header} — ${fullName}`
+        return fullName || header
+    }
+
     const onAiScan = () => {
         fileInputRef.current?.click()
     }
@@ -272,7 +282,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         if (recordType !== "RAPORT") return
 
         const generated = taggedOfficers
-            .map((o: any) => `${o.lastName} ${o.firstName} (${o.badgeNumber})`)
+            .map((o: any) => formatOfficerForRaport(o))
             .join(", ")
 
         const current = form.getValues("officerName") || ""
@@ -438,15 +448,31 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                             </Select>
                         </div>
 
-                        {recordType === "RAPORT" && (
-                            <div className="space-y-2 md:col-span-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Поліцейські (як у ЄО/Звернення)</Label>
+                    </div>
+
+                    {recordType === "RAPORT" ? (
+                        <div className="space-y-4">
+                            <div className="rounded-2xl border border-violet-200 bg-violet-50/40 p-4">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-violet-700">Рапорт застосування</p>
+                                <p className="text-xs font-medium text-slate-700 mt-1">
+                                    Заповніть форму максимально близько до тексту оригінального рапорту.
+                                </p>
+                                <p className="text-[11px] font-bold text-rose-600 mt-2">Зірочка (*) позначає обовʼязкове поле</p>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+                                <Label htmlFor="officerName" className="text-sm font-black tracking-tight text-slate-800">
+                                    Ким застосовано зброю, фізичну силу чи спеціальні засоби <span className="text-rose-600">*</span>
+                                </Label>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                    Додати поліцейських зі списку:
+                                </p>
 
                                 {taggedOfficers.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mb-2">
+                                    <div className="flex flex-wrap gap-2 mb-1">
                                         {taggedOfficers.map((o: any) => (
                                             <div key={o.id} className="flex items-center gap-2 bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight">
-                                                <span>{o.lastName} ({o.badgeNumber})</span>
+                                                <span>{formatOfficerForRaport(o)}</span>
                                                 <button
                                                     type="button"
                                                     onClick={() => setTaggedOfficers(taggedOfficers.filter((to: any) => to.id !== o.id))}
@@ -502,24 +528,6 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
                                     Обрано поліцейських: {taggedOfficers.length}
                                 </p>
-                            </div>
-                        )}
-                    </div>
-
-                    {recordType === "RAPORT" ? (
-                        <div className="space-y-4">
-                            <div className="rounded-2xl border border-violet-200 bg-violet-50/40 p-4">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-violet-700">Рапорт застосування</p>
-                                <p className="text-xs font-medium text-slate-700 mt-1">
-                                    Заповніть форму максимально близько до тексту оригінального рапорту.
-                                </p>
-                                <p className="text-[11px] font-bold text-rose-600 mt-2">Зірочка (*) позначає обовʼязкове поле</p>
-                            </div>
-
-                            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
-                                <Label htmlFor="officerName" className="text-sm font-black tracking-tight text-slate-800">
-                                    Ким застосовано зброю, фізичну силу чи спеціальні засоби <span className="text-rose-600">*</span>
-                                </Label>
                                 <p className="text-xs italic underline text-slate-600">
                                     Приклад: Інспектором (поліцейським) взводу 2 роти 1 батальйону патрульної поліції...
                                 </p>
