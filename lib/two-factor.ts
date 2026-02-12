@@ -72,7 +72,7 @@ function generateTotp(secret: string, timestampMs: number): string {
 }
 
 export function isTwoFactorEnabledGlobally(): boolean {
-    return process.env.ENABLE_2FA === "true"
+    return process.env.ENABLE_2FA !== "false"
 }
 
 export function generateTwoFactorSecret(): string {

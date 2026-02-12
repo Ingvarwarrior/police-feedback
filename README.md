@@ -36,11 +36,12 @@
    ```env
    DATABASE_URL="file:./dev.db"
    AUTH_SECRET="your-secret-key"
-   ENABLE_2FA=false
    TWO_FACTOR_ENCRYPTION_KEY="дуже-довгий-випадковий-рядок"
    ```
-
-   `ENABLE_2FA=true` вмикає двофакторний вхід (Google Authenticator) для користувачів, у яких 2FA активовано в профілі.
+   За замовчуванням 2FA увімкнено. Якщо потрібно вимкнути глобально:
+   ```env
+   ENABLE_2FA=false
+   ```
 
 4. **Підготовка бази даних:**
    ```bash
