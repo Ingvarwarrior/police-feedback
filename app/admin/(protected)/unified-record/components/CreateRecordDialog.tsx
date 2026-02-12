@@ -219,7 +219,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                 <DialogHeader className="p-6 md:p-8 bg-slate-900 text-white flex flex-row items-center justify-between">
                     <div>
                         <DialogTitle className="text-xl md:text-2xl font-black italic uppercase tracking-tight">
-                            {isEdit ? "Редагування картки" : "Нова картка ЄО"}
+                            {isEdit ? "Редагування картки" : "Нова картка запису"}
                         </DialogTitle>
                         <p className="text-slate-400 text-[9px] md:text-[10px] font-bold uppercase tracking-widest mt-1">Використовуйте ШІ для автозаповнення</p>
                     </div>
@@ -320,6 +320,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <SelectContent className="rounded-xl border-none shadow-2xl">
                                     <SelectItem value="EO">Єдиний облік (ЄО)</SelectItem>
                                     <SelectItem value="ZVERN">Звернення</SelectItem>
+                                    <SelectItem value="RAPORT">Рапорт застосування</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

@@ -373,7 +373,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             "№ ЄО/Звернення": r.eoNumber || '-',
             "Заявник": r.applicant || '-',
             "Виконавець": r.assignedUser ? `${r.assignedUser.lastName} ${r.assignedUser.firstName || ''}`.trim() : (r.assignedUserId === 'unassigned' ? 'Не призначено' : '—'),
-            "Тип": r.recordType === 'EO' ? 'ЄО' : 'Звернення',
+            "Тип": r.recordType === 'EO' ? 'ЄО' : r.recordType === 'ZVERN' ? 'Звернення' : 'Рапорт застосування',
             "Категорія": r.category || '-',
             "Статус": r.status === 'PROCESSED' ? 'Опрацьовано' : 'В роботі',
             "Рішення": r.resolution || '-'
@@ -420,6 +420,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                 {records.filter(r => r.recordType === 'ZVERN').length}
                             </span>
                         </TabsTrigger>
+                        <TabsTrigger
+                            value="RAPORT"
+                            className="rounded-[1.5rem] px-6 md:px-10 h-full font-black uppercase tracking-widest text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-600 data-[state=active]:to-red-700 data-[state=active]:text-white transition-all duration-300 gap-3 shrink-0 shadow-sm"
+                        >
+                            Рапорти застосування
+                            <span className="bg-rose-50/50 text-rose-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
+                                {records.filter(r => r.recordType === 'RAPORT').length}
+                            </span>
+                        </TabsTrigger>
                     </TabsList>
                 </Tabs>
 
@@ -428,6 +437,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <CreateRecordDialog users={users} initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }} />
                         {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}
                         {(activeTab === 'ZVERN') && <ImportDialog defaultRecordType="ZVERN" />}
+                        {(activeTab === 'RAPORT') && <ImportDialog defaultRecordType="RAPORT" />}
                     </div>
                 )}
             </div>

@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
 interface ImportDialogProps {
-    defaultRecordType?: 'EO' | 'ZVERN'
+    defaultRecordType?: 'EO' | 'ZVERN' | 'RAPORT'
 }
 
 export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogProps) {
@@ -27,7 +27,7 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
     const [file, setFile] = useState<File | null>(null)
     const [step, setStep] = useState<'upload' | 'preview'>('upload')
     const [previewRecords, setPreviewRecords] = useState<any[]>([])
-    const [recordType, setRecordType] = useState<'EO' | 'ZVERN'>(defaultRecordType)
+    const [recordType, setRecordType] = useState<'EO' | 'ZVERN' | 'RAPORT'>(defaultRecordType)
 
     const handleParse = async () => {
         if (!file) return
@@ -79,10 +79,14 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
             <DialogTrigger asChild>
                 <Button className={cn(
                     "rounded-2xl font-bold gap-2 px-6 shadow-lg transition-all active:scale-95",
-                    recordType === 'ZVERN' ? "bg-slate-900 hover:bg-black text-white shadow-slate-200" : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"
+                    recordType === 'ZVERN'
+                        ? "bg-slate-900 hover:bg-black text-white shadow-slate-200"
+                        : recordType === 'RAPORT'
+                            ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200"
+                            : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"
                 )}>
                     <Upload className="w-4 h-4" />
-                    {recordType === 'EO' ? 'Імпорт ЄО' : 'Імпорт Звернень'}
+                    {recordType === 'EO' ? 'Імпорт ЄО' : recordType === 'ZVERN' ? 'Імпорт Звернень' : 'Імпорт Рапортів'}
                 </Button>
             </DialogTrigger>
             <DialogContent className={`${step === 'preview' ? 'sm:max-w-4xl' : 'sm:max-w-md'} rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl`}>
@@ -91,7 +95,13 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
                         <div className="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
                             {step === 'upload' ? <Upload className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
                         </div>
-                        {step === 'upload' ? (recordType === 'EO' ? 'Імпорт журналів ЄО' : 'Імпорт Звернень громадян') : 'Попередній перегляд'}
+                        {step === 'upload'
+                            ? (recordType === 'EO'
+                                ? 'Імпорт журналів ЄО'
+                                : recordType === 'ZVERN'
+                                    ? 'Імпорт Звернень громадян'
+                                    : 'Імпорт Рапортів застосування')
+                            : 'Попередній перегляд'}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -149,7 +159,7 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
 
                             <div className="space-y-3">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Тип даних для імпорту</Label>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <Button
                                         type="button"
                                         variant={recordType === 'EO' ? 'default' : 'outline'}
@@ -172,6 +182,17 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
                                     >
                                         Звернення
                                     </Button>
+                                    <Button
+                                        type="button"
+                                        variant={recordType === 'RAPORT' ? 'default' : 'outline'}
+                                        onClick={() => setRecordType('RAPORT')}
+                                        className={cn(
+                                            "rounded-xl h-11 font-bold transition-all",
+                                            recordType === 'RAPORT' ? "bg-rose-600 shadow-md shadow-rose-200" : "border-slate-200"
+                                        )}
+                                    >
+                                        Рапорти
+                                    </Button>
                                 </div>
                             </div>
 
@@ -181,7 +202,7 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
                                     <p className="font-black uppercase tracking-widest text-amber-600">Вимоги до структури:</p>
                                     <p className="font-medium">Для коректного зчитування, файл має містити колонки:</p>
                                     <div className="flex flex-wrap gap-2">
-                                        {recordType === 'EO' ? (
+                                        {recordType === 'EO' || recordType === 'RAPORT' ? (
                                             ['№ ЄО', 'подія', 'заявник', 'Рапорт- ПІБ'].map(tag => (
                                                 <span key={tag} className="bg-white border border-amber-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">{tag}</span>
                                             ))
