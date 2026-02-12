@@ -36,4 +36,6 @@ export const PERMISSIONS_CONFIG = [
     { id: 'permViewAudit', label: 'Журнал аудиту', desc: 'Перегляд історії дій: хто, що і коли робив у системі.' },
     { id: 'permManageSettings', label: 'Налаштування системи', desc: 'Зміна глобальних параметрів та назви підрозділу.' },
     { id: 'permManageMailAlerts', label: 'Керування еmail-розсилками', desc: 'Налаштування отримувачів автоматичних сповіщень.' },
-]
+] as const
+
+export type PermissionId = (typeof PERMISSIONS_CONFIG)[number]["id"]

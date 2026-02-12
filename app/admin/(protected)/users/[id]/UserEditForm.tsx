@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { ArrowLeft, Save, Shield, Eye, EyeOff, Loader2, CheckCircle2, UserCog } from 'lucide-react'
+import { Save, Shield, Eye, EyeOff, Loader2, CheckCircle2, UserCog, Briefcase, ClipboardList, SearchCheck } from 'lucide-react'
 import Link from 'next/link'
 import { updateUser } from '../actions/userActions'
 import { toast } from 'sonner'
 
 import { PERMISSIONS_CONFIG } from '@/lib/permissions-config'
+import { ROLE_PRESETS, buildPermissionsMap, getRolePresetById } from '@/lib/role-presets'
 
 const PERMISSIONS = PERMISSIONS_CONFIG
 
@@ -38,6 +39,7 @@ export default function UserEditForm({ user }: UserEditFormProps) {
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [role, setRole] = useState(user.role)
+    const [selectedPresetId, setSelectedPresetId] = useState('CUSTOM')
     const [permissions, setPermissions] = useState<Record<string, boolean>>(() => {
         const initial: Record<string, boolean> = {}
         PERMISSIONS_CONFIG.forEach(p => {
@@ -49,37 +51,25 @@ export default function UserEditForm({ user }: UserEditFormProps) {
     const router = useRouter()
 
     const togglePermission = (id: string) => {
+        setSelectedPresetId('CUSTOM')
         setPermissions(prev => ({ ...prev, [id]: !prev[id] }))
     }
 
-    const setRolePresets = (newRole: string) => {
-        setRole(newRole)
-        if (newRole === 'ADMIN') {
-            const allTrue: Record<string, boolean> = {}
-            PERMISSIONS_CONFIG.forEach(p => allTrue[p.id] = true)
-            setPermissions(allTrue)
-        } else if (newRole === 'OFFICER_VIEWER') {
-            const officerViewer: Record<string, boolean> = {}
-            PERMISSIONS_CONFIG.forEach(p => officerViewer[p.id] = false)
-            officerViewer.permViewOfficerStats = true
-            officerViewer.permViewUnifiedRecords = true
-            setPermissions(officerViewer)
-        } else {
-            const viewer: Record<string, boolean> = {}
-            PERMISSIONS_CONFIG.forEach(p => viewer[p.id] = false)
-            viewer.permViewReports = true
-            viewer.permViewSensitiveData = true
-            viewer.permEditNotes = true
-            viewer.permChangeStatus = true
-            viewer.permEditOfficers = true
-            viewer.permViewOfficerStats = true
-            viewer.permCreateEvaluations = true
-            viewer.permViewUnifiedRecords = true
-            viewer.permProcessUnifiedRecords = true
-            viewer.permEditCitizens = true
-            viewer.permMarkSuspicious = true
-            setPermissions(viewer)
-        }
+    const applyPreset = (presetId: string) => {
+        const preset = getRolePresetById(presetId)
+        if (!preset) return
+        setSelectedPresetId(presetId)
+        setRole(preset.roleValue)
+        setPermissions(buildPermissionsMap(preset.enabledPermissions))
+    }
+
+    const getPresetIcon = (presetId: string) => {
+        if (presetId === 'ADMIN') return UserCog
+        if (presetId === 'SUPERVISOR') return Briefcase
+        if (presetId === 'HR') return Shield
+        if (presetId === 'AUDITOR') return SearchCheck
+        if (presetId === 'EO_OPERATOR') return ClipboardList
+        return Eye
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -186,55 +176,35 @@ export default function UserEditForm({ user }: UserEditFormProps) {
 
             <div className="space-y-4">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Рівень доступу (пресет)</Label>
-                <div className="grid grid-cols-3 gap-4">
-                    <button
-                        type="button"
-                        onClick={() => setRolePresets('VIEWER')}
-                        className={`p-6 rounded-[2rem] border-2 text-left transition-all ${role === 'VIEWER' ? 'border-primary bg-primary/5 ring-4 ring-primary/10' : 'border-slate-100 hover:border-slate-200'}`}
-                    >
-                        <div className="flex flex-col gap-3">
-                            <div className={`p-2 rounded-xl w-fit ${role === 'VIEWER' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                <Eye className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className={`font-black uppercase tracking-tighter italic ${role === 'VIEWER' ? 'text-primary' : 'text-slate-400'}`}>Інспектор</p>
-                                <p className="text-[10px] font-bold text-slate-400 mt-1">Опрацювання звітів</p>
-                            </div>
-                        </div>
-                    </button>
+                <div className="grid md:grid-cols-2 gap-4">
+                    {ROLE_PRESETS.map((preset) => {
+                        const Icon = getPresetIcon(preset.id)
+                        const isSelected = selectedPresetId === preset.id
 
-                    <button
-                        type="button"
-                        onClick={() => setRolePresets('OFFICER_VIEWER')}
-                        className={`p-6 rounded-[2rem] border-2 text-left transition-all ${role === 'OFFICER_VIEWER' ? 'border-primary bg-primary/5 ring-4 ring-primary/10' : 'border-slate-100 hover:border-slate-200'}`}
-                    >
-                        <div className="flex flex-col gap-3">
-                            <div className={`p-2 rounded-xl w-fit ${role === 'OFFICER_VIEWER' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                <Shield className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className={`font-black uppercase tracking-tighter italic ${role === 'OFFICER_VIEWER' ? 'text-primary' : 'text-slate-400'}`}>Кадри</p>
-                                <p className="text-[10px] font-bold text-slate-400 mt-1">Особовий склад</p>
-                            </div>
-                        </div>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setRolePresets('ADMIN')}
-                        className={`p-6 rounded-[2rem] border-2 text-left transition-all ${role === 'ADMIN' ? 'border-primary bg-primary/5 ring-4 ring-primary/10' : 'border-slate-100 hover:border-slate-200'}`}
-                    >
-                        <div className="flex flex-col gap-3">
-                            <div className={`p-2 rounded-xl w-fit ${role === 'ADMIN' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                <UserCog className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <p className={`font-black uppercase tracking-tighter italic ${role === 'ADMIN' ? 'text-primary' : 'text-slate-400'}`}>Адміністратор</p>
-                                <p className="text-[10px] font-bold text-slate-400 mt-1">Повний доступ</p>
-                            </div>
-                        </div>
-                    </button>
+                        return (
+                            <button
+                                key={preset.id}
+                                type="button"
+                                onClick={() => applyPreset(preset.id)}
+                                className={`p-5 rounded-[2rem] border-2 text-left transition-all ${isSelected ? 'border-primary bg-primary/5 ring-4 ring-primary/10' : 'border-slate-100 hover:border-slate-200'}`}
+                            >
+                                <div className="flex flex-col gap-3">
+                                    <div className={`p-2 rounded-xl w-fit ${isSelected ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                        <Icon className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className={`font-black uppercase tracking-tighter italic ${isSelected ? 'text-primary' : 'text-slate-400'}`}>{preset.title}</p>
+                                        <p className="text-[11px] font-semibold text-slate-600 mt-1">{preset.shortDesc}</p>
+                                        <p className="text-[10px] text-slate-400 mt-1">{preset.fullDesc}</p>
+                                    </div>
+                                </div>
+                            </button>
+                        )
+                    })}
                 </div>
+                {selectedPresetId === 'CUSTOM' ? (
+                    <p className="text-xs font-semibold text-amber-600">Увімкнено індивідуальний режим: права змінено вручну.</p>
+                ) : null}
             </div>
 
             <div className="space-y-6 pt-2 border-t border-slate-100">
