@@ -206,7 +206,7 @@ export default function AnalyticsClient({
                         {/* Overall Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-amber-50 to-white">
-                                <CardContent className="p-8">
+                                <CardContent className="p-5 sm:p-8">
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1">Всього Звернень</p>
@@ -221,7 +221,7 @@ export default function AnalyticsClient({
                                 </CardContent>
                             </Card>
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-emerald-50 to-white">
-                                <CardContent className="p-8">
+                                <CardContent className="p-5 sm:p-8">
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1">Виконано (Звернень)</p>
@@ -238,7 +238,7 @@ export default function AnalyticsClient({
                                 </CardContent>
                             </Card>
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-blue-50 to-white">
-                                <CardContent className="p-8">
+                                <CardContent className="p-5 sm:p-8">
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">В роботі (Звернень)</p>
@@ -258,7 +258,7 @@ export default function AnalyticsClient({
 
                         {/* Inspector-Specific Stats for APPEALS */}
                         <Card className="border-0 shadow-xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden">
-                            <CardHeader className="p-8 bg-slate-50/50 border-b border-slate-100">
+                            <CardHeader className="p-5 sm:p-8 bg-slate-50/50 border-b border-slate-100">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="space-y-1">
                                         <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
@@ -356,7 +356,7 @@ export default function AnalyticsClient({
                         {/* Overall Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-blue-50 to-white">
-                                <CardContent className="p-8">
+                                <CardContent className="p-5 sm:p-8">
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Всього ЄО</p>
@@ -371,7 +371,7 @@ export default function AnalyticsClient({
                                 </CardContent>
                             </Card>
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-amber-50 to-white">
-                                <CardContent className="p-8">
+                                <CardContent className="p-5 sm:p-8">
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1">Всього Звернень</p>
@@ -386,7 +386,7 @@ export default function AnalyticsClient({
                                 </CardContent>
                             </Card>
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-emerald-50 to-white">
-                                <CardContent className="p-8">
+                                <CardContent className="p-5 sm:p-8">
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1">Виконано (Загалом)</p>
@@ -404,7 +404,7 @@ export default function AnalyticsClient({
 
                         {/* Inspector-Specific Stats */}
                         <Card className="border-0 shadow-xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden">
-                            <CardHeader className="p-8 bg-slate-50/50 border-b border-slate-100">
+                            <CardHeader className="p-5 sm:p-8 bg-slate-50/50 border-b border-slate-100">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="space-y-1">
                                         <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
@@ -429,11 +429,11 @@ export default function AnalyticsClient({
                                     </Select>
                                 </div>
                             </CardHeader>
-                            <CardContent className="p-8">
+                            <CardContent className="p-5 sm:p-8">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                     <div className="space-y-2 text-center p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50 transition-all hover:scale-105">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Призначено</p>
-                                        <h4 className="text-5xl font-black text-blue-600">
+                                        <h4 className="text-4xl sm:text-5xl font-black text-blue-600">
                                             {selectedInspectorId === 'all'
                                                 ? unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.assigned, 0)
                                                 : selectedInspector?.assigned || 0
@@ -442,7 +442,7 @@ export default function AnalyticsClient({
                                     </div>
                                     <div className="space-y-2 text-center p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50 transition-all hover:scale-105">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Розглянуто</p>
-                                        <h4 className="text-5xl font-black text-emerald-600">
+                                        <h4 className="text-4xl sm:text-5xl font-black text-emerald-600">
                                             {selectedInspectorId === 'all'
                                                 ? unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.processed, 0)
                                                 : selectedInspector?.processed || 0
@@ -451,7 +451,7 @@ export default function AnalyticsClient({
                                     </div>
                                     <div className="space-y-2 text-center p-6 bg-amber-50/50 rounded-3xl border border-amber-100/50 transition-all hover:scale-105">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Залишилося</p>
-                                        <h4 className="text-5xl font-black text-amber-600">
+                                        <h4 className="text-4xl sm:text-5xl font-black text-amber-600">
                                             {selectedInspectorId === 'all'
                                                 ? unifiedRecordStats.inspectorPerformance.reduce((acc, curr) => acc + curr.pending, 0)
                                                 : selectedInspector?.pending || 0
@@ -464,7 +464,7 @@ export default function AnalyticsClient({
 
                         {/* Summary Table */}
                         <Card className="border-0 shadow-xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden">
-                            <CardHeader className="p-8 bg-white border-b border-slate-50">
+                            <CardHeader className="p-5 sm:p-8 bg-white border-b border-slate-50">
                                 <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                                     <BarChart3 className="w-5 h-5 text-slate-400" /> Зведена таблиця виконавців
                                 </CardTitle>
