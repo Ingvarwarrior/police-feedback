@@ -124,6 +124,8 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const [detentionPurpose, setDetentionPurpose] = useState("для припинення адміністративного правопорушення оформлення адміністративних матеріалів")
     const [detentionMaterials, setDetentionMaterials] = useState("Складено постанову/протокол")
     const [applicationBirthDate, setApplicationBirthDate] = useState("")
+    const [detentionProtocolSeries, setDetentionProtocolSeries] = useState("")
+    const [detentionProtocolNumber, setDetentionProtocolNumber] = useState("")
     const autoOfficerNameRef = useRef("")
     const autoAddressRef = useRef("")
     const autoApplicantRef = useRef("")
@@ -315,7 +317,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const onSubmit = async (data: FormValues) => {
         setIsLoading(true)
         try {
-            if (data.recordType !== "RAPORT" && data.recordType !== "APPLICATION" && !data.eoNumber?.trim()) {
+            if (data.recordType !== "RAPORT" && data.recordType !== "APPLICATION" && data.recordType !== "DETENTION_PROTOCOL" && !data.eoNumber?.trim()) {
                 toast.error('Поле "Номер ЄО" є обовʼязковим')
                 return
             }
@@ -328,6 +330,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             let raportDescription = data.description || ""
             let payloadAddress = data.address
             let payloadCategory = data.category
+            let payloadEoNumber = data.eoNumber
             if (data.recordType === "RAPORT") {
                 if (!data.officerName?.trim()) {
                     toast.error('Поле "Ким застосовано..." є обовʼязковим')
@@ -427,8 +430,32 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                 payloadCategory = "Застосування"
             }
 
+            if (data.recordType === "DETENTION_PROTOCOL") {
+                if (!detentionProtocolSeries.trim()) {
+                    toast.error('Поле "СЕРІЯ ПРОТОКОЛУ затримання" є обовʼязковим')
+                    return
+                }
+                if (!detentionProtocolNumber.trim()) {
+                    toast.error('Поле "№ ПРОТОКОЛУ затримання" є обовʼязковим')
+                    return
+                }
+                if (!data.applicant?.trim()) {
+                    toast.error('Поле "ПІБ кого затримали" є обовʼязковим')
+                    return
+                }
+                if (!applicationBirthDate) {
+                    toast.error('Поле "Дата народження" є обовʼязковим')
+                    return
+                }
+                payloadEoNumber = `Серія ${detentionProtocolSeries.trim()} №${detentionProtocolNumber.trim()}`
+                raportDescription = "Протокол затримання"
+                payloadAddress = `DOB:${applicationBirthDate}`
+                payloadCategory = "Протоколи затримання"
+            }
+
             const result = await upsertUnifiedRecordAction({
                 ...data,
+                eoNumber: payloadEoNumber,
                 description: raportDescription,
                 address: payloadAddress,
                 category: payloadCategory,
@@ -472,6 +499,8 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             setDetentionPurpose("для припинення адміністративного правопорушення оформлення адміністративних матеріалів")
             setDetentionMaterials("Складено постанову/протокол")
             setApplicationBirthDate("")
+            setDetentionProtocolSeries("")
+            setDetentionProtocolNumber("")
             autoOfficerNameRef.current = ""
             autoAddressRef.current = ""
             autoApplicantRef.current = ""
@@ -481,8 +510,17 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     useEffect(() => {
         if (!isOpen) return
         const addressVal = form.getValues("address") || ""
-        if (form.getValues("recordType") === "APPLICATION" && addressVal.startsWith("DOB:")) {
+        if ((form.getValues("recordType") === "APPLICATION" || form.getValues("recordType") === "DETENTION_PROTOCOL") && addressVal.startsWith("DOB:")) {
             setApplicationBirthDate(addressVal.replace("DOB:", ""))
+        }
+
+        if (form.getValues("recordType") === "DETENTION_PROTOCOL") {
+            const val = form.getValues("eoNumber") || ""
+            const match = val.match(/^Серія\s+(.+?)\s+№\s*(.+)$/i)
+            if (match) {
+                setDetentionProtocolSeries(match[1] || "")
+                setDetentionProtocolNumber(match[2] || "")
+            }
         }
     }, [isOpen, form])
 
@@ -664,31 +702,33 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
 
                 <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="p-6 md:p-8 space-y-5 md:space-y-6 max-h-[50vh] md:max-h-[70vh] overflow-y-auto custom-scrollbar">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
-                        <div className="space-y-2">
-                            <Label htmlFor="eoNumber" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                {recordType === "APPLICATION" ? "Рапорт №" : "Номер ЄО"}
-                            </Label>
-                            {recordType === "RAPORT" || recordType === "APPLICATION" ? (
-                                <div className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-3 flex items-center text-sm font-semibold text-slate-600">
-                                    {isEdit
-                                        ? `Рапорт №${form.getValues("eoNumber") || "—"}`
-                                        : "Буде присвоєно автоматично"}
-                                </div>
-                            ) : (
-                                <>
-                                    <Input
-                                        id="eoNumber"
-                                        {...form.register("eoNumber")}
-                                        placeholder="Напр. 1256"
-                                        className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                        disabled={isEdit}
-                                    />
-                                    {form.formState.errors.eoNumber && (
-                                        <p className="text-[10px] text-red-500 font-bold">{form.formState.errors.eoNumber.message}</p>
-                                    )}
-                                </>
-                            )}
-                        </div>
+                        {recordType !== "DETENTION_PROTOCOL" && (
+                            <div className="space-y-2">
+                                <Label htmlFor="eoNumber" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    {recordType === "APPLICATION" ? "Рапорт №" : "Номер ЄО"}
+                                </Label>
+                                {recordType === "RAPORT" || recordType === "APPLICATION" ? (
+                                    <div className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-3 flex items-center text-sm font-semibold text-slate-600">
+                                        {isEdit
+                                            ? `Рапорт №${form.getValues("eoNumber") || "—"}`
+                                            : "Буде присвоєно автоматично"}
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Input
+                                            id="eoNumber"
+                                            {...form.register("eoNumber")}
+                                            placeholder="Напр. 1256"
+                                            className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                            disabled={isEdit}
+                                        />
+                                        {form.formState.errors.eoNumber && (
+                                            <p className="text-[10px] text-red-500 font-bold">{form.formState.errors.eoNumber.message}</p>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
 
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Дата</Label>
@@ -724,18 +764,22 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                         {recordType !== "RAPORT" && (
                             <div className="space-y-2">
                                 <Label htmlFor="applicant" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                    {recordType === "APPLICATION" ? "ПІБ до кого застосовано" : "Заявник"}
+                                    {recordType === "APPLICATION"
+                                        ? "ПІБ до кого застосовано"
+                                        : recordType === "DETENTION_PROTOCOL"
+                                            ? "ПІБ кого затримали"
+                                            : "Заявник"}
                                 </Label>
                                 <Input
                                     id="applicant"
                                     {...form.register("applicant")}
-                                    placeholder={recordType === "APPLICATION" ? "ПІБ" : "ПІБ заявника"}
+                                    placeholder={recordType === "APPLICATION" || recordType === "DETENTION_PROTOCOL" ? "ПІБ" : "ПІБ заявника"}
                                     className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                 />
                             </div>
                         )}
 
-                        {recordType === "APPLICATION" && (
+                        {recordType === "APPLICATION" || recordType === "DETENTION_PROTOCOL" ? (
                             <div className="space-y-2">
                                 <Label htmlFor="applicationBirthDate" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Дата народження</Label>
                                 <Input
@@ -746,6 +790,31 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                     className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                 />
                             </div>
+                        ) : null}
+
+                        {recordType === "DETENTION_PROTOCOL" && (
+                            <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="detentionProtocolSeries" className="text-[10px] font-black uppercase tracking-widest text-slate-400">СЕРІЯ ПРОТОКОЛУ затримання</Label>
+                                    <Input
+                                        id="detentionProtocolSeries"
+                                        value={detentionProtocolSeries}
+                                        onChange={(e) => setDetentionProtocolSeries(e.target.value)}
+                                        placeholder="Серія"
+                                        className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="detentionProtocolNumber" className="text-[10px] font-black uppercase tracking-widest text-slate-400">№ ПРОТОКОЛУ затримання</Label>
+                                    <Input
+                                        id="detentionProtocolNumber"
+                                        value={detentionProtocolNumber}
+                                        onChange={(e) => setDetentionProtocolNumber(e.target.value)}
+                                        placeholder="Номер"
+                                        className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                    />
+                                </div>
+                            </>
                         )}
 
                         <div className="space-y-2">
@@ -761,6 +830,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                     <SelectItem value="EO">Єдиний облік (ЄО)</SelectItem>
                                     <SelectItem value="ZVERN">Звернення</SelectItem>
                                     <SelectItem value="APPLICATION">Застосування</SelectItem>
+                                    <SelectItem value="DETENTION_PROTOCOL">Протоколи затримання</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -1092,7 +1162,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                         </div>
                     ) : (
                         <>
-                            {recordType !== "APPLICATION" && (
+                            {recordType !== "APPLICATION" && recordType !== "DETENTION_PROTOCOL" && (
                                 <>
                                     <div className="space-y-2">
                                         <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Подія</Label>

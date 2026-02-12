@@ -19,7 +19,7 @@ const UnifiedRecordSchema = z.object({
     description: z.string().optional().nullable(),
     applicant: z.string().optional().nullable(),
     category: z.string().optional().nullable(),
-    recordType: z.enum(["EO", "ZVERN", "APPLICATION"]).default("EO"),
+    recordType: z.enum(["EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL"]).default("EO"),
     officerName: z.string().optional().nullable(),
     assignedUserId: z.string().optional().nullable(),
     status: z.string().optional().default("PENDING"),
@@ -165,7 +165,7 @@ export async function getUnifiedRecords(params?: {
     if (!currentUser) throw new Error("User not found")
 
     const where: any = {
-        recordType: { in: ["EO", "ZVERN", "APPLICATION"] }
+        recordType: { in: ["EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL"] }
     }
 
     // If not Admin, restrict to assigned records

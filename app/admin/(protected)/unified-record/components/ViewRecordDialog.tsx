@@ -63,7 +63,13 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                 {currentStatus.label}
                             </div>
                             <div className="px-3 py-1 rounded-full bg-white/10 text-white/60 text-[10px] font-black uppercase tracking-widest border border-white/5">
-                                {record.recordType === 'EO' ? 'Єдиний облік' : record.recordType === 'ZVERN' ? 'Звернення' : 'Застосування'}
+                                {record.recordType === 'EO'
+                                    ? 'Єдиний облік'
+                                    : record.recordType === 'ZVERN'
+                                        ? 'Звернення'
+                                        : record.recordType === 'APPLICATION'
+                                            ? 'Застосування'
+                                            : 'Протоколи затримання'}
                             </div>
                         </div>
 
