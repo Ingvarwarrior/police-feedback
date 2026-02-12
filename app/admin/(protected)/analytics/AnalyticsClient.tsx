@@ -187,7 +187,7 @@ export default function AnalyticsClient({
                     </div>
 
                     <Button
-                        variant="plain"
+                        variant="outline"
                         className="w-full sm:w-auto rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 px-6 shadow-sm bg-white border border-slate-200"
                         onClick={() => window.print()}
                     >
@@ -268,7 +268,42 @@ export default function AnalyticsClient({
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="overflow-x-auto">
+                                <div className="md:hidden p-4 space-y-3">
+                                    {[...unifiedRecordStats.inspectorPerformance]
+                                        .filter(i => i.recordType === 'ZVERN' && i.assigned > 0)
+                                        .sort((a, b) => b.assigned - a.assigned)
+                                        .map((item) => {
+                                            const progress = item.assigned > 0 ? Math.round((item.processed / item.assigned) * 100) : 0
+                                            return (
+                                                <div key={item.id} className="rounded-2xl border border-slate-100 bg-white p-4 space-y-3">
+                                                    <p className="font-bold text-slate-900">
+                                                        {item.id === 'unassigned' ? 'Не призначено' : item.name}
+                                                    </p>
+                                                    <div className="grid grid-cols-3 gap-3 text-center">
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Призначено</p>
+                                                            <p className="text-lg font-black text-slate-700">{item.assigned}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Розглянуто</p>
+                                                            <p className="text-lg font-black text-emerald-600">{item.processed}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">В роботі</p>
+                                                            <p className="text-lg font-black text-amber-600">{item.pending}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${progress}%` }} />
+                                                        </div>
+                                                        <span className="w-10 text-right text-xs font-black">{progress}%</span>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                </div>
+                                <div className="hidden md:block overflow-x-auto">
                                     <Table>
                                         <TableHeader className="bg-slate-50/50">
                                             <TableRow className="border-slate-50 hover:bg-transparent">
@@ -435,7 +470,53 @@ export default function AnalyticsClient({
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="overflow-x-auto">
+                                <div className="md:hidden p-4 space-y-3">
+                                    {[...unifiedRecordStats.inspectorPerformance]
+                                        .sort((a, b) => {
+                                            if (a.id === 'unassigned') return -1;
+                                            if (b.id === 'unassigned') return 1;
+                                            return b.assigned - a.assigned;
+                                        })
+                                        .map((item) => {
+                                            const progress = item.assigned > 0 ? Math.round((item.processed / item.assigned) * 100) : 0
+                                            return (
+                                                <div key={item.id} className="rounded-2xl border border-slate-100 bg-white p-4 space-y-3">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <p className="font-bold text-slate-900">
+                                                            {item.id === 'unassigned' ? 'Не призначено' : item.name}
+                                                        </p>
+                                                        <span className={cn(
+                                                            "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shrink-0",
+                                                            item.recordType === 'EO' ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"
+                                                        )}>
+                                                            {item.recordType === 'EO' ? 'ЄО' : 'Звернення'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-3 text-center">
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Призначено</p>
+                                                            <p className="text-lg font-black text-slate-700">{item.assigned}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Розглянуто</p>
+                                                            <p className="text-lg font-black text-emerald-600">{item.processed}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">В роботі</p>
+                                                            <p className="text-lg font-black text-amber-600">{item.pending}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${progress}%` }} />
+                                                        </div>
+                                                        <span className="w-10 text-right text-xs font-black">{progress}%</span>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                </div>
+                                <div className="hidden md:block overflow-x-auto">
                                     <Table>
                                         <TableHeader className="bg-slate-50/50">
                                             <TableRow className="border-slate-50 hover:bg-transparent">
