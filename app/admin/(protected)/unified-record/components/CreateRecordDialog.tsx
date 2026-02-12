@@ -422,6 +422,11 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         }
     }
 
+    const onInvalid = (errors: any) => {
+        const firstError = Object.values(errors || {}).find((v: any) => v?.message) as { message?: string } | undefined
+        toast.error(firstError?.message || "Перевірте обовʼязкові поля форми")
+    }
+
     useEffect(() => {
         if (isOpen) {
             setTaggedOfficers((initialData as any)?.officers || [])
@@ -624,7 +629,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     )}
                 </DialogHeader>
 
-                <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 md:p-8 space-y-5 md:space-y-6 max-h-[50vh] md:max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="p-6 md:p-8 space-y-5 md:space-y-6 max-h-[50vh] md:max-h-[70vh] overflow-y-auto custom-scrollbar">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="eoNumber" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
@@ -1078,7 +1083,8 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                         Скасувати
                     </Button>
                     <Button
-                        onClick={form.handleSubmit(onSubmit)}
+                        type="button"
+                        onClick={form.handleSubmit(onSubmit, onInvalid)}
                         disabled={isLoading}
                         className="bg-slate-900 hover:bg-black text-white rounded-xl px-4 md:px-8 h-10 shadow-lg shadow-slate-900/20 transition-all flex-1 md:flex-none"
                     >
