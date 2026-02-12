@@ -94,6 +94,8 @@ const getInitialLegalBasis = (): LegalBasisState => ({
     art45_p3_b_teargas: false,
 })
 
+type ProtocolLawType = "KUPAP_261_263" | "CPK_207" | "CPK_208"
+
 interface CreateRecordDialogProps {
     initialData?: Partial<FormValues>
     users?: { id: string, firstName: string | null, lastName: string | null, username: string }[]
@@ -112,8 +114,19 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const [subjectFullName, setSubjectFullName] = useState("")
     const [subjectBirthDate, setSubjectBirthDate] = useState("")
     const [legalBasis, setLegalBasis] = useState<LegalBasisState>(getInitialLegalBasis())
+    const [protocolPrepared, setProtocolPrepared] = useState<"YES" | "NO" | "">("")
+    const [protocolSeries, setProtocolSeries] = useState("")
+    const [protocolNumber, setProtocolNumber] = useState("")
+    const [protocolDate, setProtocolDate] = useState("")
+    const [protocolLaw, setProtocolLaw] = useState<ProtocolLawType>("KUPAP_261_263")
+    const [detentionFromDate, setDetentionFromDate] = useState("")
+    const [detentionFromTime, setDetentionFromTime] = useState("")
+    const [detentionToDate, setDetentionToDate] = useState("")
+    const [detentionToTime, setDetentionToTime] = useState("")
+    const [detentionPurpose, setDetentionPurpose] = useState("для припинення адміністративного правопорушення оформлення адміністративних матеріалів")
     const autoOfficerNameRef = useRef("")
     const autoAddressRef = useRef("")
+    const autoApplicantRef = useRef("")
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const isEdit = !!initialData?.id
@@ -203,6 +216,12 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const formatBirthDateUa = (isoDate: string) => {
         if (!isoDate) return ""
         return formatDateUa(isoDate)
+    }
+
+    const formatTimeUa = (hhmm: string) => {
+        if (!hhmm || !hhmm.includes(":")) return hhmm
+        const [hh, mm] = hhmm.split(":")
+        return `${hh} год. ${mm} хв.`
     }
 
     const onAiScan = () => {
@@ -327,6 +346,20 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     toast.error('Поле "Дані про оформлення протоколу..." є обовʼязковим')
                     return
                 }
+                if (!protocolPrepared) {
+                    toast.error('Вкажіть, чи складався протокол затримання')
+                    return
+                }
+                if (protocolPrepared === "YES") {
+                    if (!protocolSeries.trim() || !protocolNumber.trim() || !protocolDate) {
+                        toast.error('Для протоколу "ТАК" вкажіть серію, номер і дату')
+                        return
+                    }
+                    if (!detentionFromDate || !detentionFromTime || !detentionToDate || !detentionToTime) {
+                        toast.error('Для протоколу "ТАК" вкажіть повний період затримання (з/до)')
+                        return
+                    }
+                }
 
                 const lines: string[] = []
                 for (const key of activeKeys) {
@@ -382,8 +415,19 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             setSubjectFullName("")
             setSubjectBirthDate("")
             setLegalBasis(getInitialLegalBasis())
+            setProtocolPrepared("")
+            setProtocolSeries("")
+            setProtocolNumber("")
+            setProtocolDate("")
+            setProtocolLaw("KUPAP_261_263")
+            setDetentionFromDate("")
+            setDetentionFromTime("")
+            setDetentionToDate("")
+            setDetentionToTime("")
+            setDetentionPurpose("для припинення адміністративного правопорушення оформлення адміністративних матеріалів")
             autoOfficerNameRef.current = ""
             autoAddressRef.current = ""
+            autoApplicantRef.current = ""
         }
     }, [initialData, isOpen])
 
@@ -476,6 +520,60 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             autoAddressRef.current = generated
         }
     }, [legalBasis, subjectFullName, subjectBirthDate, recordType, form])
+
+    useEffect(() => {
+        if (recordType !== "RAPORT") return
+
+        let generated = ""
+        if (protocolPrepared === "NO") {
+            generated = "Не складався."
+        }
+
+        if (protocolPrepared === "YES") {
+            const lawText =
+                protocolLaw === "KUPAP_261_263"
+                    ? "відповідно до статей 261, 262, 263 КУпАП"
+                    : protocolLaw === "CPK_207"
+                        ? "відповідно до статті 207 КПК України"
+                        : "відповідно до статті 208 КПК України"
+
+            const parts: string[] = ["Складався"]
+            if (protocolSeries || protocolNumber || protocolDate) {
+                parts.push(`протокол серії ${protocolSeries || "___"} № ${protocolNumber || "___"} від ${protocolDate ? `${formatDateUa(protocolDate)} р.` : "___"}`)
+            }
+            parts.push(lawText)
+
+            if (detentionFromDate && detentionFromTime && detentionToDate && detentionToTime) {
+                parts.push(`затриманий з ${formatTimeUa(detentionFromTime)} ${formatDateUa(detentionFromDate)} р. до ${formatTimeUa(detentionToTime)} ${formatDateUa(detentionToDate)} р.`)
+            }
+
+            if (detentionPurpose.trim()) {
+                parts.push(detentionPurpose.trim())
+            }
+
+            generated = `${parts.join(", ")}.`
+        }
+
+        const current = form.getValues("applicant") || ""
+        const prevGenerated = autoApplicantRef.current
+        if (!current.trim() || current === prevGenerated) {
+            form.setValue("applicant", generated, { shouldDirty: true })
+            autoApplicantRef.current = generated
+        }
+    }, [
+        protocolPrepared,
+        protocolSeries,
+        protocolNumber,
+        protocolDate,
+        protocolLaw,
+        detentionFromDate,
+        detentionFromTime,
+        detentionToDate,
+        detentionToTime,
+        detentionPurpose,
+        recordType,
+        form
+    ])
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => {
@@ -860,6 +958,78 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <p className="text-xs italic underline text-slate-600">
                                     Приклад: складався згідно ст.261, 262, 263 КУпАП, затриманий з ... по ...
                                 </p>
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-xs font-black uppercase tracking-widest text-slate-500">Протокол затримання складався?</span>
+                                        <Button
+                                            type="button"
+                                            variant={protocolPrepared === "YES" ? "default" : "outline"}
+                                            className="h-8 rounded-lg text-xs font-black"
+                                            onClick={() => setProtocolPrepared("YES")}
+                                        >
+                                            Так
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant={protocolPrepared === "NO" ? "default" : "outline"}
+                                            className="h-8 rounded-lg text-xs font-black"
+                                            onClick={() => setProtocolPrepared("NO")}
+                                        >
+                                            Ні
+                                        </Button>
+                                    </div>
+
+                                    {protocolPrepared === "YES" && (
+                                        <>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                <Input
+                                                    value={protocolSeries}
+                                                    onChange={(e) => setProtocolSeries(e.target.value)}
+                                                    placeholder="Серія протоколу"
+                                                    className="rounded-lg bg-white border-slate-200 h-10"
+                                                />
+                                                <Input
+                                                    value={protocolNumber}
+                                                    onChange={(e) => setProtocolNumber(e.target.value)}
+                                                    placeholder="Номер протоколу"
+                                                    className="rounded-lg bg-white border-slate-200 h-10"
+                                                />
+                                                <Input
+                                                    type="date"
+                                                    value={protocolDate}
+                                                    onChange={(e) => setProtocolDate(e.target.value)}
+                                                    className="rounded-lg bg-white border-slate-200 h-10"
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <Select value={protocolLaw} onValueChange={(v) => setProtocolLaw(v as ProtocolLawType)}>
+                                                    <SelectTrigger className="rounded-lg bg-white border-slate-200 h-10 text-xs font-bold">
+                                                        <SelectValue placeholder="Правова підстава затримання" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="rounded-xl border-none shadow-2xl">
+                                                        <SelectItem value="KUPAP_261_263">КУпАП: ст.261, 262, 263</SelectItem>
+                                                        <SelectItem value="CPK_207">КПК: ст.207</SelectItem>
+                                                        <SelectItem value="CPK_208">КПК: ст.208</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <Input
+                                                    value={detentionPurpose}
+                                                    onChange={(e) => setDetentionPurpose(e.target.value)}
+                                                    placeholder="Мета затримання"
+                                                    className="rounded-lg bg-white border-slate-200 h-10"
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                <Input type="date" value={detentionFromDate} onChange={(e) => setDetentionFromDate(e.target.value)} className="rounded-lg bg-white border-slate-200 h-10" />
+                                                <Input type="time" value={detentionFromTime} onChange={(e) => setDetentionFromTime(e.target.value)} className="rounded-lg bg-white border-slate-200 h-10" />
+                                                <Input type="date" value={detentionToDate} onChange={(e) => setDetentionToDate(e.target.value)} className="rounded-lg bg-white border-slate-200 h-10" />
+                                                <Input type="time" value={detentionToTime} onChange={(e) => setDetentionToTime(e.target.value)} className="rounded-lg bg-white border-slate-200 h-10" />
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                                 <Textarea
                                     id="applicant"
                                     {...form.register("applicant")}
