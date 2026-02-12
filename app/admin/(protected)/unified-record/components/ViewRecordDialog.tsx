@@ -68,7 +68,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                     : record.recordType === 'ZVERN'
                                         ? 'Звернення'
                                         : record.recordType === 'APPLICATION'
-                                            ? 'Застосування'
+                                            ? 'Застосування сили/спецзасобів'
                                             : 'Протоколи затримання'}
                             </div>
                         </div>

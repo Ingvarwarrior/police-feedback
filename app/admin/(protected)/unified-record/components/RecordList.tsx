@@ -391,7 +391,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             "№ ЄО/Звернення": r.eoNumber || '-',
             "Заявник": r.applicant || '-',
             "Виконавець": r.assignedUser ? `${r.assignedUser.lastName} ${r.assignedUser.firstName || ''}`.trim() : (r.assignedUserId === 'unassigned' ? 'Не призначено' : '—'),
-            "Тип": r.recordType === 'EO' ? 'ЄО' : r.recordType === 'ZVERN' ? 'Звернення' : r.recordType === 'APPLICATION' ? 'Застосування' : 'Протоколи затримання',
+            "Тип": r.recordType === 'EO' ? 'ЄО' : r.recordType === 'ZVERN' ? 'Звернення' : r.recordType === 'APPLICATION' ? 'Застосування сили/спецзасобів' : 'Протоколи затримання',
             "Категорія": r.category || '-',
             "Статус": r.status === 'PROCESSED' ? 'Опрацьовано' : 'В роботі',
             "Рішення": r.resolution || '-'
@@ -442,7 +442,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             value="APPLICATION"
                             className="rounded-[1.5rem] px-6 md:px-10 h-full font-black uppercase tracking-widest text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-600 data-[state=active]:to-red-700 data-[state=active]:text-white transition-all duration-300 gap-3 shrink-0 shadow-sm"
                         >
-                            Застосування
+                            Застосування сили/спецзасобів
                             <span className="bg-rose-50/50 text-rose-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
                                 {records.filter(r => r.recordType === 'APPLICATION').length}
                             </span>
@@ -792,7 +792,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                 : (record.description || 'Без опису')}
                                                     </h3>
                                                     {record.recordType === 'APPLICATION' && (
-                                                        <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mt-1">Застосування</p>
+                                                        <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mt-1">Застосування сили/спецзасобів</p>
                                                     )}
                                                     {record.recordType === 'DETENTION_PROTOCOL' && (
                                                         <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mt-1">Протоколи затримання</p>

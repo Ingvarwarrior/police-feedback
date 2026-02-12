@@ -425,9 +425,9 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     toast.error('Поле "Дата народження" є обовʼязковим')
                     return
                 }
-                raportDescription = "Застосування"
+                raportDescription = "Застосування сили/спецзасобів"
                 payloadAddress = `DOB:${applicationBirthDate}`
-                payloadCategory = "Застосування"
+                payloadCategory = "Застосування сили/спецзасобів"
             }
 
             if (data.recordType === "DETENTION_PROTOCOL") {
@@ -829,7 +829,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <SelectContent className="rounded-xl border-none shadow-2xl">
                                     <SelectItem value="EO">Єдиний облік (ЄО)</SelectItem>
                                     <SelectItem value="ZVERN">Звернення</SelectItem>
-                                    <SelectItem value="APPLICATION">Застосування</SelectItem>
+                                    <SelectItem value="APPLICATION">Застосування сили/спецзасобів</SelectItem>
                                     <SelectItem value="DETENTION_PROTOCOL">Протоколи затримання</SelectItem>
                                 </SelectContent>
                             </Select>
