@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -39,6 +40,31 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>
 
+type ForceKey = "weapon" | "tearGas" | "baton" | "handcuffs" | "force"
+type ForceUsage = Record<ForceKey, {
+    enabled: boolean
+    date: string
+    time: string
+    from: string
+    to: string
+}>
+
+const forceLabels: Record<ForceKey, string> = {
+    weapon: "Зброя",
+    tearGas: "Засоби, споряджені речовинами сльозогінної та дратівної дії",
+    baton: "Гумовий кийок",
+    handcuffs: "Кайданки",
+    force: "Фізична сила",
+}
+
+const getInitialForceUsage = (): ForceUsage => ({
+    weapon: { enabled: false, date: "", time: "", from: "", to: "" },
+    tearGas: { enabled: false, date: "", time: "", from: "", to: "" },
+    baton: { enabled: false, date: "", time: "", from: "", to: "" },
+    handcuffs: { enabled: false, date: "", time: "", from: "", to: "" },
+    force: { enabled: false, date: "", time: "", from: "", to: "" },
+})
+
 interface CreateRecordDialogProps {
     initialData?: Partial<FormValues>
     users?: { id: string, firstName: string | null, lastName: string | null, username: string }[]
@@ -53,6 +79,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const [officerSearchQuery, setOfficerSearchQuery] = useState("")
     const [officerSearchResults, setOfficerSearchResults] = useState<any[]>([])
     const [isSearchingOfficers, setIsSearchingOfficers] = useState(false)
+    const [forceUsage, setForceUsage] = useState<ForceUsage>(getInitialForceUsage())
     const autoOfficerNameRef = useRef("")
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -111,6 +138,19 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         const header = [position, rank].filter(Boolean).join(", ")
         if (header && fullName) return `${header} — ${fullName}`
         return fullName || header
+    }
+
+    const formatDateUa = (isoDate: string) => {
+        const [year, month, day] = isoDate.split("-")
+        if (!year || !month || !day) return isoDate
+        return `${day}.${month}.${year}`
+    }
+
+    const updateForceUsage = (key: ForceKey, patch: Partial<ForceUsage[ForceKey]>) => {
+        setForceUsage(prev => ({
+            ...prev,
+            [key]: { ...prev[key], ...patch }
+        }))
     }
 
     const onAiScan = () => {
@@ -204,13 +244,15 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const onSubmit = async (data: FormValues) => {
         setIsLoading(true)
         try {
+            let raportDescription = data.description || ""
             if (data.recordType === "RAPORT") {
                 if (!data.officerName?.trim()) {
                     toast.error('Поле "Ким застосовано..." є обовʼязковим')
                     return
                 }
-                if (!data.description?.trim()) {
-                    toast.error('Поле "Дата застосування..." є обовʼязковим')
+                const activeKeys = (Object.keys(forceUsage) as ForceKey[]).filter((k) => forceUsage[k].enabled)
+                if (activeKeys.length === 0) {
+                    toast.error('Оберіть щонайменше один засіб застосування')
                     return
                 }
                 if (!data.address?.trim()) {
@@ -221,10 +263,37 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     toast.error('Поле "Дані про оформлення протоколу..." є обовʼязковим')
                     return
                 }
+
+                const lines: string[] = []
+                for (const key of activeKeys) {
+                    const item = forceUsage[key]
+                    const label = forceLabels[key]
+
+                    if (!item.date) {
+                        toast.error(`Для "${label}" потрібно вказати дату`)
+                        return
+                    }
+
+                    if (key === "handcuffs") {
+                        if (!item.from || !item.to) {
+                            toast.error(`Для "${label}" потрібно вказати період часу з-по`)
+                            return
+                        }
+                        lines.push(`${label.toLowerCase()} — ${formatDateUa(item.date)} з ${item.from} по ${item.to}`)
+                    } else {
+                        if (!item.time) {
+                            toast.error(`Для "${label}" потрібно вказати час`)
+                            return
+                        }
+                        lines.push(`${label.toLowerCase()} — ${formatDateUa(item.date)} о ${item.time}`)
+                    }
+                }
+                raportDescription = lines.join("; ")
             }
 
             const result = await upsertUnifiedRecordAction({
                 ...data,
+                description: raportDescription,
                 officerIds: taggedOfficers.map((o: any) => o.id)
             })
             if (result.success) {
@@ -244,6 +313,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             setTaggedOfficers((initialData as any)?.officers || [])
             setOfficerSearchQuery("")
             setOfficerSearchResults([])
+            setForceUsage(getInitialForceUsage())
             autoOfficerNameRef.current = ""
         }
     }, [initialData, isOpen])
@@ -546,12 +616,53 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <p className="text-xs italic underline text-slate-600">
                                     Приклад: фізична сила з 23:42 10.03.2023, кайданки з 23:42 по 23:58...
                                 </p>
-                                <Textarea
-                                    id="description"
-                                    {...form.register("description")}
-                                    placeholder="Ваша відповідь"
-                                    className="rounded-xl border-slate-200 bg-slate-50 min-h-[110px]"
-                                />
+                                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    {(Object.keys(forceLabels) as ForceKey[]).map((key) => (
+                                        <div key={key} className="rounded-lg bg-white p-3 border border-slate-100 space-y-2">
+                                            <label className="flex items-center gap-3">
+                                                <Checkbox
+                                                    checked={forceUsage[key].enabled}
+                                                    onCheckedChange={(val) => updateForceUsage(key, { enabled: val === true })}
+                                                />
+                                                <span className="text-sm font-bold text-slate-800">{forceLabels[key]}</span>
+                                            </label>
+
+                                            {forceUsage[key].enabled && (
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                    <Input
+                                                        type="date"
+                                                        value={forceUsage[key].date}
+                                                        onChange={(e) => updateForceUsage(key, { date: e.target.value })}
+                                                        className="rounded-lg bg-white border-slate-200 h-10"
+                                                    />
+                                                    {key === "handcuffs" ? (
+                                                        <>
+                                                            <Input
+                                                                type="time"
+                                                                value={forceUsage[key].from}
+                                                                onChange={(e) => updateForceUsage(key, { from: e.target.value })}
+                                                                className="rounded-lg bg-white border-slate-200 h-10"
+                                                            />
+                                                            <Input
+                                                                type="time"
+                                                                value={forceUsage[key].to}
+                                                                onChange={(e) => updateForceUsage(key, { to: e.target.value })}
+                                                                className="rounded-lg bg-white border-slate-200 h-10"
+                                                            />
+                                                        </>
+                                                    ) : (
+                                                        <Input
+                                                            type="time"
+                                                            value={forceUsage[key].time}
+                                                            onChange={(e) => updateForceUsage(key, { time: e.target.value })}
+                                                            className="rounded-lg bg-white border-slate-200 h-10 sm:col-span-2"
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
                                 {form.formState.errors.description && (
                                     <p className="text-[10px] font-bold text-rose-600">{form.formState.errors.description.message}</p>
                                 )}
