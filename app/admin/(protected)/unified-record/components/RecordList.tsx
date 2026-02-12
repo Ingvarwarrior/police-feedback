@@ -122,13 +122,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         setRecords(initialRecords.filter(r => r.recordType !== 'RAPORT'))
     }, [initialRecords])
 
-    const getRaportSubjectName = (basisText?: string | null) => {
-        if (!basisText) return "—"
-        const normalized = basisText.replace(/\s+/g, " ").trim()
-        const exact = normalized.match(/до\s+(.+?)\s+\d{2}\.\d{2}\.\d{4}/i)
-        if (exact?.[1]) return exact[1].trim()
-        const fallback = normalized.match(/до\s+(.+)/i)
-        return fallback?.[1]?.trim() || "—"
+    const getApplicationBirthDate = (record: any) => {
+        const val = record?.address || ""
+        if (typeof val !== "string") return "—"
+        if (!val.startsWith("DOB:")) return "—"
+        const iso = val.replace("DOB:", "")
+        if (!iso) return "—"
+        const [y, m, d] = iso.split("-")
+        if (!y || !m || !d) return iso
+        return `${d}.${m}.${y}`
     }
 
     const getAssignedInspectorName = (record: any) => {
@@ -387,7 +389,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             "№ ЄО/Звернення": r.eoNumber || '-',
             "Заявник": r.applicant || '-',
             "Виконавець": r.assignedUser ? `${r.assignedUser.lastName} ${r.assignedUser.firstName || ''}`.trim() : (r.assignedUserId === 'unassigned' ? 'Не призначено' : '—'),
-            "Тип": r.recordType === 'EO' ? 'ЄО' : 'Звернення',
+            "Тип": r.recordType === 'EO' ? 'ЄО' : r.recordType === 'ZVERN' ? 'Звернення' : 'Застосування',
             "Категорія": r.category || '-',
             "Статус": r.status === 'PROCESSED' ? 'Опрацьовано' : 'В роботі',
             "Рішення": r.resolution || '-'
@@ -432,6 +434,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             Звернення
                             <span className="bg-amber-50/50 text-amber-600 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
                                 {records.filter(r => r.recordType === 'ZVERN').length}
+                            </span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="APPLICATION"
+                            className="rounded-[1.5rem] px-6 md:px-10 h-full font-black uppercase tracking-widest text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-600 data-[state=active]:to-red-700 data-[state=active]:text-white transition-all duration-300 gap-3 shrink-0 shadow-sm"
+                        >
+                            Застосування
+                            <span className="bg-rose-50/50 text-rose-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
+                                {records.filter(r => r.recordType === 'APPLICATION').length}
                             </span>
                         </TabsTrigger>
                     </TabsList>
@@ -763,10 +774,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         }}
                                                         className="text-base md:text-lg font-black text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase tracking-tight leading-tight mt-2 break-words cursor-pointer"
                                                     >
-                                                        {record.recordType === 'RAPORT' ? `Рапорт №${record.eoNumber}` : (record.description || 'Без опису')}
+                                                        {record.recordType === 'APPLICATION' ? `Рапорт №${record.eoNumber}` : (record.description || 'Без опису')}
                                                     </h3>
-                                                    {record.recordType === 'RAPORT' && (
-                                                        <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mt-1">Затримання</p>
+                                                    {record.recordType === 'APPLICATION' && (
+                                                        <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mt-1">Застосування</p>
                                                     )}
                                                 </div>
 
@@ -842,11 +853,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                     <div className="space-y-3">
                                                         <div className="flex items-center gap-2 text-slate-500">
                                                             <User className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'RAPORT' ? 'ПІБ' : 'Заявник'}</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'APPLICATION' ? 'ПІБ' : 'Заявник'}</span>
                                                         </div>
                                                         <p className="text-sm font-black text-slate-900 dark:text-white transition-colors duration-300">
-                                                        {record.recordType === 'RAPORT'
-                                                            ? getRaportSubjectName(record.address)
+                                                        {record.recordType === 'APPLICATION'
+                                                            ? (record.applicant || '—')
                                                             : (<><span className="text-slate-400 text-[10px] mr-1">Гр.</span> {record.applicant || '—'}</>)}
                                                         </p>
                                                     </div>
@@ -854,7 +865,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-slate-500">
                                                         <FileText className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'RAPORT' ? 'Тип' : 'Результат'}</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'APPLICATION' ? 'Дата народження' : 'Результат'}</span>
                                                     </div>
 
                                                     <div className="space-y-1">
@@ -862,8 +873,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             "text-sm font-bold italic transition-colors duration-300",
                                                             record.status === 'PROCESSED' ? "text-emerald-700 dark:text-emerald-400" : (record.assignedUserId ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")
                                                         )}>
-                                                            {record.recordType === 'RAPORT'
-                                                                ? 'Затримання'
+                                                            {record.recordType === 'APPLICATION'
+                                                                ? getApplicationBirthDate(record)
                                                                 : (record.status === 'PROCESSED' ? (record.resolution || 'Виконано') : (record.assignedUserId ? (record.resolution ? 'Потребує доопрацювання/В процесі...' : 'В процесі розгляду...') : 'Не призначено'))}
                                                         </div>
                                                         {record.recordType !== 'RAPORT' && record.resolutionDate && (

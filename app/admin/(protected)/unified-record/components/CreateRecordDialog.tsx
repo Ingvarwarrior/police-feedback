@@ -25,7 +25,7 @@ const formSchema = z.object({
     id: z.string().optional(),
     eoNumber: z.string().optional(),
     eoDate: z.date(),
-    description: z.string().min(1, "Опис події обов'язковий"),
+    description: z.string().optional(),
     applicant: z.string().optional(),
     address: z.string().optional(),
     officerName: z.string().optional(),
@@ -123,6 +123,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const [detentionToTime, setDetentionToTime] = useState("")
     const [detentionPurpose, setDetentionPurpose] = useState("для припинення адміністративного правопорушення оформлення адміністративних матеріалів")
     const [detentionMaterials, setDetentionMaterials] = useState("Складено постанову/протокол")
+    const [applicationBirthDate, setApplicationBirthDate] = useState("")
     const autoOfficerNameRef = useRef("")
     const autoAddressRef = useRef("")
     const autoApplicantRef = useRef("")
@@ -314,12 +315,19 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const onSubmit = async (data: FormValues) => {
         setIsLoading(true)
         try {
-            if (data.recordType !== "RAPORT" && !data.eoNumber?.trim()) {
+            if (data.recordType !== "RAPORT" && data.recordType !== "APPLICATION" && !data.eoNumber?.trim()) {
                 toast.error('Поле "Номер ЄО" є обовʼязковим')
                 return
             }
 
+            if ((data.recordType === "EO" || data.recordType === "ZVERN") && !data.description?.trim()) {
+                toast.error('Поле "Подія" є обовʼязковим')
+                return
+            }
+
             let raportDescription = data.description || ""
+            let payloadAddress = data.address
+            let payloadCategory = data.category
             if (data.recordType === "RAPORT") {
                 if (!data.officerName?.trim()) {
                     toast.error('Поле "Ким застосовано..." є обовʼязковим')
@@ -405,9 +413,29 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                 raportDescription = lines.join("; ")
             }
 
+            if (data.recordType === "APPLICATION") {
+                if (!data.applicant?.trim()) {
+                    toast.error('Поле "ПІБ до кого застосовано" є обовʼязковим')
+                    return
+                }
+                if (!applicationBirthDate) {
+                    toast.error('Поле "Дата народження" є обовʼязковим')
+                    return
+                }
+                if (!data.assignedUserId) {
+                    toast.error('Оберіть виконавця')
+                    return
+                }
+                raportDescription = "Застосування"
+                payloadAddress = `DOB:${applicationBirthDate}`
+                payloadCategory = "Застосування"
+            }
+
             const result = await upsertUnifiedRecordAction({
                 ...data,
                 description: raportDescription,
+                address: payloadAddress,
+                category: payloadCategory,
                 officerIds: taggedOfficers.map((o: any) => o.id)
             })
             if (result.success) {
@@ -447,11 +475,20 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             setDetentionToTime("")
             setDetentionPurpose("для припинення адміністративного правопорушення оформлення адміністративних матеріалів")
             setDetentionMaterials("Складено постанову/протокол")
+            setApplicationBirthDate("")
             autoOfficerNameRef.current = ""
             autoAddressRef.current = ""
             autoApplicantRef.current = ""
         }
     }, [initialData, isOpen])
+
+    useEffect(() => {
+        if (!isOpen) return
+        const addressVal = form.getValues("address") || ""
+        if (form.getValues("recordType") === "APPLICATION" && addressVal.startsWith("DOB:")) {
+            setApplicationBirthDate(addressVal.replace("DOB:", ""))
+        }
+    }, [isOpen, form])
 
     useEffect(() => {
         if (recordType !== "RAPORT") {
@@ -633,9 +670,9 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="eoNumber" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                Номер ЄО
+                                {recordType === "APPLICATION" ? "Рапорт №" : "Номер ЄО"}
                             </Label>
-                            {recordType === "RAPORT" ? (
+                            {recordType === "RAPORT" || recordType === "APPLICATION" ? (
                                 <div className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-3 flex items-center text-sm font-semibold text-slate-600">
                                     {isEdit
                                         ? `Рапорт №${form.getValues("eoNumber") || "—"}`
@@ -690,11 +727,26 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
 
                         {recordType !== "RAPORT" && (
                             <div className="space-y-2">
-                                <Label htmlFor="applicant" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Заявник</Label>
+                                <Label htmlFor="applicant" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    {recordType === "APPLICATION" ? "ПІБ до кого застосовано" : "Заявник"}
+                                </Label>
                                 <Input
                                     id="applicant"
                                     {...form.register("applicant")}
-                                    placeholder="ПІБ заявника"
+                                    placeholder={recordType === "APPLICATION" ? "ПІБ" : "ПІБ заявника"}
+                                    className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                />
+                            </div>
+                        )}
+
+                        {recordType === "APPLICATION" && (
+                            <div className="space-y-2">
+                                <Label htmlFor="applicationBirthDate" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Дата народження</Label>
+                                <Input
+                                    id="applicationBirthDate"
+                                    type="date"
+                                    value={applicationBirthDate}
+                                    onChange={(e) => setApplicationBirthDate(e.target.value)}
                                     className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                 />
                             </div>
@@ -712,6 +764,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <SelectContent className="rounded-xl border-none shadow-2xl">
                                     <SelectItem value="EO">Єдиний облік (ЄО)</SelectItem>
                                     <SelectItem value="ZVERN">Звернення</SelectItem>
+                                    <SelectItem value="APPLICATION">Застосування</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -1043,28 +1096,32 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                         </div>
                     ) : (
                         <>
-                            <div className="space-y-2">
-                                <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Подія</Label>
-                                <Input
-                                    id="description"
-                                    {...form.register("description")}
-                                    placeholder="Напр. ІНШІ СКАРГИ..."
-                                    className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold uppercase"
-                                />
-                                {form.formState.errors.description && (
-                                    <p className="text-[10px] text-red-500 font-bold">{form.formState.errors.description.message}</p>
-                                )}
-                            </div>
+                            {recordType !== "APPLICATION" && (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Подія</Label>
+                                        <Input
+                                            id="description"
+                                            {...form.register("description")}
+                                            placeholder="Напр. ІНШІ СКАРГИ..."
+                                            className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold uppercase"
+                                        />
+                                        {form.formState.errors.description && (
+                                            <p className="text-[10px] text-red-500 font-bold">{form.formState.errors.description.message}</p>
+                                        )}
+                                    </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="address" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Адреса</Label>
-                                <Input
-                                    id="address"
-                                    {...form.register("address")}
-                                    placeholder="Місце події"
-                                    className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                />
-                            </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="address" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Адреса</Label>
+                                        <Input
+                                            id="address"
+                                            {...form.register("address")}
+                                            placeholder="Місце події"
+                                            className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                        />
+                                    </div>
+                                </>
+                            )}
                         </>
                     )}
                 </form>
