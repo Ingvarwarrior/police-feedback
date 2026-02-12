@@ -314,7 +314,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const onSubmit = async (data: FormValues) => {
         setIsLoading(true)
         try {
-            if (data.recordType !== "RAPORT" && !data.eoNumber?.trim()) {
+            if (data.recordType !== "RAPORT" && data.recordType !== "DETENTION" && !data.eoNumber?.trim()) {
                 toast.error('Поле "Номер ЄО" є обовʼязковим')
                 return
             }
@@ -404,6 +404,19 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                 }
                 raportDescription = lines.join("; ")
             }
+            if (data.recordType === "DETENTION") {
+                if (!data.applicant?.trim()) {
+                    toast.error('Вкажіть особу, відносно якої застосовано заходи / затримано')
+                    return
+                }
+                if (!data.address?.trim()) {
+                    toast.error('Вкажіть номер протоколу затримання')
+                    return
+                }
+                if (!raportDescription.trim()) {
+                    raportDescription = data.category?.trim() || "Затримання / застосування"
+                }
+            }
 
             const result = await upsertUnifiedRecordAction({
                 ...data,
@@ -482,6 +495,12 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
 
         return () => clearTimeout(timer)
     }, [officerSearchQuery, taggedOfficers, recordType])
+
+    useEffect(() => {
+        if (recordType === "DETENTION" && (!form.getValues("category") || form.getValues("category") === "Загальне")) {
+            form.setValue("category", "Застосування сили/спецзасобів")
+        }
+    }, [recordType, form])
 
     useEffect(() => {
         if (recordType !== "RAPORT") return
@@ -633,9 +652,9 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="eoNumber" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                Номер ЄО
+                                {recordType === "DETENTION" ? "Номер рапорту" : "Номер ЄО"}
                             </Label>
-                            {recordType === "RAPORT" ? (
+                            {recordType === "RAPORT" || recordType === "DETENTION" ? (
                                 <div className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-3 flex items-center text-sm font-semibold text-slate-600">
                                     {isEdit
                                         ? `Рапорт №${form.getValues("eoNumber") || "—"}`
@@ -690,11 +709,27 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
 
                         {recordType !== "RAPORT" && (
                             <div className="space-y-2">
-                                <Label htmlFor="applicant" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Заявник</Label>
+                                <Label htmlFor="applicant" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    {recordType === "DETENTION" ? "Відносно кого застосовано / затримано" : "Заявник"}
+                                </Label>
                                 <Input
                                     id="applicant"
                                     {...form.register("applicant")}
-                                    placeholder="ПІБ заявника"
+                                    placeholder={recordType === "DETENTION" ? "ПІБ особи" : "ПІБ заявника"}
+                                    className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                />
+                            </div>
+                        )}
+
+                        {recordType === "DETENTION" && (
+                            <div className="space-y-2">
+                                <Label htmlFor="address" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    Номер протоколу затримання
+                                </Label>
+                                <Input
+                                    id="address"
+                                    {...form.register("address")}
+                                    placeholder="Серія/номер протоколу"
                                     className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                 />
                             </div>
@@ -712,6 +747,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <SelectContent className="rounded-xl border-none shadow-2xl">
                                     <SelectItem value="EO">Єдиний облік (ЄО)</SelectItem>
                                     <SelectItem value="ZVERN">Звернення</SelectItem>
+                                    <SelectItem value="DETENTION">Затримання та застосування</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -1043,12 +1079,34 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                         </div>
                     ) : (
                         <>
+                            {recordType === "DETENTION" && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="category" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Тип запису</Label>
+                                    <Select
+                                        onValueChange={(val) => form.setValue("category", val)}
+                                        defaultValue={form.getValues("category") || "Застосування сили/спецзасобів"}
+                                    >
+                                        <SelectTrigger className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-xs md:text-sm">
+                                            <SelectValue placeholder="Оберіть тип" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl border-none shadow-2xl">
+                                            <SelectItem value="Застосування сили/спецзасобів">Застосування сили/спецзасобів</SelectItem>
+                                            <SelectItem value="Протокол затримання (без застосування сили/спецзасобів)">Протокол затримання (без застосування сили/спецзасобів)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
                             <div className="space-y-2">
-                                <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Подія</Label>
+                                <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    {recordType === "DETENTION" ? "Виконання / примітка" : "Подія"}
+                                </Label>
                                 <Input
                                     id="description"
                                     {...form.register("description")}
-                                    placeholder="Напр. ІНШІ СКАРГИ..."
+                                    placeholder={recordType === "DETENTION"
+                                        ? "Напр. Стосується поліцейських, дії правомірні - списано в справу"
+                                        : "Напр. ІНШІ СКАРГИ..."}
                                     className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold uppercase"
                                 />
                                 {form.formState.errors.description && (
@@ -1056,15 +1114,17 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 )}
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="address" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Адреса</Label>
-                                <Input
-                                    id="address"
-                                    {...form.register("address")}
-                                    placeholder="Місце події"
-                                    className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                />
-                            </div>
+                            {recordType !== "DETENTION" && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="address" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Адреса</Label>
+                                    <Input
+                                        id="address"
+                                        {...form.register("address")}
+                                        placeholder="Місце події"
+                                        className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                    />
+                                </div>
+                            )}
                         </>
                     )}
                 </form>

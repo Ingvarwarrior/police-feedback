@@ -50,8 +50,8 @@ export default async function UnifiedRecordPage() {
                         <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400/80">Центр адміністрування</h2>
                     </div>
                     <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-none">
-                        Єдиний облік <br />
-                        <span className="text-blue-400">& звернення</span>
+                        Єдиний облік, звернення <br />
+                        <span className="text-blue-400">та затримання/застосування</span>
                     </h1>
                     <p className="max-w-md text-slate-400 font-medium text-sm">
                         Офіційний реєстр подій та звернень громадян для контролю виконавчої дисципліни та класифікації інцидентів.
@@ -67,7 +67,7 @@ export default async function UnifiedRecordPage() {
                     <Info className="w-5 h-5" />
                 </div>
                 <p className="text-xs font-medium text-slate-600">
-                    Тут відображаються дані журналів ЄО. Ви можете редагувати існуючі картки, призначати відповідальних інспекторів (користувачів системи) та фільтрувати записи.
+                    Тут відображаються дані ЄО, звернень та вкладки затримань/застосування. Ви можете редагувати картки, призначати відповідальних інспекторів та фільтрувати записи.
                 </p>
             </div>
 
