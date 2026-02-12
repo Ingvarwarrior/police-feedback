@@ -28,13 +28,14 @@ export default function Step1ContactPref() {
                     Формат відгуку
                 </h2>
                 <p className="text-slate-500 text-sm font-medium px-4 md:px-0">
-                    Бажаєте, щоб ми зв'язалися з вами для уточнення деталей?
+                    Чи потрібно з вами зв'язатися для уточнення деталей?
                 </p>
             </div>
 
             <RadioGroup
                 value={formData.wantContact ? 'yes' : 'no'}
                 onValueChange={(val) => updateData({ wantContact: val === 'yes' })}
+                aria-label="Формат подання відгуку"
                 className="grid gap-4 flex-1 py-4"
             >
                 <Label
@@ -50,7 +51,7 @@ export default function Step1ContactPref() {
                             Анонімно
                         </p>
                         <p className={`text-xs font-bold leading-tight mt-0.5 ${!formData.wantContact ? 'text-white/80' : 'text-slate-400'}`}>
-                            Ми не зберігаємо ваші дані
+                            Без персональних даних
                         </p>
                     </div>
                 </Label>
@@ -68,7 +69,7 @@ export default function Step1ContactPref() {
                             Зі зв'язком
                         </p>
                         <p className={`text-xs font-bold leading-tight mt-0.5 ${formData.wantContact ? 'text-white/80' : 'text-slate-400'}`}>
-                            Залишити номер для уточнень
+                            Залишу номер для уточнень
                         </p>
                     </div>
                 </Label>

@@ -13,7 +13,7 @@ function StarRating({ value, onChange, label }: { value: number, onChange: (v: n
     return (
         <div className="space-y-4">
             <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 block ml-1">{label}</Label>
-            <div className="flex gap-2 sm:gap-4">
+            <div className="flex gap-2 sm:gap-4" role="radiogroup" aria-label={label}>
                 {[1, 2, 3, 4, 5].map((star) => (
                     <motion.button
                         key={star}
@@ -21,6 +21,10 @@ function StarRating({ value, onChange, label }: { value: number, onChange: (v: n
                         whileHover={{ y: -4, scale: 1.02 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => onChange(star)}
+                        role="radio"
+                        aria-checked={value === star}
+                        aria-label={`${label}: ${star} з 5`}
+                        title={`${star} з 5`}
                         className={cn(
                             "flex-1 h-14 sm:h-16 rounded-2xl flex items-center justify-center transition-all border-2 shadow-sm relative overflow-hidden",
                             value >= star
@@ -65,7 +69,7 @@ export default function Step7Ratings() {
                     <div className="w-1.5 h-6 bg-primary" />
                     Ваша оцінка
                 </h2>
-                <p className="text-slate-500 font-medium tracking-tight text-sm">Будь ласка, будьте об'єктивними. 1 — погано, 5 — відмінно.</p>
+                <p className="text-slate-500 font-medium tracking-tight text-sm">Оцініть кожен пункт. 1 - дуже погано, 5 - відмінно.</p>
             </div>
 
             <div className="space-y-6 flex-1 py-4">

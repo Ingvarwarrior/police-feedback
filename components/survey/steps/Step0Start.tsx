@@ -40,7 +40,7 @@ export default function Step0Start() {
                     </div>
                     <div className="leading-relaxed text-sm text-slate-600">
                         <p className="mb-4 font-semibold text-slate-800 border-l-4 border-secondary pl-4">
-                            Дане опитування проводиться з метою покращення якості надання поліцейських послуг.
+                            Це опитування допомагає нам покращити роботу поліції.
                         </p>
                         <div className="bg-white p-5 rounded-2xl border border-rose-100 shadow-sm mb-6 bg-[url('https://www.transparenttextures.com/patterns/back-lining.png')]">
                             <p className="text-rose-600 font-extrabold text-xs uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -55,7 +55,7 @@ export default function Step0Start() {
                         <div className="space-y-4 pt-4 border-t border-slate-200/50">
                             <p className="font-black text-primary text-[11px] uppercase tracking-[0.2em] flex items-center gap-2">
                                 <div className="w-4 h-0.5 bg-secondary" />
-                                Офіційні канали для звернень
+                                Офіційні канали звернення
                             </p>
                             <div className="grid grid-cols-1 gap-3 text-[13px]">
                                 {[
@@ -86,17 +86,21 @@ export default function Step0Start() {
 
             <div className="w-full space-y-6">
                 <div
-                    className={`flex items-start space-x-4 p-4 md:p-6 rounded-3xl border-2 transition-all cursor-pointer select-none group ${formData.hasConsent ? 'bg-primary/5 border-primary shadow-lg ring-4 ring-primary/5' : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
-                    onClick={() => updateData({ hasConsent: !formData.hasConsent })}
+                    className={`flex items-start space-x-4 p-4 md:p-6 rounded-3xl border-2 transition-all select-none group ${formData.hasConsent ? 'bg-primary/5 border-primary shadow-lg ring-4 ring-primary/5' : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
                 >
                     <Checkbox
+                        id="consent"
                         checked={formData.hasConsent}
-                        className="mt-1 translate-y-0.5 border-slate-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary pointer-events-none transition-colors group-hover:border-primary"
+                        onCheckedChange={(checked) => updateData({ hasConsent: checked === true })}
+                        aria-describedby="consent-note"
+                        className="mt-1 translate-y-0.5 border-slate-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-colors group-hover:border-primary"
                     />
                     <Label
-                        className="text-xs font-bold text-slate-600 leading-relaxed cursor-pointer pointer-events-none flex-1 py-1 group-hover:text-slate-900 transition-colors"
+                        htmlFor="consent"
+                        id="consent-note"
+                        className="text-xs font-bold text-slate-600 leading-relaxed cursor-pointer flex-1 py-1 group-hover:text-slate-900 transition-colors"
                     >
-                        Я підтверджую, що ознайомлений з інформацією вище та погоджуюсь на обробку моїх персональних даних з метою покращення роботи поліції.
+                        Я ознайомився з інформацією вище та погоджуюся на обробку персональних даних для покращення роботи поліції.
                     </Label>
                 </div>
             </div>

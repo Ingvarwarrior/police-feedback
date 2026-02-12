@@ -4,10 +4,7 @@ import React, { useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSurveyStore } from '@/lib/store'
-import { Card, CardContent } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { Toaster } from 'sonner'
-import { ChevronLeft } from 'lucide-react'
 
 // Step Components
 import Step0Start from './steps/Step0Start'
@@ -24,6 +21,7 @@ import Step9Finish from './steps/Step9Finish'
 import { AnimatePresence, motion } from 'framer-motion'
 
 const STEPS_COUNT = 9
+const ESTIMATED_TOTAL_MINUTES = 2
 
 import { generateId } from '@/lib/utils'
 
@@ -63,6 +61,10 @@ export default function SurveyWizard() {
     }
 
     const progress = ((currentStep) / (STEPS_COUNT)) * 100
+    const remainingMinutes = Math.max(1, Math.round(((STEPS_COUNT - currentStep) / STEPS_COUNT) * ESTIMATED_TOTAL_MINUTES))
+    const progressLabel = currentStep === 0
+        ? `Анкета займе приблизно ${ESTIMATED_TOTAL_MINUTES} хвилини`
+        : `Крок ${currentStep + 1} з ${STEPS_COUNT}. Залишилось приблизно ${remainingMinutes} хвилин`
 
     return (
         <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto md:px-4">
@@ -88,11 +90,20 @@ export default function SurveyWizard() {
                     {/* Progress Bar Row */}
                     <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center gap-2">
-                            {/* Replaced by top header info */}
+                            <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">
+                                {currentStep === 0 ? `~${ESTIMATED_TOTAL_MINUTES} хв` : `~${remainingMinutes} хв залишилось`}
+                            </span>
                         </div>
                         <span className="text-[10px] font-bold text-secondary uppercase tracking-widest">{Math.round(progress)}% Виконано</span>
                     </div>
-                    <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div
+                        className="h-1 w-full bg-white/10 rounded-full overflow-hidden"
+                        role="progressbar"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(progress)}
+                        aria-label={progressLabel}
+                    >
                         <motion.div
                             className="h-full bg-secondary shadow-[0_0_10px_rgba(255,215,0,0.5)]"
                             initial={{ width: 0 }}
@@ -100,6 +111,7 @@ export default function SurveyWizard() {
                             transition={{ duration: 0.5, ease: "circOut" }}
                         />
                     </div>
+                    <p className="sr-only" aria-live="polite">{progressLabel}</p>
                 </div>
             )}
 

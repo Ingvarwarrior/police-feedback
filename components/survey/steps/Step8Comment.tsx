@@ -44,14 +44,15 @@ export default function Step8Comment() {
                     <div className="w-1.5 h-6 bg-primary" />
                     Зауваження та пропозиції
                 </h2>
-                <p className="text-slate-500 font-medium tracking-tight text-sm px-4 md:px-0">Будь ласка, опишіть ситуацію детальніше, якщо це необхідно.</p>
+                <p className="text-slate-500 font-medium tracking-tight text-sm px-4 md:px-0">Опишіть ситуацію простими словами. Це поле не обов'язкове.</p>
             </div>
 
             <div className="space-y-4 flex-1">
                 <div className="bg-slate-50 rounded-[2.5rem] p-4 md:p-8 border border-slate-100 shadow-inner relative overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-primary opacity-30" />
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6 block px-4">Деталі взаємодії</Label>
+                    <Label htmlFor="comment-details" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6 block px-4">Деталі взаємодії</Label>
                     <Textarea
+                        id="comment-details"
                         placeholder="Опишіть, що саме сталося..."
                         className="min-h-[250px] md:min-h-[300px] border-none bg-transparent font-medium text-slate-700 focus-visible:ring-0 resize-none text-lg p-4 placeholder:text-slate-300"
                         maxLength={1000}
