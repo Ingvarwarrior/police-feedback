@@ -65,6 +65,35 @@ const getInitialForceUsage = (): ForceUsage => ({
     force: { enabled: false, date: "", time: "", from: "", to: "" },
 })
 
+type LegalKey =
+    | "art44_p1_force"
+    | "art45_p1_a_handcuffs"
+    | "art45_p1_b_handcuffs"
+    | "art45_p1_v_handcuffs"
+    | "art45_p1_g_handcuffs"
+    | "art45_p1_gg_handcuffs"
+    | "art45_p2_a_baton"
+    | "art45_p2_b_baton"
+    | "art45_p2_v_baton"
+    | "art45_p3_a_teargas"
+    | "art45_p3_b_teargas"
+
+type LegalBasisState = Record<LegalKey, boolean>
+
+const getInitialLegalBasis = (): LegalBasisState => ({
+    art44_p1_force: false,
+    art45_p1_a_handcuffs: false,
+    art45_p1_b_handcuffs: false,
+    art45_p1_v_handcuffs: false,
+    art45_p1_g_handcuffs: false,
+    art45_p1_gg_handcuffs: false,
+    art45_p2_a_baton: false,
+    art45_p2_b_baton: false,
+    art45_p2_v_baton: false,
+    art45_p3_a_teargas: false,
+    art45_p3_b_teargas: false,
+})
+
 interface CreateRecordDialogProps {
     initialData?: Partial<FormValues>
     users?: { id: string, firstName: string | null, lastName: string | null, username: string }[]
@@ -80,7 +109,11 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const [officerSearchResults, setOfficerSearchResults] = useState<any[]>([])
     const [isSearchingOfficers, setIsSearchingOfficers] = useState(false)
     const [forceUsage, setForceUsage] = useState<ForceUsage>(getInitialForceUsage())
+    const [subjectFullName, setSubjectFullName] = useState("")
+    const [subjectBirthDate, setSubjectBirthDate] = useState("")
+    const [legalBasis, setLegalBasis] = useState<LegalBasisState>(getInitialLegalBasis())
     const autoOfficerNameRef = useRef("")
+    const autoAddressRef = useRef("")
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const isEdit = !!initialData?.id
@@ -165,6 +198,11 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             ...prev,
             [key]: { ...prev[key], ...patch }
         }))
+    }
+
+    const formatBirthDateUa = (isoDate: string) => {
+        if (!isoDate) return ""
+        return formatDateUa(isoDate)
     }
 
     const onAiScan = () => {
@@ -264,6 +302,18 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     toast.error('Поле "Ким застосовано..." є обовʼязковим')
                     return
                 }
+                if (!subjectFullName.trim()) {
+                    toast.error('Вкажіть ПІБ особи, до якої застосовано')
+                    return
+                }
+                if (!subjectBirthDate) {
+                    toast.error('Вкажіть дату народження особи, до якої застосовано')
+                    return
+                }
+                if (!Object.values(legalBasis).some(Boolean)) {
+                    toast.error('Оберіть щонайменше одну правову підставу (ст.44/45)')
+                    return
+                }
                 const activeKeys = (Object.keys(forceUsage) as ForceKey[]).filter((k) => forceUsage[k].enabled)
                 if (activeKeys.length === 0) {
                     toast.error('Оберіть щонайменше один засіб застосування')
@@ -329,7 +379,11 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             setOfficerSearchQuery("")
             setOfficerSearchResults([])
             setForceUsage(getInitialForceUsage())
+            setSubjectFullName("")
+            setSubjectBirthDate("")
+            setLegalBasis(getInitialLegalBasis())
             autoOfficerNameRef.current = ""
+            autoAddressRef.current = ""
         }
     }, [initialData, isOpen])
 
@@ -383,6 +437,45 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
 
         // User edited manually; keep user text untouched.
     }, [taggedOfficers, recordType, form])
+
+    useEffect(() => {
+        if (recordType !== "RAPORT") return
+
+        const parts: string[] = []
+
+        if (legalBasis.art44_p1_force) {
+            parts.push('Відповідно до частини 1 статті 44 ЗУ "Про Національну поліцію" - застосовано фізичну силу')
+        }
+
+        if (legalBasis.art45_p1_a_handcuffs) parts.push('відповідно до ч.3 п.1 пп.а) ст. 45 ЗУ "Про Національну поліцію" - застосовані кайданки')
+        if (legalBasis.art45_p1_b_handcuffs) parts.push('відповідно до ч.3 п.1 пп.б) ст. 45 ЗУ "Про Національну поліцію" - застосовані кайданки')
+        if (legalBasis.art45_p1_v_handcuffs) parts.push('відповідно до ч.3 п.1 пп.в) ст. 45 ЗУ "Про Національну поліцію" - застосовані кайданки')
+        if (legalBasis.art45_p1_g_handcuffs) parts.push('відповідно до ч.3 п.1 пп.г) ст. 45 ЗУ "Про Національну поліцію" - застосовані кайданки')
+        if (legalBasis.art45_p1_gg_handcuffs) parts.push('відповідно до ч.3 п.1 пп.ґ) ст. 45 ЗУ "Про Національну поліцію" - застосовані кайданки')
+
+        if (legalBasis.art45_p2_a_baton) parts.push('відповідно до ч.3 п.2 пп.а) ст. 45 ЗУ "Про Національну поліцію" - застосовано гумовий кийок')
+        if (legalBasis.art45_p2_b_baton) parts.push('відповідно до ч.3 п.2 пп.б) ст. 45 ЗУ "Про Національну поліцію" - застосовано гумовий кийок')
+        if (legalBasis.art45_p2_v_baton) parts.push('відповідно до ч.3 п.2 пп.в) ст. 45 ЗУ "Про Національну поліцію" - застосовано гумовий кийок')
+
+        if (legalBasis.art45_p3_a_teargas) parts.push('відповідно до ч.3 п.3 пп.а) ст. 45 ЗУ "Про Національну поліцію" - застосовані засоби сльозогінної та дратівної дії')
+        if (legalBasis.art45_p3_b_teargas) parts.push('відповідно до ч.3 п.3 пп.б) ст. 45 ЗУ "Про Національну поліцію" - застосовані засоби сльозогінної та дратівної дії')
+
+        const subject = [subjectFullName.trim(), subjectBirthDate ? `${formatBirthDateUa(subjectBirthDate)} р.н.` : ""]
+            .filter(Boolean)
+            .join(" ")
+
+        const generated = parts.length > 0
+            ? `${parts.join(" та ")}${subject ? ` до ${subject}.` : "."}`
+            : ""
+
+        const current = form.getValues("address") || ""
+        const prevGenerated = autoAddressRef.current
+
+        if (!current.trim() || current === prevGenerated) {
+            form.setValue("address", generated, { shouldDirty: true })
+            autoAddressRef.current = generated
+        }
+    }, [legalBasis, subjectFullName, subjectBirthDate, recordType, form])
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => {
@@ -684,6 +777,65 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 {form.formState.errors.description && (
                                     <p className="text-[10px] font-bold text-rose-600">{form.formState.errors.description.message}</p>
                                 )}
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+                                <Label className="text-sm font-black tracking-tight text-slate-800">
+                                    До кого застосовано (ПІБ та дата народження) <span className="text-rose-600">*</span>
+                                </Label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <Input
+                                        value={subjectFullName}
+                                        onChange={(e) => setSubjectFullName(e.target.value)}
+                                        placeholder="ПІБ особи"
+                                        className="rounded-xl border-slate-200 bg-slate-50 h-11"
+                                    />
+                                    <Input
+                                        type="date"
+                                        value={subjectBirthDate}
+                                        onChange={(e) => setSubjectBirthDate(e.target.value)}
+                                        className="rounded-xl border-slate-200 bg-slate-50 h-11"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+                                <Label className="text-sm font-black tracking-tight text-slate-800">
+                                    Правові підстави (ст.44/45) <span className="text-rose-600">*</span>
+                                </Label>
+
+                                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    <p className="text-xs font-black uppercase tracking-widest text-slate-500">Стаття 44</p>
+                                    <label className="flex items-start gap-2">
+                                        <Checkbox
+                                            checked={legalBasis.art44_p1_force}
+                                            onCheckedChange={(val) => setLegalBasis(prev => ({ ...prev, art44_p1_force: val === true }))}
+                                        />
+                                        <span className="text-sm text-slate-700">ч.1 - застосування фізичної сили</span>
+                                    </label>
+                                </div>
+
+                                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    <p className="text-xs font-black uppercase tracking-widest text-slate-500">Стаття 45 - кайданки (ч.3 п.1)</p>
+                                    <label className="flex items-start gap-2"><Checkbox checked={legalBasis.art45_p1_a_handcuffs} onCheckedChange={(val) => setLegalBasis(prev => ({ ...prev, art45_p1_a_handcuffs: val === true }))} /><span className="text-sm text-slate-700">пп.а) підозра у кримінальному правопорушенні, опір/втеча</span></label>
+                                    <label className="flex items-start gap-2"><Checkbox checked={legalBasis.art45_p1_b_handcuffs} onCheckedChange={(val) => setLegalBasis(prev => ({ ...prev, art45_p1_b_handcuffs: val === true }))} /><span className="text-sm text-slate-700">пп.б) під час затримання особи</span></label>
+                                    <label className="flex items-start gap-2"><Checkbox checked={legalBasis.art45_p1_v_handcuffs} onCheckedChange={(val) => setLegalBasis(prev => ({ ...prev, art45_p1_v_handcuffs: val === true }))} /><span className="text-sm text-slate-700">пп.в) під час конвоювання</span></label>
+                                    <label className="flex items-start gap-2"><Checkbox checked={legalBasis.art45_p1_g_handcuffs} onCheckedChange={(val) => setLegalBasis(prev => ({ ...prev, art45_p1_g_handcuffs: val === true }))} /><span className="text-sm text-slate-700">пп.г) небезпечні дії, що можуть зашкодити собі/оточуючим</span></label>
+                                    <label className="flex items-start gap-2"><Checkbox checked={legalBasis.art45_p1_gg_handcuffs} onCheckedChange={(val) => setLegalBasis(prev => ({ ...prev, art45_p1_gg_handcuffs: val === true }))} /><span className="text-sm text-slate-700">пп.ґ) процесуальні дії за наявності реальної небезпеки</span></label>
+                                </div>
+
+                                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    <p className="text-xs font-black uppercase tracking-widest text-slate-500">Стаття 45 - гумовий кийок (ч.3 п.2)</p>
+                                    <label className="flex items-start gap-2"><Checkbox checked={legalBasis.art45_p2_a_baton} onCheckedChange={(val) => setLegalBasis(prev => ({ ...prev, art45_p2_a_baton: val === true }))} /><span className="text-sm text-slate-700">пп.а) відбиття нападу</span></label>
+                                    <label className="flex items-start gap-2"><Checkbox checked={legalBasis.art45_p2_b_baton} onCheckedChange={(val) => setLegalBasis(prev => ({ ...prev, art45_p2_b_baton: val === true }))} /><span className="text-sm text-slate-700">пп.б) затримання при злісній непокорі</span></label>
+                                    <label className="flex items-start gap-2"><Checkbox checked={legalBasis.art45_p2_v_baton} onCheckedChange={(val) => setLegalBasis(prev => ({ ...prev, art45_p2_v_baton: val === true }))} /><span className="text-sm text-slate-700">пп.в) припинення групового порушення/заворушень</span></label>
+                                </div>
+
+                                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    <p className="text-xs font-black uppercase tracking-widest text-slate-500">Стаття 45 - сльозогінні/дратівні засоби (ч.3 п.3)</p>
+                                    <label className="flex items-start gap-2"><Checkbox checked={legalBasis.art45_p3_a_teargas} onCheckedChange={(val) => setLegalBasis(prev => ({ ...prev, art45_p3_a_teargas: val === true }))} /><span className="text-sm text-slate-700">пп.а) відбиття нападу</span></label>
+                                    <label className="flex items-start gap-2"><Checkbox checked={legalBasis.art45_p3_b_teargas} onCheckedChange={(val) => setLegalBasis(prev => ({ ...prev, art45_p3_b_teargas: val === true }))} /><span className="text-sm text-slate-700">пп.б) припинення групового порушення/заворушень</span></label>
+                                </div>
                             </div>
 
                             <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
