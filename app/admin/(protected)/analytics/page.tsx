@@ -11,14 +11,14 @@ type SearchParams = {
 }
 
 type UnifiedRecordRow = {
+  eoNumber: string
   eoDate: Date
+  createdAt: Date
   recordType: string | null
   status: string | null
   assignedUserId: string | null
   assignedUser: { firstName: string | null; lastName: string | null } | null
 }
-
-const KNOWN_TYPES = ["EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL"] as const
 
 function getTypeLabel(type: string) {
   if (type === "EO") return "ЄО"
@@ -33,6 +33,20 @@ function getStatusLabel(status: string) {
   if (status === "IN_PROGRESS") return "В роботі"
   if (status === "PENDING") return "Очікує"
   return "Інше"
+}
+
+function normalizeRecordType(recordType?: string | null, eoNumber?: string | null) {
+  const raw = (recordType || "").trim().toUpperCase()
+  if (raw === "EO" || raw === "ZVERN" || raw === "APPLICATION" || raw === "DETENTION_PROTOCOL") {
+    return raw
+  }
+
+  const number = (eoNumber || "").trim().toUpperCase()
+  if (number.startsWith("APP-")) return "APPLICATION"
+  if (number.startsWith("DET-") || number.startsWith("DTP-")) return "DETENTION_PROTOCOL"
+  if (number.startsWith("ZV-") || number.startsWith("ZVERN-")) return "ZVERN"
+  if (number.length > 0) return "EO"
+  return "OTHER"
 }
 
 export default async function AnalyticsPage(props: { searchParams: Promise<SearchParams> }) {
@@ -75,9 +89,16 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
       select: { createdAt: true, rateOverall: true, status: true },
     }),
     (prisma as any).unifiedRecord.findMany({
-      where: { eoDate: { gte: startDate, lte: endDate } },
+      where: {
+        OR: [
+          { eoDate: { gte: startDate, lte: endDate } },
+          { createdAt: { gte: startDate, lte: endDate } },
+        ],
+      },
       select: {
+        eoNumber: true,
         eoDate: true,
+        createdAt: true,
         recordType: true,
         status: true,
         assignedUserId: true,
@@ -133,9 +154,10 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
   > = {}
 
   for (const row of records) {
-    const type = row.recordType && KNOWN_TYPES.includes(row.recordType as any) ? row.recordType : "OTHER"
+    const type = normalizeRecordType(row.recordType, row.eoNumber)
     const status = row.status && ["PENDING", "IN_PROGRESS", "PROCESSED"].includes(row.status) ? row.status : "OTHER"
-    const dateKey = format(new Date(row.eoDate), "dd.MM")
+    const effectiveDate = row.eoDate || row.createdAt
+    const dateKey = format(new Date(effectiveDate), "dd.MM")
 
     typeMap[type] = (typeMap[type] || 0) + 1
     statusMap[status] = (statusMap[status] || 0) + 1
