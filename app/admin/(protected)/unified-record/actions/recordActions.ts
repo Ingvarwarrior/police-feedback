@@ -19,7 +19,7 @@ const UnifiedRecordSchema = z.object({
     description: z.string().optional().nullable(),
     applicant: z.string().optional().nullable(),
     category: z.string().optional().nullable(),
-    recordType: z.string().default("EO"),
+    recordType: z.enum(["EO", "ZVERN", "RAPORT"]).default("EO"),
     officerName: z.string().optional().nullable(),
     assignedUserId: z.string().optional().nullable(),
     status: z.string().optional().default("PENDING"),
@@ -30,7 +30,7 @@ const UnifiedRecordSchema = z.object({
     extensionDeadline: z.date().optional().nullable(),
     resolution: z.string().optional().nullable(),
     resolutionDate: z.date().optional().nullable(),
-    officerIds: z.array(z.string()).optional(),
+    officerIds: z.array(z.string()).default([]),
     concernsBpp: z.boolean().default(true),
 })
 
@@ -357,6 +357,7 @@ export async function upsertUnifiedRecordAction(data: any) {
     if (user.role !== 'ADMIN' && !user.permManageUnifiedRecords) throw new Error("У вас немає прав для створення чи редагування записів ЄО")
 
     const validated = UnifiedRecordSchema.parse(data)
+    const { officerIds, ...recordData } = validated
 
     let oldRecord = null
     if (validated.id) {
@@ -372,13 +373,21 @@ export async function upsertUnifiedRecordAction(data: any) {
     const record = await prisma.unifiedRecord.upsert({
         where: { eoNumber: validated.eoNumber },
         update: {
-            ...validated,
+            ...recordData,
             deadline: deadline,
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            officers: {
+                set: officerIds.map(id => ({ id }))
+            }
         },
         create: {
-            ...validated,
-            deadline: deadline
+            ...recordData,
+            deadline: deadline,
+            officers: officerIds.length > 0
+                ? {
+                    connect: officerIds.map(id => ({ id }))
+                }
+                : undefined
         }
     })
 
@@ -424,6 +433,22 @@ export async function getUsersForAssignment() {
             username: true
         },
         orderBy: { lastName: 'asc' }
+    })
+}
+
+export async function getOfficersForAssignment() {
+    const session = await auth()
+    if (!session) throw new Error("Unauthorized")
+
+    return await prisma.officer.findMany({
+        select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            badgeNumber: true,
+            status: true
+        },
+        orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }]
     })
 }
 

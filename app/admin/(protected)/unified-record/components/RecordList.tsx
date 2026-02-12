@@ -85,6 +85,7 @@ import { Calendar } from "@/components/ui/calendar"
 interface RecordListProps {
     initialRecords: any[]
     users: { id: string, firstName: string | null, lastName: string | null, username: string }[]
+    officers: { id: string, firstName: string, lastName: string, badgeNumber: string, status: string }[]
     currentUser: {
         id: string
         role: string
@@ -94,7 +95,7 @@ interface RecordListProps {
     }
 }
 
-export default function RecordList({ initialRecords, users = [], currentUser }: RecordListProps) {
+export default function RecordList({ initialRecords, users = [], officers = [], currentUser }: RecordListProps) {
     const [records, setRecords] = useState(initialRecords)
     const [filterSearch, setFilterSearch] = useState("")
     const [filterCategory, setFilterCategory] = useState("ALL")
@@ -434,7 +435,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
 
                 {currentUser.role === 'ADMIN' && (
                     <div className="flex items-center gap-3 p-2 bg-white/90 backdrop-blur-md rounded-[2rem] border border-slate-200 shadow-xl w-full sm:w-auto justify-center sm:justify-start h-16 overflow-x-auto no-scrollbar transition-all hover:shadow-2xl">
-                        <CreateRecordDialog users={users} initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }} />
+                        <CreateRecordDialog users={users} officers={officers} initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }} />
                         {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}
                         {(activeTab === 'ZVERN') && <ImportDialog defaultRecordType="ZVERN" />}
                         {(activeTab === 'RAPORT') && <ImportDialog defaultRecordType="RAPORT" />}
@@ -782,6 +783,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             <CreateRecordDialog
                                                                 initialData={record}
                                                                 users={users}
+                                                                officers={officers}
                                                                 trigger={
                                                                     <Button variant="ghost" size="sm" className="h-9 md:h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex-1 md:flex-none">
                                                                         <Edit2 className="w-3.5 h-3.5 md:mr-1.5" />

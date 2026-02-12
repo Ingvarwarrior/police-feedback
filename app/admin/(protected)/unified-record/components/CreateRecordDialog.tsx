@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -29,6 +30,7 @@ const formSchema = z.object({
     address: z.string().optional(),
     officerName: z.string().optional(),
     assignedUserId: z.string().optional().nullable(),
+    officerIds: z.array(z.string()).optional(),
     category: z.string().optional(),
     recordType: z.string().min(1),
     district: z.string().optional(),
@@ -41,10 +43,11 @@ type FormValues = z.infer<typeof formSchema>
 interface CreateRecordDialogProps {
     initialData?: Partial<FormValues>
     users?: { id: string, firstName: string | null, lastName: string | null, username: string }[]
+    officers?: { id: string, firstName: string, lastName: string, badgeNumber: string, status: string }[]
     trigger?: React.ReactNode
 }
 
-export default function CreateRecordDialog({ initialData, users = [], trigger }: CreateRecordDialogProps) {
+export default function CreateRecordDialog({ initialData, users = [], officers = [], trigger }: CreateRecordDialogProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -63,6 +66,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             address: initialData?.address || "",
             officerName: initialData?.officerName || "",
             assignedUserId: initialData?.assignedUserId || null,
+            officerIds: (initialData as any)?.officers?.map((o: any) => o.id) || [],
             category: initialData?.category || "Загальне",
             recordType: initialData?.recordType || "EO",
             district: initialData?.district || "Хмільницький",
@@ -83,6 +87,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                 address: initialData?.address || "",
                 officerName: initialData?.officerName || "",
                 assignedUserId: initialData?.assignedUserId || null,
+                officerIds: (initialData as any)?.officers?.map((o: any) => o.id) || [],
                 category: initialData?.category || "Загальне",
                 recordType: initialData?.recordType || "EO",
                 district: initialData?.district || "Хмільницький",
@@ -93,7 +98,8 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     }, [initialData, isOpen, form])
 
     const eoDate = form.watch("eoDate")
-    const resolutionDate = form.watch("resolutionDate")
+    const recordType = form.watch("recordType")
+    const selectedOfficerIds = form.watch("officerIds") || []
 
     const onAiScan = () => {
         fileInputRef.current?.click()
@@ -197,6 +203,14 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         } finally {
             setIsLoading(false)
         }
+    }
+
+    const toggleOfficer = (officerId: string, checked: boolean) => {
+        const current = form.getValues("officerIds") || []
+        const next = checked
+            ? Array.from(new Set([...current, officerId]))
+            : current.filter(id => id !== officerId)
+        form.setValue("officerIds", next, { shouldDirty: true })
     }
 
     return (
@@ -326,7 +340,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="assignedUserId" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Виконавець (Інспектор)</Label>
+                            <Label htmlFor="assignedUserId" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Виконавець (хто розгляне)</Label>
                             <Select
                                 onValueChange={(val) => form.setValue("assignedUserId", val)}
                                 defaultValue={form.getValues("assignedUserId") || undefined}
@@ -343,6 +357,43 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        {recordType === "RAPORT" && (
+                            <div className="space-y-2 md:col-span-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Поліцейські (з довідника)</Label>
+                                <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-2 space-y-1">
+                                    {officers.length === 0 ? (
+                                        <p className="text-[11px] font-medium text-slate-500 p-2">Список поліцейських порожній</p>
+                                    ) : (
+                                        officers.map((officer) => {
+                                            const checked = selectedOfficerIds.includes(officer.id)
+                                            return (
+                                                <label
+                                                    key={officer.id}
+                                                    className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-white cursor-pointer transition-colors"
+                                                >
+                                                    <Checkbox
+                                                        checked={checked}
+                                                        onCheckedChange={(value) => toggleOfficer(officer.id, value === true)}
+                                                    />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-bold text-slate-900">
+                                                            {officer.lastName} {officer.firstName}
+                                                        </span>
+                                                        <span className="text-[10px] font-medium text-slate-500">
+                                                            Жетон: {officer.badgeNumber}
+                                                        </span>
+                                                    </div>
+                                                </label>
+                                            )
+                                        })
+                                    )}
+                                </div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                    Обрано поліцейських: {selectedOfficerIds.length}
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="space-y-2">
