@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
     LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -12,7 +12,7 @@ import {
     Users, MessageSquare, Star, TrendingUp, AlertTriangle,
     Shield, ArrowUpRight, Award, Printer, Clock, Lock,
     UserCheck, BarChart3, PieChart as PieIcon, Brain, Clock3,
-    MapPin, Zap, ClipboardList, ListTodo, CheckCircle
+    MapPin, Zap, ClipboardList, ListTodo, CheckCircle, FileText
 } from "lucide-react"
 import {
     Select,
@@ -118,7 +118,32 @@ export default function AnalyticsClient({
         router.push(`/admin/analytics?${params.toString()}`)
     }
 
-    const selectedInspector = unifiedRecordStats.inspectorPerformance.find(i => i.id === selectedInspectorId)
+    const getUnifiedTypeCount = (type: string) =>
+        unifiedRecordStats.totalByType.find(t => t.recordType === type)?._count || 0
+
+    const inspectorsAggregated = useMemo(() => {
+        const map: Record<string, { id: string, name: string, assigned: number, processed: number, pending: number }> = {}
+        unifiedRecordStats.inspectorPerformance.forEach((item) => {
+            if (!map[item.id]) {
+                map[item.id] = {
+                    id: item.id,
+                    name: item.name,
+                    assigned: 0,
+                    processed: 0,
+                    pending: 0
+                }
+            }
+            map[item.id].assigned += item.assigned
+            map[item.id].processed += item.processed
+            map[item.id].pending += item.pending
+        })
+        return Object.values(map).sort((a, b) => b.assigned - a.assigned)
+    }, [unifiedRecordStats.inspectorPerformance])
+
+    const selectedInspector = useMemo(() => {
+        if (selectedInspectorId === 'all') return null
+        return inspectorsAggregated.find(i => i.id === selectedInspectorId) || null
+    }, [inspectorsAggregated, selectedInspectorId])
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -354,14 +379,14 @@ export default function AnalyticsClient({
                 {activeTab === 'unified' && (
                     <div className="space-y-8">
                         {/* Overall Stats Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                             <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-blue-50 to-white">
                                 <CardContent className="p-5 sm:p-8">
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Всього ЄО</p>
                                             <h3 className="text-4xl font-black text-slate-900">
-                                                {unifiedRecordStats.totalByType.find(t => t.recordType === 'EO')?._count || 0}
+                                                {getUnifiedTypeCount('EO')}
                                             </h3>
                                         </div>
                                         <div className="p-3 bg-blue-100 rounded-2xl text-blue-600">
@@ -376,11 +401,41 @@ export default function AnalyticsClient({
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1">Всього Звернень</p>
                                             <h3 className="text-4xl font-black text-slate-900">
-                                                {unifiedRecordStats.totalByType.find(t => t.recordType === 'ZVERN')?._count || 0}
+                                                {getUnifiedTypeCount('ZVERN')}
                                             </h3>
                                         </div>
                                         <div className="p-3 bg-amber-100 rounded-2xl text-amber-600">
                                             <MessageSquare className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-rose-50 to-white">
+                                <CardContent className="p-5 sm:p-8">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-1">Застосування сили/спецзасобів</p>
+                                            <h3 className="text-4xl font-black text-slate-900">
+                                                {getUnifiedTypeCount('APPLICATION')}
+                                            </h3>
+                                        </div>
+                                        <div className="p-3 bg-rose-100 rounded-2xl text-rose-600">
+                                            <Shield className="w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="border-0 shadow-lg shadow-slate-200/50 rounded-[2rem] bg-gradient-to-br from-fuchsia-50 to-white">
+                                <CardContent className="p-5 sm:p-8">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-fuchsia-600 mb-1">Протоколи затримання</p>
+                                            <h3 className="text-4xl font-black text-slate-900">
+                                                {getUnifiedTypeCount('DETENTION_PROTOCOL')}
+                                            </h3>
+                                        </div>
+                                        <div className="p-3 bg-fuchsia-100 rounded-2xl text-fuchsia-600">
+                                            <FileText className="w-6 h-6" />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -418,8 +473,7 @@ export default function AnalyticsClient({
                                         </SelectTrigger>
                                         <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
                                             <SelectItem value="all" className="font-bold text-xs py-3">Усі інспектори (разом)</SelectItem>
-                                            {unifiedRecordStats.inspectorPerformance
-                                                .sort((a, b) => b.assigned - a.assigned)
+                                            {inspectorsAggregated
                                                 .map(i => (
                                                     <SelectItem key={i.id} value={i.id} className="font-bold text-xs py-3">
                                                         {i.name} {i.assigned > 0 ? `(${i.assigned})` : ''}
@@ -483,15 +537,27 @@ export default function AnalyticsClient({
                                                 <div key={item.id} className="rounded-2xl border border-slate-100 bg-white p-4 space-y-3">
                                                     <div className="flex items-start justify-between gap-3">
                                                         <p className="font-bold text-slate-900">
-                                                            {item.id === 'unassigned' ? 'Не призначено' : item.name}
-                                                        </p>
-                                                        <span className={cn(
-                                                            "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shrink-0",
-                                                            item.recordType === 'EO' ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"
-                                                        )}>
-                                                            {item.recordType === 'EO' ? 'ЄО' : 'Звернення'}
-                                                        </span>
-                                                    </div>
+                                                        {item.id === 'unassigned' ? 'Не призначено' : item.name}
+                                                    </p>
+                                                    <span className={cn(
+                                                        "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shrink-0",
+                                                        item.recordType === 'EO'
+                                                            ? "bg-blue-100 text-blue-700"
+                                                            : item.recordType === 'ZVERN'
+                                                                ? "bg-amber-100 text-amber-700"
+                                                                : item.recordType === 'APPLICATION'
+                                                                    ? "bg-rose-100 text-rose-700"
+                                                                    : "bg-fuchsia-100 text-fuchsia-700"
+                                                    )}>
+                                                        {item.recordType === 'EO'
+                                                            ? 'ЄО'
+                                                            : item.recordType === 'ZVERN'
+                                                                ? 'Звернення'
+                                                                : item.recordType === 'APPLICATION'
+                                                                    ? 'Застосування'
+                                                                    : 'Затримання'}
+                                                    </span>
+                                                </div>
                                                     <div className="grid grid-cols-3 gap-3 text-center">
                                                         <div>
                                                             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Призначено</p>
@@ -545,9 +611,21 @@ export default function AnalyticsClient({
                                                         <TableCell className="py-6">
                                                             <span className={cn(
                                                                 "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest",
-                                                                item.recordType === 'EO' ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"
+                                                                item.recordType === 'EO'
+                                                                    ? "bg-blue-100 text-blue-700"
+                                                                    : item.recordType === 'ZVERN'
+                                                                        ? "bg-amber-100 text-amber-700"
+                                                                        : item.recordType === 'APPLICATION'
+                                                                            ? "bg-rose-100 text-rose-700"
+                                                                            : "bg-fuchsia-100 text-fuchsia-700"
                                                             )}>
-                                                                {item.recordType === 'EO' ? 'ЄО' : 'Звернення'}
+                                                                {item.recordType === 'EO'
+                                                                    ? 'ЄО'
+                                                                    : item.recordType === 'ZVERN'
+                                                                        ? 'Звернення'
+                                                                        : item.recordType === 'APPLICATION'
+                                                                            ? 'Застосування'
+                                                                            : 'Затримання'}
                                                             </span>
                                                         </TableCell>
                                                         <TableCell className="text-center font-bold text-slate-600 py-6">{item.assigned}</TableCell>

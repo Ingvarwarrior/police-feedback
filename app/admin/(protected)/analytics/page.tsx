@@ -145,9 +145,9 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ per
         select: { id: true, firstName: true, lastName: true }
     })
 
-    // Initialize for both types for all users
-    users.forEach(u => {
-        ['EO', 'ZVERN'].forEach(type => {
+    // Initialize for all supported unified record types for all users
+    users.forEach((u: any) => {
+        ['EO', 'ZVERN', 'APPLICATION', 'DETENTION_PROTOCOL'].forEach(type => {
             const compositeKey = `${u.id}_${type}`
             inspectorStatsMap[compositeKey] = {
                 id: u.id,
