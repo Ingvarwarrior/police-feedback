@@ -63,14 +63,14 @@ export default async function ReportsPage() {
                 </div>
             </div>
 
-            <Card className="border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900 transition-colors duration-300">
-                <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 border-b dark:border-slate-800 px-8 py-6 transition-colors duration-300">
+            <Card className="border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900 transition-colors duration-300">
+                <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 border-b dark:border-slate-800 px-4 sm:px-8 py-4 sm:py-6 transition-colors duration-300">
                     <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-900 dark:text-slate-200">
                         <FileText className="w-4 h-4 text-primary" />
                         Усі записи ({responses.length})
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="p-8">
+                <CardContent className="p-4 sm:p-8">
                     <ReportsList initialResponses={responses} users={users} currentUser={currentUser} />
                 </CardContent>
             </Card>

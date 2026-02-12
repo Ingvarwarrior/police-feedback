@@ -460,7 +460,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 </Tabs>
 
                 {currentUser.role === 'ADMIN' && (
-                    <div className="flex flex-wrap items-center gap-3 p-2 bg-white/90 backdrop-blur-md rounded-[2rem] border border-slate-200 shadow-xl w-full justify-start min-h-16 transition-all hover:shadow-2xl">
+                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 p-2 bg-white/90 backdrop-blur-md rounded-[2rem] border border-slate-200 shadow-xl w-full justify-start min-h-16 transition-all hover:shadow-2xl">
                         <CreateRecordDialog
                             users={users}
                             initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }}

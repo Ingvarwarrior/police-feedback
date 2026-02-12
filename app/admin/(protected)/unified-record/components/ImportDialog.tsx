@@ -78,7 +78,7 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
         }}>
             <DialogTrigger asChild>
                 <Button className={cn(
-                    "rounded-2xl font-bold gap-2 px-6 shadow-lg transition-all active:scale-95",
+                    "rounded-2xl font-bold gap-2 px-6 shadow-lg transition-all active:scale-95 w-full sm:w-auto justify-center",
                     recordType === 'ZVERN'
                         ? "bg-slate-900 hover:bg-black text-white shadow-slate-200"
                         : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"
@@ -87,8 +87,8 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
                     {recordType === 'EO' ? 'Імпорт ЄО' : 'Імпорт Звернень'}
                 </Button>
             </DialogTrigger>
-            <DialogContent className={`${step === 'preview' ? 'sm:max-w-4xl' : 'sm:max-w-md'} rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl`}>
-                <DialogHeader className="p-8 pb-0">
+            <DialogContent className={`${step === 'preview' ? 'sm:max-w-4xl' : 'sm:max-w-md'} rounded-[2rem] sm:rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl`}>
+                <DialogHeader className="p-4 sm:p-8 pb-0">
                     <DialogTitle className="text-2xl font-black uppercase italic tracking-tight flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
                             {step === 'upload' ? <Upload className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
@@ -101,7 +101,7 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="p-8">
+                <div className="p-4 sm:p-8">
                     {step === 'upload' ? (
                         <div className="space-y-6">
                             <div
@@ -209,7 +209,7 @@ export default function ImportDialog({ defaultRecordType = 'EO' }: ImportDialogP
                                 <Button
                                     disabled={!file || isLoading}
                                     onClick={handleParse}
-                                    className="bg-slate-900 hover:bg-blue-600 text-white rounded-2xl font-black px-10 h-14 uppercase tracking-widest text-xs transition-all shadow-xl shadow-slate-200 flex gap-3 group"
+                                    className="bg-slate-900 hover:bg-blue-600 text-white rounded-2xl font-black px-10 h-14 uppercase tracking-widest text-xs transition-all shadow-xl shadow-slate-200 flex gap-3 group w-full sm:w-auto"
                                 >
                                     {isLoading ? (
                                         <Loader2 className="w-5 h-5 animate-spin" />

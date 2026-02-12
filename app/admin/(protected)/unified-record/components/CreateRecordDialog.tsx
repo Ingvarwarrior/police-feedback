@@ -659,14 +659,14 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
         }}>
             <DialogTrigger asChild>
                 {trigger || (
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-6 h-12 shadow-lg shadow-blue-500/20 group transition-all">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-6 h-12 shadow-lg shadow-blue-500/20 group transition-all w-full sm:w-auto justify-center">
                         <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform" />
                         Додати запис
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="w-[95%] sm:w-full sm:max-w-[600px] bg-white rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
-                <DialogHeader className="p-6 md:p-8 bg-slate-900 text-white flex flex-row items-center justify-between">
+            <DialogContent className="w-[95%] sm:w-full sm:max-w-[600px] bg-white rounded-[1.5rem] sm:rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
+                <DialogHeader className="p-5 sm:p-6 md:p-8 bg-slate-900 text-white flex flex-row items-start justify-between gap-3 sm:gap-4">
                     <div>
                         <DialogTitle className="text-xl md:text-2xl font-black italic uppercase tracking-tight">
                             {isEdit ? "Редагування картки" : "Нова картка запису"}
@@ -701,7 +701,7 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                     )}
                 </DialogHeader>
 
-                <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="p-6 md:p-8 space-y-5 md:space-y-6 max-h-[50vh] md:max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="p-4 sm:p-6 md:p-8 space-y-5 md:space-y-6 max-h-[55vh] md:max-h-[70vh] overflow-y-auto custom-scrollbar">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                         {recordType !== "DETENTION_PROTOCOL" && (
                             <div className="space-y-2">
@@ -1195,7 +1195,7 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                     )}
                 </form>
 
-                <DialogFooter className="p-4 md:p-8 bg-slate-50 border-t border-slate-100 flex flex-row gap-2 md:gap-4 items-center justify-between">
+                <DialogFooter className="p-4 md:p-8 bg-slate-50 border-t border-slate-100 flex flex-col-reverse sm:flex-row gap-2 md:gap-4 items-stretch sm:items-center justify-between">
                     <Button
                         type="button"
                         variant="ghost"
