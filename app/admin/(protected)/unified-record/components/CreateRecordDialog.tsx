@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const formSchema = z.object({
     id: z.string().optional(),
-    eoNumber: z.string().min(1, "Номер ЄО обов'язковий"),
+    eoNumber: z.string().optional(),
     eoDate: z.date(),
     description: z.string().min(1, "Опис події обов'язковий"),
     applicant: z.string().optional(),
@@ -314,6 +314,11 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const onSubmit = async (data: FormValues) => {
         setIsLoading(true)
         try {
+            if (data.recordType !== "RAPORT" && !data.eoNumber?.trim()) {
+                toast.error('Поле "Номер ЄО" є обовʼязковим')
+                return
+            }
+
             let raportDescription = data.description || ""
             if (data.recordType === "RAPORT") {
                 if (!data.officerName?.trim()) {
@@ -625,15 +630,25 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                             <Label htmlFor="eoNumber" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                                 {recordType === "RAPORT" ? "Номер рапорту / ЄО" : "Номер ЄО"}
                             </Label>
-                            <Input
-                                id="eoNumber"
-                                {...form.register("eoNumber")}
-                                placeholder="Напр. 1256"
-                                className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                disabled={isEdit}
-                            />
-                            {form.formState.errors.eoNumber && (
-                                <p className="text-[10px] text-red-500 font-bold">{form.formState.errors.eoNumber.message}</p>
+                            {recordType === "RAPORT" ? (
+                                <div className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-3 flex items-center text-sm font-semibold text-slate-600">
+                                    {isEdit
+                                        ? `Рапорт №${form.getValues("eoNumber") || "—"}`
+                                        : "Буде присвоєно автоматично"}
+                                </div>
+                            ) : (
+                                <>
+                                    <Input
+                                        id="eoNumber"
+                                        {...form.register("eoNumber")}
+                                        placeholder="Напр. 1256"
+                                        className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                        disabled={isEdit}
+                                    />
+                                    {form.formState.errors.eoNumber && (
+                                        <p className="text-[10px] text-red-500 font-bold">{form.formState.errors.eoNumber.message}</p>
+                                    )}
+                                </>
                             )}
                         </div>
 

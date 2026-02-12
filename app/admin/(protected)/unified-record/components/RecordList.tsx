@@ -122,6 +122,20 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         setRecords(initialRecords)
     }, [initialRecords])
 
+    const getRaportSubjectName = (basisText?: string | null) => {
+        if (!basisText) return "—"
+        const normalized = basisText.replace(/\s+/g, " ").trim()
+        const exact = normalized.match(/до\s+(.+?)\s+\d{2}\.\d{2}\.\d{4}/i)
+        if (exact?.[1]) return exact[1].trim()
+        const fallback = normalized.match(/до\s+(.+)/i)
+        return fallback?.[1]?.trim() || "—"
+    }
+
+    const getAssignedInspectorName = (record: any) => {
+        if (!record.assignedUser) return "Не призначено"
+        return `${record.assignedUser.lastName || ""} ${record.assignedUser.firstName || ""}`.trim() || record.assignedUser.username || "Призначено"
+    }
+
     // Auto-view record if recordId is in URL
     useEffect(() => {
         const recordId = searchParams.get('recordId')
@@ -759,8 +773,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         }}
                                                         className="text-base md:text-lg font-black text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase tracking-tight leading-tight mt-2 break-words cursor-pointer"
                                                     >
-                                                        {record.description || 'Без опису'}
+                                                        {record.recordType === 'RAPORT' ? `Рапорт №${record.eoNumber}` : (record.description || 'Без опису')}
                                                     </h3>
+                                                    {record.recordType === 'RAPORT' && (
+                                                        <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mt-1">Затримання</p>
+                                                    )}
                                                 </div>
 
                                                 <div className="flex flex-row md:flex-wrap gap-1 md:gap-2">
@@ -832,20 +849,22 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-6 border-t border-slate-200 dark:border-slate-800 transition-colors duration-300">
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center gap-2 text-slate-500">
-                                                        <User className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-black uppercase tracking-widest">Заявник</span>
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center gap-2 text-slate-500">
+                                                            <User className="w-4 h-4 shrink-0" />
+                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'RAPORT' ? 'ПІБ' : 'Заявник'}</span>
+                                                        </div>
+                                                        <p className="text-sm font-black text-slate-900 dark:text-white transition-colors duration-300">
+                                                        {record.recordType === 'RAPORT'
+                                                            ? getRaportSubjectName(record.address)
+                                                            : (<><span className="text-slate-400 text-[10px] mr-1">Гр.</span> {record.applicant || '—'}</>)}
+                                                        </p>
                                                     </div>
-                                                    <p className="text-sm font-black text-slate-900 dark:text-white transition-colors duration-300">
-                                                        <span className="text-slate-400 text-[10px] mr-1">Гр.</span> {record.applicant || '—'}
-                                                    </p>
-                                                </div>
 
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-slate-500">
                                                         <FileText className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-black uppercase tracking-widest">Результат</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'RAPORT' ? 'Тип' : 'Результат'}</span>
                                                     </div>
 
                                                     <div className="space-y-1">
@@ -853,9 +872,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             "text-sm font-bold italic transition-colors duration-300",
                                                             record.status === 'PROCESSED' ? "text-emerald-700 dark:text-emerald-400" : (record.assignedUserId ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")
                                                         )}>
-                                                            {record.status === 'PROCESSED' ? (record.resolution || 'Виконано') : (record.assignedUserId ? (record.resolution ? 'Потребує доопрацювання/В процесі...' : 'В процесі розгляду...') : 'Не призначено')}
+                                                            {record.recordType === 'RAPORT'
+                                                                ? 'Затримання'
+                                                                : (record.status === 'PROCESSED' ? (record.resolution || 'Виконано') : (record.assignedUserId ? (record.resolution ? 'Потребує доопрацювання/В процесі...' : 'В процесі розгляду...') : 'Не призначено'))}
                                                         </div>
-                                                        {record.resolutionDate && (
+                                                        {record.recordType !== 'RAPORT' && record.resolutionDate && (
                                                             <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium italic">
                                                                 <CalendarIcon className="w-3 h-3" />
                                                                 Виконано: {format(new Date(record.resolutionDate), "dd.MM.yyyy", { locale: uk })}
@@ -865,7 +886,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 </div>
 
                                                 {/* Tagged Officers */}
-                                                {record.concernsBpp && record.officers && record.officers.length > 0 && (
+                                                {record.recordType !== 'RAPORT' && record.concernsBpp && record.officers && record.officers.length > 0 && (
                                                     <div className="space-y-3 col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-1">
                                                         <div className="flex items-center gap-2 text-slate-500">
                                                             <Shield className="w-4 h-4 shrink-0" />
@@ -884,40 +905,44 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-slate-500">
                                                         <Briefcase className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-black uppercase tracking-widest">Відповідальний</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'RAPORT' ? 'Призначено' : 'Відповідальний'}</span>
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <Select
-                                                            defaultValue={record.assignedUserId || undefined}
-                                                            onValueChange={async (val) => {
-                                                                const targetIds = selectedIds.includes(record.id) ? selectedIds : [record.id]
-                                                                setIsAssigning(true)
-                                                                try {
-                                                                    await bulkAssignUnifiedRecordsAction(targetIds, val)
-                                                                    toast.success(targetIds.length > 1 ? `Призначено ${targetIds.length} записів` : "Інспектора призначено")
-                                                                    setRecords(prev => prev.map(r => targetIds.includes(r.id) ? { ...r, assignedUserId: val, assignedUser: users.find(u => u.id === val) } : r))
-                                                                    setSelectedIds([])
-                                                                } catch (error) {
-                                                                    toast.error("Помилка призначення")
-                                                                } finally {
-                                                                    setIsAssigning(false)
-                                                                }
-                                                            }}
-                                                            disabled={isAssigning || currentUser.role !== 'ADMIN'}
-                                                        >
-                                                            <SelectTrigger className="h-10 rounded-xl border-slate-300 bg-white hover:bg-slate-50 transition-all text-sm font-black text-slate-900 w-full shadow-sm">
-                                                                <SelectValue placeholder="Оберіть інспектора..." />
-                                                            </SelectTrigger>
-                                                            <SelectContent className="rounded-2xl border-none shadow-2xl">
-                                                                {users.map(user => (
-                                                                    <SelectItem key={user.id} value={user.id}>
-                                                                        {user.lastName} {user.firstName || user.username}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        {record.recordType === 'RAPORT' && currentUser.role !== 'ADMIN' ? (
+                                                            <p className="text-sm font-bold text-slate-900">{getAssignedInspectorName(record)}</p>
+                                                        ) : (
+                                                            <Select
+                                                                defaultValue={record.assignedUserId || undefined}
+                                                                onValueChange={async (val) => {
+                                                                    const targetIds = selectedIds.includes(record.id) ? selectedIds : [record.id]
+                                                                    setIsAssigning(true)
+                                                                    try {
+                                                                        await bulkAssignUnifiedRecordsAction(targetIds, val)
+                                                                        toast.success(targetIds.length > 1 ? `Призначено ${targetIds.length} записів` : "Інспектора призначено")
+                                                                        setRecords(prev => prev.map(r => targetIds.includes(r.id) ? { ...r, assignedUserId: val, assignedUser: users.find(u => u.id === val) } : r))
+                                                                        setSelectedIds([])
+                                                                    } catch (error) {
+                                                                        toast.error("Помилка призначення")
+                                                                    } finally {
+                                                                        setIsAssigning(false)
+                                                                    }
+                                                                }}
+                                                                disabled={isAssigning || currentUser.role !== 'ADMIN'}
+                                                            >
+                                                                <SelectTrigger className="h-10 rounded-xl border-slate-300 bg-white hover:bg-slate-50 transition-all text-sm font-black text-slate-900 w-full shadow-sm">
+                                                                    <SelectValue placeholder="Оберіть інспектора..." />
+                                                                </SelectTrigger>
+                                                                <SelectContent className="rounded-2xl border-none shadow-2xl">
+                                                                    {users.map(user => (
+                                                                        <SelectItem key={user.id} value={user.id}>
+                                                                            {user.lastName} {user.firstName || user.username}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        )}
 
-                                                        {record.status === 'PROCESSED' && (
+                                                        {record.recordType !== 'RAPORT' && record.status === 'PROCESSED' && (
                                                             <div className="mt-4">
                                                                 <RecordProcessPopover
                                                                     recordId={record.id}
@@ -936,7 +961,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         )}
 
                                                         {/* Single "DONE" Button for assigned user */}
-                                                        {record.assignedUserId === currentUser.id && record.status !== 'PROCESSED' && (
+                                                        {record.recordType !== 'RAPORT' && record.assignedUserId === currentUser.id && record.status !== 'PROCESSED' && (
                                                             <div className="flex flex-col gap-2 mt-4">
                                                                 <RecordProcessPopover
                                                                     recordId={record.id}
@@ -977,7 +1002,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         )}
 
                                                         {/* Admin Review for extensions or Return for Revision */}
-                                                        {currentUser.role === 'ADMIN' && (
+                                                        {record.recordType !== 'RAPORT' && currentUser.role === 'ADMIN' && (
                                                             <div className="mt-3 space-y-2">
                                                                 {record.extensionStatus === 'PENDING' && (
                                                                     <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100 space-y-2">

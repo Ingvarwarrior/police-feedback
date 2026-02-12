@@ -34,6 +34,28 @@ const UnifiedRecordSchema = z.object({
     concernsBpp: z.boolean().default(true),
 })
 
+async function generateNextRaportNumber() {
+    const year = new Date().getFullYear()
+    const prefix = `R-${year}-`
+
+    const existing = await prisma.unifiedRecord.findMany({
+        where: {
+            recordType: "RAPORT",
+            eoNumber: { startsWith: prefix }
+        },
+        select: { eoNumber: true }
+    })
+
+    let maxSeq = 0
+    for (const item of existing) {
+        const seqPart = item.eoNumber.slice(prefix.length)
+        const seq = Number.parseInt(seqPart, 10)
+        if (Number.isFinite(seq) && seq > maxSeq) maxSeq = seq
+    }
+
+    return `${prefix}${String(maxSeq + 1).padStart(4, "0")}`
+}
+
 export async function processUnifiedRecordAction(id: string, resolution: string, officerIds?: string[], concernsBpp: boolean = true): Promise<{ success?: boolean, error?: string }> {
     const session = await auth()
     if (!session?.user?.email) return { error: "Unauthorized" }
@@ -356,7 +378,15 @@ export async function upsertUnifiedRecordAction(data: any) {
     // Only admins or users with permManageUnifiedRecords can create or edit basic record details
     if (user.role !== 'ADMIN' && !user.permManageUnifiedRecords) throw new Error("У вас немає прав для створення чи редагування записів ЄО")
 
-    const validated = UnifiedRecordSchema.parse(data)
+    const payload = { ...data }
+    const isRaport = payload.recordType === "RAPORT"
+    const isCreate = !payload.id
+
+    if (isRaport && (isCreate || !payload.eoNumber || !String(payload.eoNumber).trim())) {
+        payload.eoNumber = await generateNextRaportNumber()
+    }
+
+    const validated = UnifiedRecordSchema.parse(payload)
     const { officerIds, ...recordData } = validated
 
     let oldRecord = null
