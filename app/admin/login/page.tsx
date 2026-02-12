@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,10 +12,10 @@ import { loginAction } from './actions/login'
 export default function LoginPage() {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
+    const [otp, setOtp] = useState('')
+    const [requiresTwoFactor, setRequiresTwoFactor] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
-    const router = useRouter()
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
@@ -24,12 +23,23 @@ export default function LoginPage() {
         const formData = new FormData()
         formData.append('username', username)
         formData.append('password', password)
+        if (requiresTwoFactor) {
+            formData.append('otp', otp)
+        }
 
         try {
             const result = await loginAction(formData)
             if (result?.error) {
                 toast.error(result.error)
                 setLoading(false)
+                return
+            }
+
+            if (result?.requiresTwoFactor) {
+                setRequiresTwoFactor(true)
+                setLoading(false)
+                toast.info("Введіть код з Google Authenticator")
+                return
             }
             // If success, next-auth handles redirect via 'redirectTo' in Server Action
         } catch (error) {
@@ -68,6 +78,7 @@ export default function LoginPage() {
                                 className="h-12 rounded-xl border-slate-200 bg-slate-50 focus-visible:ring-primary shadow-inner"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
+                                disabled={requiresTwoFactor}
                                 required
                             />
                         </div>
@@ -80,6 +91,7 @@ export default function LoginPage() {
                                     className="h-12 rounded-xl border-slate-200 bg-slate-50 focus-visible:ring-primary shadow-inner pr-12"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
+                                    disabled={requiresTwoFactor}
                                     required
                                 />
                                 <button
@@ -91,9 +103,39 @@ export default function LoginPage() {
                                 </button>
                             </div>
                         </div>
+                        {requiresTwoFactor && (
+                            <div className="space-y-3">
+                                <Label htmlFor="otp" className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">
+                                    Код Google Authenticator
+                                </Label>
+                                <Input
+                                    id="otp"
+                                    type="text"
+                                    inputMode="numeric"
+                                    placeholder="6-значний код"
+                                    className="h-12 rounded-xl border-slate-200 bg-slate-50 focus-visible:ring-primary shadow-inner tracking-[0.3em]"
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    required
+                                />
+                            </div>
+                        )}
                         <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]" disabled={loading}>
-                            {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Авторизуватися"}
+                            {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : requiresTwoFactor ? "Підтвердити код" : "Авторизуватися"}
                         </Button>
+                        {requiresTwoFactor && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full h-12 rounded-xl"
+                                onClick={() => {
+                                    setRequiresTwoFactor(false)
+                                    setOtp('')
+                                }}
+                            >
+                                Назад до логіну
+                            </Button>
+                        )}
                     </form>
 
                     <div className="mt-8 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3 text-xs text-amber-800 font-medium">

@@ -45,6 +45,10 @@ model User {
   permViewAudit             Boolean             @default(false)
   permManageSettings        Boolean             @default(false)
   permManageMailAlerts      Boolean             @default(false)
+  twoFactorEnabled          Boolean             @default(false)
+  twoFactorSecretEncrypted  String?
+  twoFactorTempSecret       String?
+  twoFactorEnabledAt        DateTime?
   createdAt                 DateTime            @default(now())
   phone                     String?
   lastLat                   Float?

@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { User, Shield, Key } from "lucide-react"
 import ChangePasswordForm from "./ChangePasswordForm"
 import EditProfileForm from "./EditProfileForm"
+import TwoFactorSettings from "./TwoFactorSettings"
+import { isTwoFactorEnabledGlobally } from "@/lib/two-factor"
 
 export default async function ProfilePage() {
     const session = await auth()
@@ -13,20 +15,13 @@ export default async function ProfilePage() {
 
     // Fetch full user data from database
     const user = await prisma.user.findUnique({
-        where: { username: session.user.email as string },
-        select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            badgeNumber: true,
-            role: true
-        }
+        where: { username: session.user.email as string }
     })
 
     if (!user) {
         return <div>Користувача не знайдено</div>
     }
+    const userAny = user as any
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-12">
@@ -51,9 +46,9 @@ export default async function ProfilePage() {
                     </CardHeader>
                     <CardContent className="p-6 space-y-6">
                         <EditProfileForm
-                            currentFirstName={user?.firstName}
-                            currentLastName={user?.lastName}
-                            currentBadgeNumber={user?.badgeNumber}
+                            currentFirstName={userAny?.firstName}
+                            currentLastName={userAny?.lastName}
+                            currentBadgeNumber={userAny?.badgeNumber}
                         />
 
                         <div className="pt-6 border-t border-slate-100 space-y-4">
@@ -69,7 +64,7 @@ export default async function ProfilePage() {
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user?.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-800'
                                         }`}>
                                         <Shield className="w-3 h-3 mr-1" />
-                                        {user?.role}
+                                        {userAny?.role}
                                     </span>
                                 </div>
                             </div>
@@ -95,6 +90,27 @@ export default async function ProfilePage() {
                     </CardContent>
                 </Card>
             </div>
+
+            <Card className="border-0 shadow-xl ring-1 ring-slate-200 rounded-3xl overflow-hidden">
+                <CardHeader className="bg-slate-50 border-b p-6">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-xl">
+                            <Shield className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-lg font-bold">Google Authenticator (2FA)</CardTitle>
+                            <CardDescription>Додатковий захист входу за одноразовим кодом</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                    <TwoFactorSettings
+                        enabled={!!userAny.twoFactorEnabled}
+                        enabledAt={userAny.twoFactorEnabledAt ? new Date(userAny.twoFactorEnabledAt).toLocaleString('uk-UA') : null}
+                        globallyEnabled={isTwoFactorEnabledGlobally()}
+                    />
+                </CardContent>
+            </Card>
         </div>
     )
 }

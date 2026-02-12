@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from 'bcryptjs'
+import { decryptSecret, isTwoFactorEnabledGlobally, verifyTotpCode } from "@/lib/two-factor"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     trustHost: true,
@@ -38,6 +39,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
                 const isPasswordValid = await bcrypt.compare(credentials.password as string, user.passwordHash)
                 if (isPasswordValid) {
+                    const totpCode = ((credentials as any).otp as string | undefined)?.trim() || ""
+                    let twoFactorValidated = true
+                    const userAny = user as any
+
+                    if (isTwoFactorEnabledGlobally() && userAny.twoFactorEnabled) {
+                        twoFactorValidated = false
+                        if (!totpCode || !userAny.twoFactorSecretEncrypted) {
+                            return null
+                        }
+
+                        let secret = ""
+                        try {
+                            secret = decryptSecret(userAny.twoFactorSecretEncrypted)
+                        } catch {
+                            return null
+                        }
+
+                        if (!verifyTotpCode(secret, totpCode)) {
+                            return null
+                        }
+                        twoFactorValidated = true
+                    }
+
                     // Log the login action
                     await prisma.auditLog.create({
                         data: {
@@ -87,6 +111,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         permViewAudit: user.permViewAudit,
                         permManageSettings: user.permManageSettings,
                         permManageMailAlerts: user.permManageMailAlerts,
+                        isTwoFactorVerified: twoFactorValidated,
                     }
                 }
                 return null
@@ -163,6 +188,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 // Spread all permission fields from token to session user
                 const permKeys = Object.keys(token).filter(k => k.startsWith('perm'));
                 permKeys.forEach(k => u[k] = token[k]);
+                u.isTwoFactorVerified = token.isTwoFactorVerified
             }
             return session
         },
