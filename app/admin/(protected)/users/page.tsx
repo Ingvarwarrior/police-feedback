@@ -11,7 +11,7 @@ export default async function UsersPage() {
     const session = await auth()
     const user = session?.user as any
 
-    if (user?.role !== 'ADMIN' && !user?.permManageUsers) {
+    if (user?.role !== 'ADMIN' && !user?.permViewUsers && !user?.permManageUsers) {
         redirect("/admin/dashboard")
     }
 
@@ -26,12 +26,14 @@ export default async function UsersPage() {
                     <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic transition-colors duration-300">Керування персоналом</h1>
                     <p className="text-slate-500 dark:text-slate-400 font-medium italic transition-colors duration-300">Додавання та налаштування доступів для інспекторів</p>
                 </div>
-                <Link href="/admin/users/new" className="w-full sm:w-auto">
-                    <Button className="w-full sm:w-auto rounded-2xl font-black uppercase tracking-widest gap-2 h-12 px-6 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
-                        <UserPlus className="w-5 h-5" />
-                        <span className="truncate">Додати інспектора</span>
-                    </Button>
-                </Link>
+                {(user?.role === 'ADMIN' || user?.permCreateUsers || user?.permManageUsers) ? (
+                    <Link href="/admin/users/new" className="w-full sm:w-auto">
+                        <Button className="w-full sm:w-auto rounded-2xl font-black uppercase tracking-widest gap-2 h-12 px-6 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
+                            <UserPlus className="w-5 h-5" />
+                            <span className="truncate">Додати інспектора</span>
+                        </Button>
+                    </Link>
+                ) : null}
             </div>
 
             <div className="grid gap-6">

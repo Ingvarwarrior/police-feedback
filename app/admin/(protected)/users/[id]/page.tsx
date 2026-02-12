@@ -19,7 +19,7 @@ export default async function EditUserPage({
     const session = await auth()
     const userRole = session?.user as any
 
-    if (userRole?.role !== 'ADMIN' && !userRole?.permManageUsers) {
+    if (userRole?.role !== 'ADMIN' && !userRole?.permEditUsers && !userRole?.permManageUsers) {
         redirect("/admin/dashboard")
     }
 

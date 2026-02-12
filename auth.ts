@@ -73,44 +73,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         }
                     })
 
+                    const permissionPayload = Object.fromEntries(
+                        Object.entries(user as Record<string, unknown>).filter(([key]) => key.startsWith("perm"))
+                    )
+
                     return {
                         id: user.id,
                         email: user.username as string, // Using username as the unique identifier for session
                         name: user.role,
-                        // Reports
-                        permViewReports: user.permViewReports,
-                        permAssignReports: user.permAssignReports,
-                        permViewSensitiveData: user.permViewSensitiveData,
-                        permBulkActionReports: user.permBulkActionReports,
-                        // Administrative
-                        permManageUsers: user.permManageUsers,
-                        permEditNotes: user.permEditNotes,
-                        permChangeStatus: user.permChangeStatus,
-                        permExportData: user.permExportData,
-                        permDeleteReports: user.permDeleteReports,
-                        // Officers
-                        permCreateOfficers: user.permCreateOfficers,
-                        permEditOfficers: user.permEditOfficers,
-                        permDeleteOfficers: user.permDeleteOfficers,
-                        permViewOfficerStats: user.permViewOfficerStats,
-                        permCreateEvaluations: user.permCreateEvaluations,
-                        permManageOfficerStatus: user.permManageOfficerStatus,
-                        // Unified Records
-                        permManageUnifiedRecords: user.permManageUnifiedRecords,
-                        permViewUnifiedRecords: user.permViewUnifiedRecords,
-                        permProcessUnifiedRecords: user.permProcessUnifiedRecords,
-                        permAssignUnifiedRecords: user.permAssignUnifiedRecords,
-                        permManageExtensions: user.permManageExtensions,
-                        // Citizens
-                        permEditCitizens: user.permEditCitizens,
-                        permDeleteCitizens: user.permDeleteCitizens,
-                        permMarkSuspicious: user.permMarkSuspicious,
-                        // System
-                        permViewAnalytics: user.permViewAnalytics,
-                        permViewMap: user.permViewMap,
-                        permViewAudit: user.permViewAudit,
-                        permManageSettings: user.permManageSettings,
-                        permManageMailAlerts: user.permManageMailAlerts,
+                        ...permissionPayload,
                         isTwoFactorVerified: twoFactorValidated,
                     }
                 }
@@ -129,27 +100,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
                 // Map all permissions from user object to token
                 const u = user as any;
-                token.permViewReports = u.permViewReports;
-                token.permAssignReports = u.permAssignReports;
-                token.permViewSensitiveData = u.permViewSensitiveData;
-                token.permBulkActionReports = u.permBulkActionReports;
-                token.permManageUsers = u.permManageUsers;
-                token.permEditNotes = u.permEditNotes;
-                token.permChangeStatus = u.permChangeStatus;
-                token.permExportData = u.permExportData;
-                token.permDeleteReports = u.permDeleteReports;
-                token.permCreateOfficers = u.permCreateOfficers;
-                token.permEditOfficers = u.permEditOfficers;
-                token.permDeleteOfficers = u.permDeleteOfficers;
-                token.permViewOfficerStats = u.permViewOfficerStats;
-                token.permCreateEvaluations = u.permCreateEvaluations;
-                token.permManageOfficerStatus = u.permManageOfficerStatus;
-                token.permEditCitizens = u.permEditCitizens;
-                token.permDeleteCitizens = u.permDeleteCitizens;
-                token.permMarkSuspicious = u.permMarkSuspicious;
-                token.permViewAudit = u.permViewAudit;
-                token.permManageSettings = u.permManageSettings;
-                token.permManageMailAlerts = u.permManageMailAlerts;
+                Object.keys(u).forEach((key) => {
+                    if (key.startsWith("perm")) {
+                        token[key] = u[key]
+                    }
+                })
             }
 
             // High security & Real-time Permissions: 

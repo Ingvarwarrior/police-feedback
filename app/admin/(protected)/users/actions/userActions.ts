@@ -3,7 +3,6 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/auth"
-import { checkPermission } from "@/lib/permissions"
 import bcrypt from 'bcryptjs'
 
 type CreateUserInput = {
@@ -19,6 +18,11 @@ type CreateUserInput = {
     permViewSensitiveData: boolean;
     permBulkActionReports: boolean;
     permManageUsers: boolean;
+    permViewUsers: boolean;
+    permCreateUsers: boolean;
+    permEditUsers: boolean;
+    permDeleteUsers: boolean;
+    permResetUserPasswords: boolean;
     permEditNotes: boolean;
     permChangeStatus: boolean;
     permExportData: boolean;
@@ -42,13 +46,17 @@ type CreateUserInput = {
     permViewAudit: boolean;
     permManageSettings: boolean;
     permManageMailAlerts: boolean;
+    permImportUnifiedRecords: boolean;
+    permDeleteUnifiedRecords: boolean;
+    permReturnUnifiedRecords: boolean;
+    permUseAiExtraction: boolean;
 }
 
 export async function createUser(data: CreateUserInput) {
     const session = await auth()
     const currentUser = session?.user as any
 
-    if (currentUser?.role !== 'ADMIN' && !currentUser?.permManageUsers) {
+    if (currentUser?.role !== 'ADMIN' && !currentUser?.permCreateUsers && !currentUser?.permManageUsers) {
         throw new Error('У вас немає прав для створення користувачів')
     }
 
@@ -107,6 +115,11 @@ export async function updateUser(id: string, data: {
     permViewSensitiveData?: boolean;
     permBulkActionReports?: boolean;
     permManageUsers?: boolean;
+    permViewUsers?: boolean;
+    permCreateUsers?: boolean;
+    permEditUsers?: boolean;
+    permDeleteUsers?: boolean;
+    permResetUserPasswords?: boolean;
     permEditNotes?: boolean;
     permChangeStatus?: boolean;
     permExportData?: boolean;
@@ -130,8 +143,16 @@ export async function updateUser(id: string, data: {
     permViewAudit?: boolean;
     permManageSettings?: boolean;
     permManageMailAlerts?: boolean;
+    permImportUnifiedRecords?: boolean;
+    permDeleteUnifiedRecords?: boolean;
+    permReturnUnifiedRecords?: boolean;
+    permUseAiExtraction?: boolean;
 }) {
-    await checkPermission('permManageUsers')
+    const session = await auth()
+    const currentUser = session?.user as any
+    if (currentUser?.role !== 'ADMIN' && !currentUser?.permEditUsers && !currentUser?.permManageUsers) {
+        throw new Error("У вас немає прав для редагування користувачів")
+    }
 
     const updateData: any = { ...data }
     // Remove undefined fields
@@ -147,7 +168,6 @@ export async function updateUser(id: string, data: {
         data: updateData
     })
 
-    const session = await auth()
     if (session?.user?.id) {
         await prisma.auditLog.create({
             data: {
@@ -164,14 +184,17 @@ export async function updateUser(id: string, data: {
 }
 
 export async function toggleUserStatus(id: string, active: boolean) {
-    await checkPermission('permManageUsers')
+    const session = await auth()
+    const currentUser = session?.user as any
+    if (currentUser?.role !== 'ADMIN' && !currentUser?.permEditUsers && !currentUser?.permManageUsers) {
+        throw new Error("У вас немає прав для зміни статусу користувачів")
+    }
 
     await prisma.user.update({
         where: { id },
         data: { active }
     })
 
-    const session = await auth()
     if (session?.user?.id) {
         await prisma.auditLog.create({
             data: {
@@ -187,9 +210,12 @@ export async function toggleUserStatus(id: string, active: boolean) {
 }
 
 export async function deleteUser(id: string) {
-    await checkPermission('permManageUsers')
-
     const session = await auth()
+    const currentUser = session?.user as any
+    if (currentUser?.role !== 'ADMIN' && !currentUser?.permDeleteUsers && !currentUser?.permManageUsers) {
+        throw new Error("У вас немає прав для видалення користувачів")
+    }
+
     if (session?.user?.email) {
         const userToDelete = await prisma.user.findUnique({ where: { id } })
         if (userToDelete?.email === session.user.email) {
@@ -216,7 +242,11 @@ export async function deleteUser(id: string) {
 }
 
 export async function resetUserPassword(id: string, newPasswordHash: string) {
-    await checkPermission('permManageUsers')
+    const session = await auth()
+    const currentUser = session?.user as any
+    if (currentUser?.role !== 'ADMIN' && !currentUser?.permResetUserPasswords && !currentUser?.permManageUsers) {
+        throw new Error("У вас немає прав для скидання паролів")
+    }
 
     const hashedPassword = await bcrypt.hash(newPasswordHash, 10)
 
@@ -225,7 +255,6 @@ export async function resetUserPassword(id: string, newPasswordHash: string) {
         data: { passwordHash: hashedPassword }
     })
 
-    const session = await auth()
     if (session?.user?.id) {
         await prisma.auditLog.create({
             data: {

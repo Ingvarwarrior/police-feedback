@@ -10,7 +10,7 @@ export default async function NewUserPage() {
     const session = await auth()
     const userRole = session?.user as any
 
-    if (userRole?.role !== 'ADMIN' && !userRole?.permManageUsers) {
+    if (userRole?.role !== 'ADMIN' && !userRole?.permCreateUsers && !userRole?.permManageUsers) {
         redirect("/admin/dashboard")
     }
 

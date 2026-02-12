@@ -36,6 +36,7 @@ export default async function AdminLayout({
             badgeNumber: true,
             role: true,
             permManageUsers: true,
+            permViewUsers: true,
             permViewAudit: true,
             permManageSettings: true,
             permManageMailAlerts: true,
@@ -93,7 +94,7 @@ export default async function AdminLayout({
                             <ShieldCheck className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
                             Особовий склад
                         </Link>
-                        {user?.permManageUsers || user?.permViewAudit || user?.role === 'ADMIN' ? (
+                        {user?.permManageUsers || user?.permViewUsers || user?.permViewAudit || user?.role === 'ADMIN' ? (
                             <>
                                 <Link href="/admin/users" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
                                     <Users className="w-5 h-5 group-hover:text-blue-400 transition-colors" />

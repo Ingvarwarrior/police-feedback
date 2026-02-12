@@ -5,6 +5,10 @@ import { NextResponse } from "next/server"
 export async function GET() {
     const session = await auth()
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
+    const user = session.user as any
+    if (user.role !== "ADMIN" && !user.permViewUsers && !user.permManageUsers) {
+        return new NextResponse("Forbidden", { status: 403 })
+    }
 
     try {
         const users = await prisma.user.findMany({

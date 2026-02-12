@@ -294,9 +294,9 @@ export async function parseUnifiedRecordsAction(formData: FormData, recordType: 
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { role: true, permManageUnifiedRecords: true }
+        select: { role: true, permManageUnifiedRecords: true, permImportUnifiedRecords: true }
     })
-    if (user?.role !== 'ADMIN' && !user?.permManageUnifiedRecords) throw new Error("У вас немає прав для імпорту записів ЄО")
+    if (user?.role !== 'ADMIN' && !user?.permImportUnifiedRecords && !user?.permManageUnifiedRecords) throw new Error("У вас немає прав для імпорту записів ЄО")
 
     const file = formData.get('file') as File
     if (!file) throw new Error("No file provided")
@@ -325,9 +325,9 @@ export async function saveUnifiedRecordsAction(records: any[]) {
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { role: true, permManageUnifiedRecords: true }
+        select: { role: true, permManageUnifiedRecords: true, permImportUnifiedRecords: true }
     })
-    if (user?.role !== 'ADMIN' && !user?.permManageUnifiedRecords) throw new Error("У вас немає прав для збереження записів ЄО")
+    if (user?.role !== 'ADMIN' && !user?.permImportUnifiedRecords && !user?.permManageUnifiedRecords) throw new Error("У вас немає прав для збереження записів ЄО")
 
     let createdCount = 0
     let updatedCount = 0
@@ -482,9 +482,9 @@ export async function deleteUnifiedRecordAction(id: string) {
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { role: true }
+        select: { role: true, permDeleteUnifiedRecords: true }
     })
-    if (user?.role !== 'ADMIN') throw new Error("Only admins can delete records")
+    if (user?.role !== 'ADMIN' && !user?.permDeleteUnifiedRecords) throw new Error("У вас немає прав для видалення записів ЄО")
 
     await prisma.unifiedRecord.delete({
         where: { id }
@@ -500,9 +500,9 @@ export async function bulkDeleteUnifiedRecordsAction(ids: string[]) {
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { role: true }
+        select: { role: true, permDeleteUnifiedRecords: true }
     })
-    if (user?.role !== 'ADMIN') throw new Error("Only admins can delete records")
+    if (user?.role !== 'ADMIN' && !user?.permDeleteUnifiedRecords) throw new Error("У вас немає прав для видалення записів ЄО")
 
     await prisma.unifiedRecord.deleteMany({
         where: { id: { in: ids } }
@@ -592,9 +592,9 @@ export async function returnForRevisionAction(id: string, comment: string) {
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { role: true }
+        select: { role: true, permReturnUnifiedRecords: true }
     })
-    if (user?.role !== 'ADMIN') throw new Error("Тільки адміністратор може повертати на доопрацювання")
+    if (user?.role !== 'ADMIN' && !user?.permReturnUnifiedRecords) throw new Error("У вас немає прав повертати записи на доопрацювання")
 
     const record = await prisma.unifiedRecord.findUnique({
         where: { id },
@@ -632,6 +632,12 @@ export async function returnForRevisionAction(id: string, comment: string) {
 export async function analyzeRecordImageAction(formData: FormData) {
     const session = await auth()
     if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true, permUseAiExtraction: true }
+    })
+    if (user?.role !== 'ADMIN' && !user?.permUseAiExtraction) throw new Error("У вас немає прав для AI-розбору документів")
 
     const file = formData.get('file') as File
     if (!file) throw new Error("No file provided")

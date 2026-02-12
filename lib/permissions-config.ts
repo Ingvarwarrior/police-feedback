@@ -33,9 +33,18 @@ export const PERMISSIONS_CONFIG = [
     { id: 'permViewMap', label: 'Карта патрулів', desc: 'Перегляд реального місця розташування екіпажів у реальному часі.' },
     { id: 'permViewAnalytics', label: 'Аналітичний центр', desc: 'Доступ до загальних звітів по підрозділу та теплових карт.' },
     { id: 'permManageUsers', label: 'Керування доступом', desc: 'Створення нових користувачів та надання їм цих самих прав.' },
+    { id: 'permViewUsers', label: 'Перегляд користувачів', desc: 'Доступ до списку користувачів без права змін.' },
+    { id: 'permCreateUsers', label: 'Створення користувачів', desc: 'Право реєструвати нові облікові записи в системі.' },
+    { id: 'permEditUsers', label: 'Редагування користувачів', desc: 'Зміна ролей, ПІБ, прав доступу та інших даних користувачів.' },
+    { id: 'permDeleteUsers', label: 'Видалення користувачів', desc: 'Безповоротне видалення облікових записів.' },
+    { id: 'permResetUserPasswords', label: 'Скидання паролів', desc: 'Встановлення нового пароля для іншого користувача.' },
     { id: 'permViewAudit', label: 'Журнал аудиту', desc: 'Перегляд історії дій: хто, що і коли робив у системі.' },
     { id: 'permManageSettings', label: 'Налаштування системи', desc: 'Зміна глобальних параметрів та назви підрозділу.' },
     { id: 'permManageMailAlerts', label: 'Керування еmail-розсилками', desc: 'Налаштування отримувачів автоматичних сповіщень.' },
+    { id: 'permImportUnifiedRecords', label: 'Імпорт записів ЄО', desc: 'Завантаження реєстрів ЄО/звернень із Excel.' },
+    { id: 'permDeleteUnifiedRecords', label: 'Видалення записів ЄО', desc: 'Видалення карток ЄО/звернень/рапортів/протоколів.' },
+    { id: 'permReturnUnifiedRecords', label: 'Повернення на доопрацювання', desc: 'Повернення запису виконавцю з коментарем керівника.' },
+    { id: 'permUseAiExtraction', label: 'AI-розбір документів', desc: 'Автозаповнення полів з фото рапорту/заяви через AI.' },
 ] as const
 
 export type PermissionId = (typeof PERMISSIONS_CONFIG)[number]["id"]
