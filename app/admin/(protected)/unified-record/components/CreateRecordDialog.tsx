@@ -796,9 +796,6 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
                                     Обрано поліцейських: {taggedOfficers.length}
                                 </p>
-                                <p className="text-xs italic underline text-slate-600">
-                                    Приклад: Інспектором (поліцейським) взводу 2 роти 1 батальйону патрульної поліції...
-                                </p>
                                 <Textarea
                                     id="officerName"
                                     {...form.register("officerName")}
@@ -811,9 +808,6 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <Label htmlFor="description" className="text-sm font-black tracking-tight text-slate-800">
                                     Дата застосування зброї, фізичної сили чи спеціальних засобів (що саме застосовано, період) <span className="text-rose-600">*</span>
                                 </Label>
-                                <p className="text-xs italic underline text-slate-600">
-                                    Приклад: фізична сила з 23:42 10.03.2023, кайданки з 23:42 по 23:58...
-                                </p>
                                 <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
                                     {(Object.keys(forceLabels) as ForceKey[]).map((key) => (
                                         <div key={key} className="rounded-lg bg-white p-3 border border-slate-100 space-y-2">
@@ -932,9 +926,6 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <Label htmlFor="address" className="text-sm font-black tracking-tight text-slate-800">
                                     Підстава застосування, до кого застосовано <span className="text-rose-600">*</span>
                                 </Label>
-                                <p className="text-xs italic underline text-slate-600">
-                                    Приклад: відповідно до частини 1 ст.44 ЗУ "Про Національну Поліцію"...
-                                </p>
                                 <Textarea
                                     id="address"
                                     {...form.register("address")}
@@ -947,9 +938,6 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <Label htmlFor="applicant" className="text-sm font-black tracking-tight text-slate-800">
                                     Дані про оформлення протоколу про адмінзатримання (КУпАП), строки затримання <span className="text-rose-600">*</span>
                                 </Label>
-                                <p className="text-xs italic underline text-slate-600">
-                                    Приклад: складався згідно ст.261, 262, 263 КУпАП, затриманий з ... по ...
-                                </p>
                                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <span className="text-xs font-black uppercase tracking-widest text-slate-500">Протокол затримання складався?</span>
