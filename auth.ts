@@ -7,8 +7,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     trustHost: true,
     session: {
         strategy: "jwt",
-        maxAge: 1200, // 20 minutes in seconds
-        updateAge: 0, // Ensure the session is updated on every interaction
+        // Effectively disables short session expiry for active users.
+        maxAge: 60 * 60 * 24 * 365 * 10, // 10 years
+        updateAge: 0,
     },
     cookies: {
         sessionToken: {

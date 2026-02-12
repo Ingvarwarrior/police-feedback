@@ -11,7 +11,6 @@ import NotificationCenter from "@/components/admin/NotificationCenter"
 import BirthdayNotifications from "@/components/admin/BirthdayNotifications"
 import { UserLocationTracker } from "@/components/UserLocationTracker"
 import { Providers } from "@/components/Providers"
-import { IdleTimer } from "@/components/admin/IdleTimer"
 import { ThemeToggle } from "@/components/ThemeToggle"
 
 export default async function AdminLayout({
@@ -53,7 +52,6 @@ export default async function AdminLayout({
 
     return (
         <Providers>
-            <IdleTimer />
             <div className="min-h-screen flex bg-neutral-50 dark:bg-slate-950 print:block print:bg-white transition-colors duration-300">
                 {/* Sidebar */}
                 <aside className="w-64 bg-slate-900 border-r border-slate-800 hidden md:flex flex-col no-print shadow-2xl relative z-20">
