@@ -367,15 +367,17 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                             </Popover>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="applicant" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Заявник</Label>
-                            <Input
-                                id="applicant"
-                                {...form.register("applicant")}
-                                placeholder="ПІБ заявника"
-                                className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                            />
-                        </div>
+                        {recordType !== "RAPORT" && (
+                            <div className="space-y-2">
+                                <Label htmlFor="applicant" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Заявник</Label>
+                                <Input
+                                    id="applicant"
+                                    {...form.register("applicant")}
+                                    placeholder="ПІБ заявника"
+                                    className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                />
+                            </div>
+                        )}
 
                         <div className="space-y-2">
                             <Label htmlFor="recordType" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Тип запису</Label>
@@ -482,25 +484,33 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     </div>
 
                     {recordType === "RAPORT" ? (
-                        <div className="space-y-5">
-                            <div className="space-y-2">
-                                <Label htmlFor="officerName" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                    Ким застосовано зброю, фізичну силу чи спеціальні засоби *
+                        <div className="space-y-4">
+                            <div className="rounded-2xl border border-violet-200 bg-violet-50/40 p-4">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-violet-700">Рапорт застосування</p>
+                                <p className="text-xs font-medium text-slate-700 mt-1">
+                                    Заповніть форму максимально близько до тексту оригінального рапорту.
+                                </p>
+                                <p className="text-[11px] font-bold text-rose-600 mt-2">Зірочка (*) позначає обовʼязкове поле</p>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+                                <Label htmlFor="officerName" className="text-sm font-black tracking-tight text-slate-800">
+                                    Ким застосовано зброю, фізичну силу чи спеціальні засоби <span className="text-rose-600">*</span>
                                 </Label>
                                 <p className="text-xs italic underline text-slate-600">
-                                    Приклад: Інспектором (поліцейським) взводу 2 роти 1 батальйону...
+                                    Приклад: Інспектором (поліцейським) взводу 2 роти 1 батальйону патрульної поліції...
                                 </p>
                                 <Textarea
                                     id="officerName"
                                     {...form.register("officerName")}
                                     placeholder="Ваша відповідь"
-                                    className="rounded-xl border-slate-100 bg-slate-50 min-h-[90px]"
+                                    className="rounded-xl border-slate-200 bg-slate-50 min-h-[110px]"
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                    Дата застосування зброї, фізичної сили чи спеціальних засобів (що саме застосовано, період) *
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+                                <Label htmlFor="description" className="text-sm font-black tracking-tight text-slate-800">
+                                    Дата застосування зброї, фізичної сили чи спеціальних засобів (що саме застосовано, період) <span className="text-rose-600">*</span>
                                 </Label>
                                 <p className="text-xs italic underline text-slate-600">
                                     Приклад: фізична сила з 23:42 10.03.2023, кайданки з 23:42 по 23:58...
@@ -509,37 +519,40 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                     id="description"
                                     {...form.register("description")}
                                     placeholder="Ваша відповідь"
-                                    className="rounded-xl border-slate-100 bg-slate-50 min-h-[90px]"
+                                    className="rounded-xl border-slate-200 bg-slate-50 min-h-[110px]"
                                 />
+                                {form.formState.errors.description && (
+                                    <p className="text-[10px] font-bold text-rose-600">{form.formState.errors.description.message}</p>
+                                )}
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="address" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                    Підстава застосування, до кого застосовано *
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+                                <Label htmlFor="address" className="text-sm font-black tracking-tight text-slate-800">
+                                    Підстава застосування, до кого застосовано <span className="text-rose-600">*</span>
                                 </Label>
                                 <p className="text-xs italic underline text-slate-600">
-                                    Приклад: відповідно до ч.1 ст.44 ЗУ "Про Національну Поліцію"...
+                                    Приклад: відповідно до частини 1 ст.44 ЗУ "Про Національну Поліцію"...
                                 </p>
                                 <Textarea
                                     id="address"
                                     {...form.register("address")}
                                     placeholder="Ваша відповідь"
-                                    className="rounded-xl border-slate-100 bg-slate-50 min-h-[90px]"
+                                    className="rounded-xl border-slate-200 bg-slate-50 min-h-[110px]"
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="applicant" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                    Дані про оформлення протоколу про затримання (згідно КУпАП чи КПК), строки затримання *
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+                                <Label htmlFor="applicant" className="text-sm font-black tracking-tight text-slate-800">
+                                    Дані про оформлення протоколу про затримання (згідно КУпАП чи КПК), строки затримання <span className="text-rose-600">*</span>
                                 </Label>
                                 <p className="text-xs italic underline text-slate-600">
-                                    Приклад: складався згідно ст.261-263 КУпАП, затриманий з ... по ...
+                                    Приклад: складався згідно ст.261, 262, 263 КУпАП, затриманий з ... по ...
                                 </p>
                                 <Textarea
                                     id="applicant"
                                     {...form.register("applicant")}
                                     placeholder="Ваша відповідь"
-                                    className="rounded-xl border-slate-100 bg-slate-50 min-h-[90px]"
+                                    className="rounded-xl border-slate-200 bg-slate-50 min-h-[110px]"
                                 />
                             </div>
                         </div>
