@@ -19,7 +19,7 @@ const UnifiedRecordSchema = z.object({
     description: z.string().optional().nullable(),
     applicant: z.string().optional().nullable(),
     category: z.string().optional().nullable(),
-    recordType: z.enum(["EO", "ZVERN", "RAPORT"]).default("EO"),
+    recordType: z.enum(["EO", "ZVERN"]).default("EO"),
     officerName: z.string().optional().nullable(),
     assignedUserId: z.string().optional().nullable(),
     status: z.string().optional().default("PENDING"),
@@ -33,28 +33,6 @@ const UnifiedRecordSchema = z.object({
     officerIds: z.array(z.string()).default([]),
     concernsBpp: z.boolean().default(true),
 })
-
-async function generateNextRaportNumber() {
-    const year = new Date().getFullYear()
-    const prefix = `R-${year}-`
-
-    const existing = await prisma.unifiedRecord.findMany({
-        where: {
-            recordType: "RAPORT",
-            eoNumber: { startsWith: prefix }
-        },
-        select: { eoNumber: true }
-    })
-
-    let maxSeq = 0
-    for (const item of existing) {
-        const seqPart = item.eoNumber.slice(prefix.length)
-        const seq = Number.parseInt(seqPart, 10)
-        if (Number.isFinite(seq) && seq > maxSeq) maxSeq = seq
-    }
-
-    return `${prefix}${String(maxSeq + 1).padStart(4, "0")}`
-}
 
 export async function processUnifiedRecordAction(id: string, resolution: string, officerIds?: string[], concernsBpp: boolean = true): Promise<{ success?: boolean, error?: string }> {
     const session = await auth()
@@ -164,7 +142,9 @@ export async function getUnifiedRecords(params?: {
 
     if (!currentUser) throw new Error("User not found")
 
-    const where: any = {}
+    const where: any = {
+        recordType: { in: ["EO", "ZVERN"] }
+    }
 
     // If not Admin, restrict to assigned records
     if (currentUser.role !== 'ADMIN') {
@@ -378,24 +358,7 @@ export async function upsertUnifiedRecordAction(data: any) {
     // Only admins or users with permManageUnifiedRecords can create or edit basic record details
     if (user.role !== 'ADMIN' && !user.permManageUnifiedRecords) throw new Error("У вас немає прав для створення чи редагування записів ЄО")
 
-    const payload = { ...data }
-    const isRaport = payload.recordType === "RAPORT"
-    const isCreate = !payload.id
-
-    if (isRaport && isCreate) {
-        payload.eoNumber = await generateNextRaportNumber()
-    }
-
-    if (isRaport && !isCreate && (!payload.eoNumber || !String(payload.eoNumber).trim()) && payload.id) {
-        const existingById = await prisma.unifiedRecord.findUnique({
-            where: { id: payload.id },
-            select: { eoNumber: true }
-        })
-
-        payload.eoNumber = existingById?.eoNumber || await generateNextRaportNumber()
-    }
-
-    const validated = UnifiedRecordSchema.parse(payload)
+    const validated = UnifiedRecordSchema.parse(data)
     const { officerIds, ...recordData } = validated
 
     let oldRecord = null

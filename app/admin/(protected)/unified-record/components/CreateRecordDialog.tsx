@@ -633,7 +633,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="eoNumber" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                {recordType === "RAPORT" ? "Номер рапорту / ЄО" : "Номер ЄО"}
+                                Номер ЄО
                             </Label>
                             {recordType === "RAPORT" ? (
                                 <div className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-3 flex items-center text-sm font-semibold text-slate-600">
@@ -712,7 +712,6 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                 <SelectContent className="rounded-xl border-none shadow-2xl">
                                     <SelectItem value="EO">Єдиний облік (ЄО)</SelectItem>
                                     <SelectItem value="ZVERN">Звернення</SelectItem>
-                                    <SelectItem value="RAPORT">Рапорт застосування</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
