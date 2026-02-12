@@ -94,8 +94,6 @@ const getInitialLegalBasis = (): LegalBasisState => ({
     art45_p3_b_teargas: false,
 })
 
-type ProtocolLawType = "KUPAP_261_263" | "CPK_207" | "CPK_208"
-
 interface CreateRecordDialogProps {
     initialData?: Partial<FormValues>
     users?: { id: string, firstName: string | null, lastName: string | null, username: string }[]
@@ -118,7 +116,6 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const [protocolSeries, setProtocolSeries] = useState("")
     const [protocolNumber, setProtocolNumber] = useState("")
     const [protocolDate, setProtocolDate] = useState("")
-    const [protocolLaw, setProtocolLaw] = useState<ProtocolLawType>("KUPAP_261_263")
     const [detentionFromDate, setDetentionFromDate] = useState("")
     const [detentionFromTime, setDetentionFromTime] = useState("")
     const [detentionToDate, setDetentionToDate] = useState("")
@@ -419,7 +416,6 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             setProtocolSeries("")
             setProtocolNumber("")
             setProtocolDate("")
-            setProtocolLaw("KUPAP_261_263")
             setDetentionFromDate("")
             setDetentionFromTime("")
             setDetentionToDate("")
@@ -530,12 +526,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         }
 
         if (protocolPrepared === "YES") {
-            const lawText =
-                protocolLaw === "KUPAP_261_263"
-                    ? "відповідно до статей 261, 262, 263 КУпАП"
-                    : protocolLaw === "CPK_207"
-                        ? "відповідно до статті 207 КПК України"
-                        : "відповідно до статті 208 КПК України"
+            const lawText = "відповідно до статей 261, 262, 263 КУпАП"
 
             const parts: string[] = ["Складався"]
             if (protocolSeries || protocolNumber || protocolDate) {
@@ -565,7 +556,6 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         protocolSeries,
         protocolNumber,
         protocolDate,
-        protocolLaw,
         detentionFromDate,
         detentionFromTime,
         detentionToDate,
@@ -953,7 +943,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
 
                             <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
                                 <Label htmlFor="applicant" className="text-sm font-black tracking-tight text-slate-800">
-                                    Дані про оформлення протоколу про затримання (згідно КУпАП чи КПК), строки затримання <span className="text-rose-600">*</span>
+                                    Дані про оформлення протоколу про адмінзатримання (КУпАП), строки затримання <span className="text-rose-600">*</span>
                                 </Label>
                                 <p className="text-xs italic underline text-slate-600">
                                     Приклад: складався згідно ст.261, 262, 263 КУпАП, затриманий з ... по ...
@@ -1003,16 +993,11 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                <Select value={protocolLaw} onValueChange={(v) => setProtocolLaw(v as ProtocolLawType)}>
-                                                    <SelectTrigger className="rounded-lg bg-white border-slate-200 h-10 text-xs font-bold">
-                                                        <SelectValue placeholder="Правова підстава затримання" />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="rounded-xl border-none shadow-2xl">
-                                                        <SelectItem value="KUPAP_261_263">КУпАП: ст.261, 262, 263</SelectItem>
-                                                        <SelectItem value="CPK_207">КПК: ст.207</SelectItem>
-                                                        <SelectItem value="CPK_208">КПК: ст.208</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                                                <Input
+                                                    value="КУпАП: статті 261, 262, 263"
+                                                    readOnly
+                                                    className="rounded-lg bg-slate-100 border-slate-200 h-10 text-xs font-bold text-slate-700"
+                                                />
                                                 <Input
                                                     value={detentionPurpose}
                                                     onChange={(e) => setDetentionPurpose(e.target.value)}
