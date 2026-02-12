@@ -122,6 +122,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         setRecords(initialRecords.filter(r => r.recordType !== 'RAPORT'))
     }, [initialRecords])
 
+    const getRaportSubjectName = (basisText?: string | null) => {
+        if (!basisText) return "—"
+        const normalized = basisText.replace(/\s+/g, " ").trim()
+        const exact = normalized.match(/до\s+(.+?)\s+\d{2}\.\d{2}\.\d{4}/i)
+        if (exact?.[1]) return exact[1].trim()
+        const fallback = normalized.match(/до\s+(.+)/i)
+        return fallback?.[1]?.trim() || "—"
+    }
+
     const getAssignedInspectorName = (record: any) => {
         if (!record.assignedUser) return "Не призначено"
         return `${record.assignedUser.lastName || ""} ${record.assignedUser.firstName || ""}`.trim() || record.assignedUser.username || "Призначено"
@@ -355,8 +364,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     }
 
     const resolutionPresets = [
-        "Стосується поліцейських, дії правомірні - списано в справу",
-        "Дії не правомірні - ініційовано проведення СР",
         "Складено адмінпротокол",
         "Проведено профілактичну бесіду",
         "Надіслано за належністю",
@@ -380,7 +387,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             "№ ЄО/Звернення": r.eoNumber || '-',
             "Заявник": r.applicant || '-',
             "Виконавець": r.assignedUser ? `${r.assignedUser.lastName} ${r.assignedUser.firstName || ''}`.trim() : (r.assignedUserId === 'unassigned' ? 'Не призначено' : '—'),
-            "Тип": r.recordType === 'EO' ? 'ЄО' : r.recordType === 'ZVERN' ? 'Звернення' : 'Затримання та застосування',
+            "Тип": r.recordType === 'EO' ? 'ЄО' : 'Звернення',
             "Категорія": r.category || '-',
             "Статус": r.status === 'PROCESSED' ? 'Опрацьовано' : 'В роботі',
             "Рішення": r.resolution || '-'
@@ -425,15 +432,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             Звернення
                             <span className="bg-amber-50/50 text-amber-600 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
                                 {records.filter(r => r.recordType === 'ZVERN').length}
-                            </span>
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="DETENTION"
-                            className="rounded-[1.5rem] px-6 md:px-10 h-full font-black uppercase tracking-widest text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-600 data-[state=active]:to-red-700 data-[state=active]:text-white transition-all duration-300 gap-3 shrink-0 shadow-sm"
-                        >
-                            Затримання та застосування
-                            <span className="bg-rose-50/50 text-rose-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
-                                {records.filter(r => r.recordType === 'DETENTION').length}
                             </span>
                         </TabsTrigger>
                     </TabsList>
@@ -765,9 +763,9 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         }}
                                                         className="text-base md:text-lg font-black text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase tracking-tight leading-tight mt-2 break-words cursor-pointer"
                                                     >
-                                                        {record.recordType === 'DETENTION' ? `Рапорт №${record.eoNumber}` : (record.description || 'Без опису')}
+                                                        {record.recordType === 'RAPORT' ? `Рапорт №${record.eoNumber}` : (record.description || 'Без опису')}
                                                     </h3>
-                                                    {record.recordType === 'DETENTION' && (
+                                                    {record.recordType === 'RAPORT' && (
                                                         <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mt-1">Затримання</p>
                                                     )}
                                                 </div>
@@ -844,11 +842,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                     <div className="space-y-3">
                                                         <div className="flex items-center gap-2 text-slate-500">
                                                             <User className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'DETENTION' ? 'Відносно кого' : 'Заявник'}</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'RAPORT' ? 'ПІБ' : 'Заявник'}</span>
                                                         </div>
                                                         <p className="text-sm font-black text-slate-900 dark:text-white transition-colors duration-300">
-                                                        {record.recordType === 'DETENTION'
-                                                            ? (record.applicant || '—')
+                                                        {record.recordType === 'RAPORT'
+                                                            ? getRaportSubjectName(record.address)
                                                             : (<><span className="text-slate-400 text-[10px] mr-1">Гр.</span> {record.applicant || '—'}</>)}
                                                         </p>
                                                     </div>
@@ -856,7 +854,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-slate-500">
                                                         <FileText className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'DETENTION' ? 'Номер протоколу' : 'Результат'}</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'RAPORT' ? 'Тип' : 'Результат'}</span>
                                                     </div>
 
                                                     <div className="space-y-1">
@@ -864,16 +862,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             "text-sm font-bold italic transition-colors duration-300",
                                                             record.status === 'PROCESSED' ? "text-emerald-700 dark:text-emerald-400" : (record.assignedUserId ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")
                                                         )}>
-                                                            {record.recordType === 'DETENTION'
-                                                                ? (record.address || '—')
+                                                            {record.recordType === 'RAPORT'
+                                                                ? 'Затримання'
                                                                 : (record.status === 'PROCESSED' ? (record.resolution || 'Виконано') : (record.assignedUserId ? (record.resolution ? 'Потребує доопрацювання/В процесі...' : 'В процесі розгляду...') : 'Не призначено'))}
                                                         </div>
-                                                        {record.recordType === 'DETENTION' && (
-                                                            <div className="text-[10px] text-slate-500 font-semibold">
-                                                                Виконання: {record.resolution || (record.status === 'PROCESSED' ? 'Виконано' : 'В роботі')}
-                                                            </div>
-                                                        )}
-                                                        {record.recordType !== 'DETENTION' && record.resolutionDate && (
+                                                        {record.recordType !== 'RAPORT' && record.resolutionDate && (
                                                             <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium italic">
                                                                 <CalendarIcon className="w-3 h-3" />
                                                                 Виконано: {format(new Date(record.resolutionDate), "dd.MM.yyyy", { locale: uk })}
@@ -883,7 +876,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 </div>
 
                                                 {/* Tagged Officers */}
-                                                {record.recordType !== 'DETENTION' && record.concernsBpp && record.officers && record.officers.length > 0 && (
+                                                {record.recordType !== 'RAPORT' && record.concernsBpp && record.officers && record.officers.length > 0 && (
                                                     <div className="space-y-3 col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-1">
                                                         <div className="flex items-center gap-2 text-slate-500">
                                                             <Shield className="w-4 h-4 shrink-0" />
@@ -902,10 +895,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-slate-500">
                                                         <Briefcase className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'DETENTION' ? 'Виконавець' : 'Відповідальний'}</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest">{record.recordType === 'RAPORT' ? 'Призначено' : 'Відповідальний'}</span>
                                                     </div>
                                                     <div className="space-y-1">
-                                                        {record.recordType === 'DETENTION' && currentUser.role !== 'ADMIN' ? (
+                                                        {record.recordType === 'RAPORT' && currentUser.role !== 'ADMIN' ? (
                                                             <p className="text-sm font-bold text-slate-900">{getAssignedInspectorName(record)}</p>
                                                         ) : (
                                                             <Select
@@ -939,7 +932,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             </Select>
                                                         )}
 
-                                                        {record.status === 'PROCESSED' && (
+                                                        {record.recordType !== 'RAPORT' && record.status === 'PROCESSED' && (
                                                             <div className="mt-4">
                                                                 <RecordProcessPopover
                                                                     recordId={record.id}
@@ -958,7 +951,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         )}
 
                                                         {/* Single "DONE" Button for assigned user */}
-                                                        {record.assignedUserId === currentUser.id && record.status !== 'PROCESSED' && (
+                                                        {record.recordType !== 'RAPORT' && record.assignedUserId === currentUser.id && record.status !== 'PROCESSED' && (
                                                             <div className="flex flex-col gap-2 mt-4">
                                                                 <RecordProcessPopover
                                                                     recordId={record.id}
@@ -999,7 +992,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         )}
 
                                                         {/* Admin Review for extensions or Return for Revision */}
-                                                        {currentUser.role === 'ADMIN' && (
+                                                        {record.recordType !== 'RAPORT' && currentUser.role === 'ADMIN' && (
                                                             <div className="mt-3 space-y-2">
                                                                 {record.extensionStatus === 'PENDING' && (
                                                                     <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100 space-y-2">
