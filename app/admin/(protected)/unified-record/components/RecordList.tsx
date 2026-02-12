@@ -66,7 +66,9 @@ import {
 import {
     getApplicationBirthDate,
     getAssignedInspectorName,
+    getRecordTypeLabel,
     isApplicationLike,
+    normalizeRecordType,
 } from "./unifiedRecord.helpers"
 import {
     AlertDialog,
@@ -100,7 +102,11 @@ interface RecordListProps {
 }
 
 export default function RecordList({ initialRecords, users = [], currentUser }: RecordListProps) {
-    const [records, setRecords] = useState(initialRecords.filter(r => r.recordType !== 'RAPORT'))
+    const [records, setRecords] = useState(
+        initialRecords
+            .filter(r => r.recordType !== 'RAPORT')
+            .map((r: any) => ({ ...r, recordType: normalizeRecordType(r.recordType, r.eoNumber) }))
+    )
     const [filterSearch, setFilterSearch] = useState("")
     const [filterCategory, setFilterCategory] = useState("ALL")
     const [activeTab, setActiveTab] = useState("EO")
@@ -124,7 +130,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const searchParams = useSearchParams()
 
     useEffect(() => {
-        setRecords(initialRecords.filter(r => r.recordType !== 'RAPORT'))
+        setRecords(
+            initialRecords
+                .filter(r => r.recordType !== 'RAPORT')
+                .map((r: any) => ({ ...r, recordType: normalizeRecordType(r.recordType, r.eoNumber) }))
+        )
     }, [initialRecords])
 
     // Auto-view record if recordId is in URL
@@ -378,7 +388,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             "№ ЄО/Звернення": r.eoNumber || '-',
             "Заявник": r.applicant || '-',
             "Виконавець": r.assignedUser ? `${r.assignedUser.lastName} ${r.assignedUser.firstName || ''}`.trim() : (r.assignedUserId === 'unassigned' ? 'Не призначено' : '—'),
-            "Тип": r.recordType === 'EO' ? 'ЄО' : r.recordType === 'ZVERN' ? 'Звернення' : r.recordType === 'APPLICATION' ? 'Застосування сили/спецзасобів' : 'Протоколи затримання',
+            "Тип": getRecordTypeLabel(r.recordType, r.eoNumber),
             "Категорія": r.category || '-',
             "Статус": r.status === 'PROCESSED' ? 'Опрацьовано' : 'В роботі',
             "Рішення": r.resolution || '-'

@@ -12,6 +12,7 @@ import {
     ArrowLeft, Shield, Star, Award, TrendingUp, Phone, Activity, AlertTriangle, FileText, Trash2, CheckCircle2, XCircle, Users, Image as ImageIcon, ClipboardList, MessageSquare
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getRecordTypeLabel, normalizeRecordType } from "../../unified-record/components/unifiedRecord.helpers"
 import { format } from "date-fns"
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis,
@@ -665,12 +666,25 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                             })()}
                                         </td>
                                         <td className="px-8 py-6">
+                                            {(() => {
+                                                const type = normalizeRecordType(rec.recordType, rec.eoNumber)
+                                                const typeClass =
+                                                    type === 'ZVERN'
+                                                        ? "bg-purple-100 text-purple-700 shadow-sm"
+                                                        : type === 'APPLICATION'
+                                                            ? "bg-rose-100 text-rose-700 shadow-sm"
+                                                            : type === 'DETENTION_PROTOCOL'
+                                                                ? "bg-fuchsia-100 text-fuchsia-700 shadow-sm"
+                                                                : "bg-blue-100 text-blue-700 shadow-sm"
+                                                return (
                                             <span className={cn(
                                                 "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest",
-                                                rec.recordType === 'ZVERN' ? "bg-purple-100 text-purple-700 shadow-sm" : "bg-blue-100 text-blue-700 shadow-sm"
+                                                typeClass
                                             )}>
-                                                {rec.recordType === 'ZVERN' ? 'Звернення' : 'ЄО'}
+                                                {getRecordTypeLabel(rec.recordType, rec.eoNumber)}
                                             </span>
+                                                )
+                                            })()}
                                         </td>
                                         <td className="px-8 py-6 text-blue-600 font-black text-base italic">
                                             {rec.eoNumber}

@@ -116,3 +116,28 @@ export function getAssignedInspectorName(record: any) {
     if (!record.assignedUser) return "Не призначено"
     return `${record.assignedUser.lastName || ""} ${record.assignedUser.firstName || ""}`.trim() || record.assignedUser.username || "Призначено"
 }
+
+export type NormalizedRecordType = "EO" | "ZVERN" | "APPLICATION" | "DETENTION_PROTOCOL" | "OTHER"
+
+export function normalizeRecordType(recordType?: string | null, eoNumber?: string | null): NormalizedRecordType {
+    const raw = (recordType || "").trim().toUpperCase()
+    if (raw === "EO" || raw === "ZVERN" || raw === "APPLICATION" || raw === "DETENTION_PROTOCOL") {
+        return raw
+    }
+
+    const number = (eoNumber || "").trim().toUpperCase()
+    if (number.startsWith("APP-")) return "APPLICATION"
+    if (number.startsWith("DET-") || number.startsWith("DTP-")) return "DETENTION_PROTOCOL"
+    if (number.startsWith("ZV-") || number.startsWith("ZVERN-")) return "ZVERN"
+    if (number.length > 0) return "EO"
+    return "OTHER"
+}
+
+export function getRecordTypeLabel(recordType?: string | null, eoNumber?: string | null) {
+    const normalized = normalizeRecordType(recordType, eoNumber)
+    if (normalized === "EO") return "ЄО"
+    if (normalized === "ZVERN") return "Звернення"
+    if (normalized === "APPLICATION") return "Застосування сили/спецзасобів"
+    if (normalized === "DETENTION_PROTOCOL") return "Протоколи затримання"
+    return "Інше"
+}
