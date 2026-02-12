@@ -1098,14 +1098,12 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                             )}
 
                             <div className="space-y-2">
-                                <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                    {recordType === "DETENTION" ? "Виконання / примітка" : "Подія"}
-                                </Label>
+                                <Label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Подія</Label>
                                 <Input
                                     id="description"
                                     {...form.register("description")}
                                     placeholder={recordType === "DETENTION"
-                                        ? "Напр. Стосується поліцейських, дії правомірні - списано в справу"
+                                        ? "Короткий опис події"
                                         : "Напр. ІНШІ СКАРГИ..."}
                                     className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold uppercase"
                                 />
