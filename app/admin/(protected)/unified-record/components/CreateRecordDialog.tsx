@@ -113,6 +113,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const [subjectBirthDate, setSubjectBirthDate] = useState("")
     const [legalBasis, setLegalBasis] = useState<LegalBasisState>(getInitialLegalBasis())
     const [protocolPrepared, setProtocolPrepared] = useState<"YES" | "NO" | "">("")
+    const [protocolNoReason, setProtocolNoReason] = useState("")
     const [protocolSeries, setProtocolSeries] = useState("")
     const [protocolNumber, setProtocolNumber] = useState("")
     const [protocolDate, setProtocolDate] = useState("")
@@ -348,6 +349,10 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                     toast.error('Вкажіть, чи складався протокол затримання')
                     return
                 }
+                if (protocolPrepared === "NO" && !protocolNoReason.trim()) {
+                    toast.error('Для варіанту "НІ" вкажіть причину застосування')
+                    return
+                }
                 if (protocolPrepared === "YES") {
                     if (!protocolSeries.trim() || !protocolNumber.trim() || !protocolDate) {
                         toast.error('Для протоколу "ТАК" вкажіть серію, номер і дату')
@@ -418,6 +423,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             setSubjectBirthDate("")
             setLegalBasis(getInitialLegalBasis())
             setProtocolPrepared("")
+            setProtocolNoReason("")
             setProtocolSeries("")
             setProtocolNumber("")
             setProtocolDate("")
@@ -528,7 +534,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
 
         let generated = ""
         if (protocolPrepared === "NO") {
-            generated = "Не складався."
+            generated = `Не складався. Причина: ${protocolNoReason.trim() || "не вказано"}.`
         }
 
         if (protocolPrepared === "YES") {
@@ -554,6 +560,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         }
     }, [
         protocolPrepared,
+        protocolNoReason,
         protocolSeries,
         protocolNumber,
         protocolDate,
@@ -970,6 +977,15 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                             Ні
                                         </Button>
                                     </div>
+
+                                    {protocolPrepared === "NO" && (
+                                        <Input
+                                            value={protocolNoReason}
+                                            onChange={(e) => setProtocolNoReason(e.target.value)}
+                                            placeholder="Вкажіть причину застосування (напр. доставлення психічно хворого, затриманий в порядку ст.207 КПК...)"
+                                            className="rounded-lg bg-white border-slate-200 h-10"
+                                        />
+                                    )}
 
                                     {protocolPrepared === "YES" && (
                                         <>
