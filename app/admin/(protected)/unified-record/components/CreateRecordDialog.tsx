@@ -121,6 +121,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
     const [detentionToDate, setDetentionToDate] = useState("")
     const [detentionToTime, setDetentionToTime] = useState("")
     const [detentionPurpose, setDetentionPurpose] = useState("для припинення адміністративного правопорушення оформлення адміністративних матеріалів")
+    const [detentionMaterials, setDetentionMaterials] = useState("Складено постанову/протокол")
     const autoOfficerNameRef = useRef("")
     const autoAddressRef = useRef("")
     const autoApplicantRef = useRef("")
@@ -356,6 +357,10 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                         toast.error('Для протоколу "ТАК" вкажіть повний період затримання (з/до)')
                         return
                     }
+                    if (!detentionMaterials.trim()) {
+                        toast.error('Вкажіть, які матеріали складалися')
+                        return
+                    }
                 }
 
                 const lines: string[] = []
@@ -421,6 +426,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
             setDetentionToDate("")
             setDetentionToTime("")
             setDetentionPurpose("для припинення адміністративного правопорушення оформлення адміністративних матеріалів")
+            setDetentionMaterials("Складено постанову/протокол")
             autoOfficerNameRef.current = ""
             autoAddressRef.current = ""
             autoApplicantRef.current = ""
@@ -526,23 +532,18 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         }
 
         if (protocolPrepared === "YES") {
-            const lawText = "відповідно до статей 261, 262, 263 КУпАП"
+            const firstSentenceParts = [
+                "Складався",
+                "відповідно до статей 261, 262, 263 КУпАП",
+                detentionFromDate && detentionFromTime && detentionToDate && detentionToTime
+                    ? `затриманий з ${formatTimeUa(detentionFromTime)} ${formatDateUa(detentionFromDate)} р. до ${formatTimeUa(detentionToTime)} ${formatDateUa(detentionToDate)} р.`
+                    : "",
+                detentionPurpose.trim(),
+            ].filter(Boolean)
 
-            const parts: string[] = ["Складався"]
-            if (protocolSeries || protocolNumber || protocolDate) {
-                parts.push(`протокол серії ${protocolSeries || "___"} № ${protocolNumber || "___"} від ${protocolDate ? `${formatDateUa(protocolDate)} р.` : "___"}`)
-            }
-            parts.push(lawText)
+            const secondSentence = `${detentionMaterials.trim() || "Складено постанову/протокол"} серії ${protocolSeries || "___"} номер ${protocolNumber || "___"}`
 
-            if (detentionFromDate && detentionFromTime && detentionToDate && detentionToTime) {
-                parts.push(`затриманий з ${formatTimeUa(detentionFromTime)} ${formatDateUa(detentionFromDate)} р. до ${formatTimeUa(detentionToTime)} ${formatDateUa(detentionToDate)} р.`)
-            }
-
-            if (detentionPurpose.trim()) {
-                parts.push(detentionPurpose.trim())
-            }
-
-            generated = `${parts.join(", ")}.`
+            generated = `${firstSentenceParts.join(", ")}. ${secondSentence}`
         }
 
         const current = form.getValues("applicant") || ""
@@ -561,6 +562,7 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
         detentionToDate,
         detentionToTime,
         detentionPurpose,
+        detentionMaterials,
         recordType,
         form
     ])
@@ -1005,6 +1007,13 @@ export default function CreateRecordDialog({ initialData, users = [], trigger }:
                                                     className="rounded-lg bg-white border-slate-200 h-10"
                                                 />
                                             </div>
+
+                                            <Input
+                                                value={detentionMaterials}
+                                                onChange={(e) => setDetentionMaterials(e.target.value)}
+                                                placeholder="Які матеріали складалися"
+                                                className="rounded-lg bg-white border-slate-200 h-10"
+                                            />
 
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                                 <Input type="date" value={detentionFromDate} onChange={(e) => setDetentionFromDate(e.target.value)} className="rounded-lg bg-white border-slate-200 h-10" />
