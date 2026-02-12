@@ -436,22 +436,6 @@ export async function getUsersForAssignment() {
     })
 }
 
-export async function getOfficersForAssignment() {
-    const session = await auth()
-    if (!session) throw new Error("Unauthorized")
-
-    return await prisma.officer.findMany({
-        select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            badgeNumber: true,
-            status: true
-        },
-        orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }]
-    })
-}
-
 export async function deleteUnifiedRecordAction(id: string) {
     const session = await auth()
     if (!session?.user?.email) throw new Error("Unauthorized")

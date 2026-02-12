@@ -8,13 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format, parseISO, isValid } from "date-fns"
 import { uk } from "date-fns/locale"
-import { CalendarIcon, Plus, Loader2, Edit2, Sparkles, Image as ImageIcon } from "lucide-react"
+import { CalendarIcon, Plus, Loader2, Edit2, Sparkles, Image as ImageIcon, Search, UserPlus, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { upsertUnifiedRecordAction } from "../actions/recordActions"
@@ -43,14 +42,17 @@ type FormValues = z.infer<typeof formSchema>
 interface CreateRecordDialogProps {
     initialData?: Partial<FormValues>
     users?: { id: string, firstName: string | null, lastName: string | null, username: string }[]
-    officers?: { id: string, firstName: string, lastName: string, badgeNumber: string, status: string }[]
     trigger?: React.ReactNode
 }
 
-export default function CreateRecordDialog({ initialData, users = [], officers = [], trigger }: CreateRecordDialogProps) {
+export default function CreateRecordDialog({ initialData, users = [], trigger }: CreateRecordDialogProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
+    const [taggedOfficers, setTaggedOfficers] = useState<any[]>((initialData as any)?.officers || [])
+    const [officerSearchQuery, setOfficerSearchQuery] = useState("")
+    const [officerSearchResults, setOfficerSearchResults] = useState<any[]>([])
+    const [isSearchingOfficers, setIsSearchingOfficers] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const isEdit = !!initialData?.id
@@ -99,7 +101,6 @@ export default function CreateRecordDialog({ initialData, users = [], officers =
 
     const eoDate = form.watch("eoDate")
     const recordType = form.watch("recordType")
-    const selectedOfficerIds = form.watch("officerIds") || []
 
     const onAiScan = () => {
         fileInputRef.current?.click()
@@ -192,7 +193,10 @@ export default function CreateRecordDialog({ initialData, users = [], officers =
     const onSubmit = async (data: FormValues) => {
         setIsLoading(true)
         try {
-            const result = await upsertUnifiedRecordAction(data)
+            const result = await upsertUnifiedRecordAction({
+                ...data,
+                officerIds: taggedOfficers.map((o: any) => o.id)
+            })
             if (result.success) {
                 toast.success(isEdit ? "Запис оновлено" : "Запис успішно збережено")
                 setIsOpen(false)
@@ -205,13 +209,43 @@ export default function CreateRecordDialog({ initialData, users = [], officers =
         }
     }
 
-    const toggleOfficer = (officerId: string, checked: boolean) => {
-        const current = form.getValues("officerIds") || []
-        const next = checked
-            ? Array.from(new Set([...current, officerId]))
-            : current.filter(id => id !== officerId)
-        form.setValue("officerIds", next, { shouldDirty: true })
-    }
+    useEffect(() => {
+        if (isOpen) {
+            setTaggedOfficers((initialData as any)?.officers || [])
+            setOfficerSearchQuery("")
+            setOfficerSearchResults([])
+        }
+    }, [initialData, isOpen])
+
+    useEffect(() => {
+        if (recordType !== "RAPORT") {
+            setOfficerSearchQuery("")
+            setOfficerSearchResults([])
+            return
+        }
+
+        if (!officerSearchQuery.trim() || officerSearchQuery.length < 2) {
+            setOfficerSearchResults([])
+            return
+        }
+
+        const timer = setTimeout(async () => {
+            setIsSearchingOfficers(true)
+            try {
+                const res = await fetch(`/api/admin/officers?search=${encodeURIComponent(officerSearchQuery)}`)
+                if (res.ok) {
+                    const data = await res.json()
+                    setOfficerSearchResults(data.filter((o: any) => !taggedOfficers.some((to: any) => to.id === o.id)))
+                }
+            } catch (error) {
+                console.error("Officer search error:", error)
+            } finally {
+                setIsSearchingOfficers(false)
+            }
+        }, 300)
+
+        return () => clearTimeout(timer)
+    }, [officerSearchQuery, taggedOfficers, recordType])
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => {
@@ -360,37 +394,67 @@ export default function CreateRecordDialog({ initialData, users = [], officers =
 
                         {recordType === "RAPORT" && (
                             <div className="space-y-2 md:col-span-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Поліцейські (з довідника)</Label>
-                                <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-2 space-y-1">
-                                    {officers.length === 0 ? (
-                                        <p className="text-[11px] font-medium text-slate-500 p-2">Список поліцейських порожній</p>
-                                    ) : (
-                                        officers.map((officer) => {
-                                            const checked = selectedOfficerIds.includes(officer.id)
-                                            return (
-                                                <label
-                                                    key={officer.id}
-                                                    className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-white cursor-pointer transition-colors"
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Поліцейські (як у ЄО/Звернення)</Label>
+
+                                {taggedOfficers.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {taggedOfficers.map((o: any) => (
+                                            <div key={o.id} className="flex items-center gap-2 bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight">
+                                                <span>{o.lastName} ({o.badgeNumber})</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setTaggedOfficers(taggedOfficers.filter((to: any) => to.id !== o.id))}
+                                                    className="hover:text-blue-800"
                                                 >
-                                                    <Checkbox
-                                                        checked={checked}
-                                                        onCheckedChange={(value) => toggleOfficer(officer.id, value === true)}
-                                                    />
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-bold text-slate-900">
-                                                            {officer.lastName} {officer.firstName}
-                                                        </span>
-                                                        <span className="text-[10px] font-medium text-slate-500">
-                                                            Жетон: {officer.badgeNumber}
-                                                        </span>
+                                                    <XCircle className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="relative">
+                                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <Input
+                                        placeholder="Прізвище або жетон..."
+                                        value={officerSearchQuery}
+                                        onChange={(e) => setOfficerSearchQuery(e.target.value)}
+                                        className="pl-10 h-11 rounded-xl border-slate-200 text-sm"
+                                    />
+
+                                    {officerSearchResults.length > 0 && (
+                                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xl z-50 max-h-64 overflow-y-auto">
+                                            {officerSearchResults.map((o: any) => (
+                                                <button
+                                                    type="button"
+                                                    key={o.id}
+                                                    onClick={() => {
+                                                        setTaggedOfficers([...taggedOfficers, o])
+                                                        setOfficerSearchQuery("")
+                                                        setOfficerSearchResults([])
+                                                    }}
+                                                    className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0"
+                                                >
+                                                    <div className="text-left">
+                                                        <p className="text-sm font-bold text-slate-900">{o.lastName} {o.firstName}</p>
+                                                        <p className="text-[10px] text-slate-400 uppercase font-black">{o.badgeNumber} • {o.rank || 'Офіцер'}</p>
                                                     </div>
-                                                </label>
-                                            )
-                                        })
+                                                    <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                                                        <UserPlus className="w-3.5 h-3.5" />
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {isSearchingOfficers && (
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                            <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                                        </div>
                                     )}
                                 </div>
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                                    Обрано поліцейських: {selectedOfficerIds.length}
+                                    Обрано поліцейських: {taggedOfficers.length}
                                 </p>
                             </div>
                         )}

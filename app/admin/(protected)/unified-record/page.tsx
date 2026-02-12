@@ -1,4 +1,4 @@
-import { getUnifiedRecords, getUsersForAssignment, getOfficersForAssignment } from "./actions/recordActions"
+import { getUnifiedRecords, getUsersForAssignment } from "./actions/recordActions"
 import RecordList from "./components/RecordList"
 import ImportDialog from "./components/ImportDialog"
 import CreateRecordDialog from "./components/CreateRecordDialog"
@@ -23,10 +23,9 @@ export default async function UnifiedRecordPage() {
         )
     }
 
-    const [records, users, officers, currentUser] = await Promise.all([
+    const [records, users, currentUser] = await Promise.all([
         getUnifiedRecords(),
         getUsersForAssignment(),
-        getOfficersForAssignment(),
         prisma.user.findUnique({
             where: { username: session.user.email },
             select: { id: true, role: true, firstName: true, lastName: true, username: true }
@@ -73,7 +72,7 @@ export default async function UnifiedRecordPage() {
             </div>
 
             {/* Content Section */}
-            <RecordList initialRecords={records} users={users} officers={officers} currentUser={currentUser} />
+            <RecordList initialRecords={records} users={users} currentUser={currentUser} />
         </div>
     )
 }
