@@ -15,6 +15,7 @@ interface MobileNavProps {
         lastName: string | null
         role: string
         permManageUsers: boolean
+        permViewUsers: boolean
         permViewAudit: boolean
         permManageSettings: boolean
         permManageMailAlerts: boolean
@@ -71,7 +72,7 @@ export default function MobileNav({ user }: MobileNavProps) {
             href: "/admin/users",
             label: "Користувачі",
             icon: Users,
-            permission: (user.role === 'ADMIN' || user.permManageUsers) && user.role !== 'OFFICER_VIEWER'
+            permission: (user.role === 'ADMIN' || user.permManageUsers || user.permViewUsers) && user.role !== 'OFFICER_VIEWER'
         },
         {
             href: "/admin/audit",

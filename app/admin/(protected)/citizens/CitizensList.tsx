@@ -219,9 +219,9 @@ export default function CitizensList({ citizens, currentUser }: { citizens: any[
 
             {/* Floating Bulk Actions Bar */}
             {canDelete && selectedIds.length > 0 && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-8 duration-500">
-                    <div className="bg-slate-900 text-white rounded-[2.5rem] px-8 py-4 shadow-2xl shadow-blue-900/40 flex items-center gap-8 border border-white/10 ring-1 ring-white/5 backdrop-blur-xl">
-                        <div className="flex items-center gap-4 pr-8 border-r border-white/10">
+                <div className="fixed bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-50 w-[94vw] sm:w-auto animate-in slide-in-from-bottom-8 duration-500">
+                    <div className="bg-slate-900 text-white rounded-2xl md:rounded-[2.5rem] px-4 md:px-8 py-3 md:py-4 shadow-2xl shadow-blue-900/40 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-8 border border-white/10 ring-1 ring-white/5 backdrop-blur-xl">
+                        <div className="flex items-center gap-3 sm:gap-4 sm:pr-8 sm:border-r border-white/10">
                             <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-sm font-black text-white shadow-lg shadow-primary/30">
                                 {selectedIds.length}
                             </div>
@@ -234,7 +234,7 @@ export default function CitizensList({ citizens, currentUser }: { citizens: any[
                         <div className="flex items-center gap-2">
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <button className="h-11 px-6 rounded-2xl bg-rose-500 hover:bg-rose-600 font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95 text-white">
+                                    <button className="h-11 w-full sm:w-auto px-6 rounded-2xl bg-rose-500 hover:bg-rose-600 font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95 text-white">
                                         {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                                         Видалити
                                     </button>

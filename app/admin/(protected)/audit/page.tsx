@@ -55,14 +55,14 @@ export default async function AuditPage() {
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <header className="flex flex-col gap-2">
                 <div className="flex items-center gap-3">
                     <div className="p-3 bg-slate-900 rounded-2xl shadow-lg ring-4 ring-slate-100">
                         <Activity className="w-6 h-6 text-blue-400" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">Системний Аудит</h1>
+                        <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 uppercase">Системний Аудит</h1>
                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                             Останні 100 подій в реальному часі
@@ -72,17 +72,17 @@ export default async function AuditPage() {
             </header>
 
             <Card className="border-0 shadow-2xl ring-1 ring-slate-200 rounded-[2.5rem] overflow-hidden bg-white">
-                <CardHeader className="border-b bg-slate-50/50 px-8 py-6">
-                    <div className="flex items-center justify-between">
+                <CardHeader className="border-b bg-slate-50/50 px-4 md:px-8 py-5 md:py-6">
+                    <div className="flex items-center justify-between gap-3">
                         <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Журнал активності</CardTitle>
-                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 bg-white px-4 py-2 rounded-xl border border-slate-200">
+                        <div className="hidden sm:flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 bg-white px-4 py-2 rounded-xl border border-slate-200">
                             <Search className="w-3 h-3" />
                             Історія дій команди
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto">
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50/50 border-b border-slate-100">
@@ -94,7 +94,7 @@ export default async function AuditPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {logs.map((log) => (
+                                {logs.map((log: any) => (
                                     <tr key={log.id} className="hover:bg-slate-50/80 transition-colors group">
                                         <td className="px-8 py-5">
                                             <div className="flex flex-col">
@@ -153,6 +153,37 @@ export default async function AuditPage() {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                    <div className="md:hidden p-4 space-y-3">
+                        {logs.length === 0 ? (
+                            <div className="py-10 text-center text-slate-400 text-sm font-medium">Історія дій порожня</div>
+                        ) : logs.map((log: any) => (
+                            <div key={log.id} className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="text-sm font-black text-slate-900">
+                                            {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                        <p className="text-[10px] font-bold uppercase text-slate-400">
+                                            {new Date(log.createdAt).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] font-black uppercase ${getActionColor(log.action)}`}>
+                                        {getActionIcon(log.action)}
+                                        {log.action}
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-xs font-bold text-slate-900">
+                                        {log.actorUser?.lastName ? `${log.actorUser.lastName} ${log.actorUser.firstName}` : log.actorUser?.email || "Невідомо"}
+                                    </p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase">{log.entityType} • ID: {log.entityId?.slice(-8).toUpperCase() || 'N/A'}</p>
+                                </div>
+                                <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+                                    {log.metadata || '—'}
+                                </p>
+                            </div>
+                        ))}
                     </div>
                 </CardContent>
             </Card>

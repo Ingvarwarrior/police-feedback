@@ -55,7 +55,7 @@ export default function SettingsForm({ initialSettings }: SettingsFormProps) {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <div className="p-3 bg-primary/10 rounded-2xl text-primary">
                         <SettingsIcon className="w-8 h-8" />
@@ -68,7 +68,7 @@ export default function SettingsForm({ initialSettings }: SettingsFormProps) {
                 <Button
                     type="submit"
                     disabled={isPending}
-                    className="h-12 px-8 rounded-2xl font-black uppercase tracking-widest gap-2 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="h-12 w-full lg:w-auto px-6 lg:px-8 rounded-2xl font-black uppercase tracking-widest gap-2 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                     {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                     Зберегти зміни

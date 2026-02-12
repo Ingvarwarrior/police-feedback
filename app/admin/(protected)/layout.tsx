@@ -141,7 +141,7 @@ export default async function AdminLayout({
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 flex flex-col h-screen overflow-hidden print:h-auto print:overflow-visible">
+                <main className="flex-1 flex flex-col h-screen overflow-hidden overflow-x-hidden print:h-auto print:overflow-visible">
                     {/* Desktop Top Header */}
                     <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 hidden md:flex items-center justify-between px-8 no-print shadow-sm relative z-30 transition-colors duration-300">
                         <div className="flex items-center gap-4">
@@ -180,7 +180,7 @@ export default async function AdminLayout({
                     </header>
 
                     {/* Content Area */}
-                    <div id="admin-content-area" className="flex-1 overflow-y-auto p-4 md:p-8 print:overflow-visible print:p-0">
+                    <div id="admin-content-area" className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-8 print:overflow-visible print:p-0">
                         {children}
                     </div>
                 </main>
