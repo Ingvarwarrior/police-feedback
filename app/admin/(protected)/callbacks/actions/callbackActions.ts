@@ -120,6 +120,7 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
   }
 
   const parsed = callbackSchema.parse(input)
+  const uniqueOfficerIds = Array.from(new Set(parsed.officerIds))
   const operatorDisplayName =
     [user.lastName, user.firstName].filter(Boolean).join(" ").trim() || user.username
   const surveyNotesWithOperator = [parsed.surveyNotes?.trim(), `ПІБ співробітника, який проводив Callback: ${operatorDisplayName}`]
@@ -143,7 +144,7 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
       qOverall: parsed.qOverall,
       surveyNotes: surveyNotesWithOperator || null,
       officers: {
-        set: parsed.officerIds.map((id) => ({ id })),
+        connect: uniqueOfficerIds.map((id) => ({ id })),
       },
     },
   })
@@ -158,7 +159,7 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
     },
   })
 
-  for (const officerId of parsed.officerIds) {
+  for (const officerId of uniqueOfficerIds) {
     try {
       await refreshOfficerStats(officerId)
     } catch (error) {
