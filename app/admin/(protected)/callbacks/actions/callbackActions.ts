@@ -64,7 +64,7 @@ export async function getCallbacks() {
 
   const where = user.role === "ADMIN" ? {} : { OR: [{ createdById: user.id }, { assignedUserId: user.id }] }
 
-  return (prisma as any).callback.findMany({
+  const callbacks = await (prisma as any).callback.findMany({
     where,
     include: {
       officers: {
@@ -84,9 +84,13 @@ export async function getCallbacks() {
         select: { id: true, firstName: true, lastName: true, username: true },
       },
     },
-    orderBy: { callDate: "desc" },
+    orderBy: { createdAt: "asc" },
     take: 500,
   })
+
+  return callbacks
+    .map((cb: any, index: number) => ({ ...cb, callbackNumber: index + 1 }))
+    .sort((a: any, b: any) => new Date(b.callDate).getTime() - new Date(a.callDate).getTime())
 }
 
 export async function getCallbackReferenceData() {

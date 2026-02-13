@@ -63,14 +63,13 @@ export default async function CallbacksPage() {
           <Info className="h-5 w-5" />
         </div>
         <p className="text-xs font-medium text-slate-600">
-          У картці callback є список питань для опитування заявника: ввічливість, професіоналізм, законність дій, оперативність, корисність та загальна оцінка.
+          У картці callback є список питань для опитування заявника. Натисніть на картку в списку, щоб відкрити повну деталізацію.
         </p>
       </div>
 
       <CallbackList
         initialCallbacks={callbacks as any[]}
         officers={refs.officers}
-        currentUser={currentUser}
       />
     </div>
   )
