@@ -31,12 +31,19 @@ interface Props {
 }
 
 const questionItems = [
-  { key: "qResponseSpeed", label: "1. Після дзвінка на 102 наряд прибув оперативно?" },
-  { key: "qPoliteness", label: "2. Під час прибуття поліцейські були ввічливими та коректними?" },
-  { key: "qProfessionalism", label: "3. Під час спілкування поліцейські діяли професійно та впевнено?" },
-  { key: "qLawfulness", label: "4. Дії поліцейських були законними та зрозумілими для вас?" },
-  { key: "qHelpfulness", label: "5. За результатом ви отримали реальну допомогу/вирішення?" },
-  { key: "qOverall", label: "6. Загальна оцінка роботи наряду за цей виклик" },
+  "Коротко опишіть, в чому полягало питання / ситуація, яка стала причиною звернення в поліцію.",
+  "Вкажіть ім'я чи будь-яку інформацію щодо співробітника поліції, з яким Ви контактували.",
+  "Через який період часу прибув до Вас / відреагував співробітник поліції після звернення?",
+  "Це, на Вашу думку, було швидко?",
+  "Чи було вирішене Ваше питання?",
+  "Який результат?",
+  "Що було, на Вашу думку, позитивним у роботі поліцейського?",
+  "Було щось, що Вам не сподобалося? Що саме?",
+  "Чи запропонував співробітник поліції альтернативні варіанти врегулювання проблеми / питання?",
+  "Якщо запропонував альтернативний варіант, то який саме?",
+  "Чи вів себе співробітник поліції ввічливо під час реагування на Ваш запит / звернення?",
+  "Чи була для Вас результативною робота співробітника поліції, з яким Ви контактували?",
+  "Що, з Вашої точки зору, можна поліпшити в роботі співробітника поліції? Додаткові коментарі.",
 ] as const
 
 export default function CreateCallbackDialog({ officers }: Props) {
@@ -49,8 +56,21 @@ export default function CreateCallbackDialog({ officers }: Props) {
   const [applicantName, setApplicantName] = useState("")
   const [applicantPhone, setApplicantPhone] = useState("")
   const [selectedOfficerIds, setSelectedOfficerIds] = useState<string[]>([])
-  const [surveyNotes, setSurveyNotes] = useState("")
-  const [ratings, setRatings] = useState<Record<string, string>>({})
+  const [callbackDate, setCallbackDate] = useState(new Date().toISOString().split("T")[0])
+  const [situationDescription, setSituationDescription] = useState("")
+  const [officerInfo, setOfficerInfo] = useState("")
+  const [responseTime, setResponseTime] = useState("")
+  const [wasFast, setWasFast] = useState<string>("UNSET")
+  const [wasResolved, setWasResolved] = useState<string>("UNSET")
+  const [resultText, setResultText] = useState("")
+  const [positivePoints, setPositivePoints] = useState("")
+  const [negativePoints, setNegativePoints] = useState("")
+  const [offeredAlternative, setOfferedAlternative] = useState<string>("UNSET")
+  const [alternativeDetails, setAlternativeDetails] = useState("")
+  const [wasPolite, setWasPolite] = useState<string>("UNSET")
+  const [wasEffective, setWasEffective] = useState<string>("UNSET")
+  const [improvements, setImprovements] = useState("")
+  const [operatorName, setOperatorName] = useState("")
 
   const filteredOfficers = useMemo(() => {
     const q = officerQuery.trim().toLowerCase()
@@ -66,9 +86,22 @@ export default function CreateCallbackDialog({ officers }: Props) {
     setEoNumber("")
     setApplicantName("")
     setApplicantPhone("")
+    setCallbackDate(new Date().toISOString().split("T")[0])
     setSelectedOfficerIds([])
-    setSurveyNotes("")
-    setRatings({})
+    setSituationDescription("")
+    setOfficerInfo("")
+    setResponseTime("")
+    setWasFast("UNSET")
+    setWasResolved("UNSET")
+    setResultText("")
+    setPositivePoints("")
+    setNegativePoints("")
+    setOfferedAlternative("UNSET")
+    setAlternativeDetails("")
+    setWasPolite("UNSET")
+    setWasEffective("UNSET")
+    setImprovements("")
+    setOperatorName("")
     setOfficerQuery("")
   }
 
@@ -102,19 +135,58 @@ export default function CreateCallbackDialog({ officers }: Props) {
 
     setIsLoading(true)
     try {
+      const renderedSurvey = [
+        `Дата проведення Callback: ${callbackDate || "—"}`,
+        "",
+        `1. ${questionItems[0]}`,
+        situationDescription || "—",
+        "",
+        `2. ${questionItems[1]}`,
+        officerInfo || "—",
+        "",
+        `3. ${questionItems[2]}`,
+        responseTime || "—",
+        "",
+        `4. ${questionItems[3]}`,
+        wasFast === "YES" ? "так" : wasFast === "NO" ? "ні" : "не вказано",
+        "",
+        `5. ${questionItems[4]}`,
+        wasResolved === "YES" ? "так" : wasResolved === "NO" ? "ні" : "не вказано",
+        "",
+        `6. ${questionItems[5]}`,
+        resultText || "—",
+        "",
+        `7. ${questionItems[6]}`,
+        positivePoints || "—",
+        "",
+        `8. ${questionItems[7]}`,
+        negativePoints || "—",
+        "",
+        `9. ${questionItems[8]}`,
+        offeredAlternative === "YES" ? "так" : offeredAlternative === "NO" ? "ні" : "не вказано",
+        "",
+        `10. ${questionItems[9]}`,
+        alternativeDetails || "—",
+        "",
+        `11. ${questionItems[10]}`,
+        wasPolite === "YES" ? "так" : wasPolite === "NO" ? "ні" : "не вказано",
+        "",
+        `12. ${questionItems[11]}`,
+        wasEffective === "YES" ? "так" : wasEffective === "NO" ? "ні" : "не вказано",
+        "",
+        `13. ${questionItems[12]}`,
+        improvements || "—",
+        "",
+        `ПІБ співробітника, який проводив Callback: ${operatorName || "—"}`,
+      ].join("\n")
+
       await createCallback({
         callDate,
         eoNumber,
         applicantName,
         applicantPhone,
         officerIds: selectedOfficerIds,
-        qPoliteness: ratings.qPoliteness ? Number(ratings.qPoliteness) : undefined,
-        qProfessionalism: ratings.qProfessionalism ? Number(ratings.qProfessionalism) : undefined,
-        qLawfulness: ratings.qLawfulness ? Number(ratings.qLawfulness) : undefined,
-        qResponseSpeed: ratings.qResponseSpeed ? Number(ratings.qResponseSpeed) : undefined,
-        qHelpfulness: ratings.qHelpfulness ? Number(ratings.qHelpfulness) : undefined,
-        qOverall: ratings.qOverall ? Number(ratings.qOverall) : undefined,
-        surveyNotes,
+        surveyNotes: renderedSurvey,
       })
       toast.success("Callback-картку створено")
       setIsOpen(false)
@@ -226,30 +298,102 @@ export default function CreateCallbackDialog({ officers }: Props) {
 
           <div className="space-y-3 rounded-2xl border border-blue-200 bg-blue-50/40 p-4">
             <h3 className="text-xs font-black uppercase tracking-widest text-blue-700">Питання для опитування заявника</h3>
-            <div className="space-y-3">
-              {questionItems.map((q) => (
-                <div key={q.key} className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_180px] md:items-center">
-                  <Label className="font-semibold text-slate-700">{q.label}</Label>
-                  <Select
-                    value={ratings[q.key] || "UNSET"}
-                    onValueChange={(value) => setRatings((prev) => ({ ...prev, [q.key]: value === "UNSET" ? "" : value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Оцінка 1-5" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="UNSET">Не вказано</SelectItem>
-                      {[1, 2, 3, 4, 5].map((v) => (
-                        <SelectItem key={v} value={String(v)}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
-            </div>
-            <div className="space-y-2">
-              <Label>Додатковий коментар за результатом опитування</Label>
-              <Textarea value={surveyNotes} onChange={(e) => setSurveyNotes(e.target.value)} placeholder="Короткий підсумок розмови із заявником" />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">Дата проведення Callback</Label>
+                <Input type="date" value={callbackDate} onChange={(e) => setCallbackDate(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">1. {questionItems[0]}</Label>
+                <Textarea value={situationDescription} onChange={(e) => setSituationDescription(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">2. {questionItems[1]}</Label>
+                <Textarea value={officerInfo} onChange={(e) => setOfficerInfo(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">3. {questionItems[2]}</Label>
+                <Input value={responseTime} onChange={(e) => setResponseTime(e.target.value)} placeholder="Напр. через 12 хвилин" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">4. {questionItems[3]}</Label>
+                <Select value={wasFast} onValueChange={setWasFast}>
+                  <SelectTrigger><SelectValue placeholder="Оберіть відповідь" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNSET">Не вказано</SelectItem>
+                    <SelectItem value="YES">Так</SelectItem>
+                    <SelectItem value="NO">Ні</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">5. {questionItems[4]}</Label>
+                <Select value={wasResolved} onValueChange={setWasResolved}>
+                  <SelectTrigger><SelectValue placeholder="Оберіть відповідь" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNSET">Не вказано</SelectItem>
+                    <SelectItem value="YES">Так</SelectItem>
+                    <SelectItem value="NO">Ні</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">6. {questionItems[5]}</Label>
+                <Textarea value={resultText} onChange={(e) => setResultText(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">7. {questionItems[6]}</Label>
+                <Textarea value={positivePoints} onChange={(e) => setPositivePoints(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">8. {questionItems[7]}</Label>
+                <Textarea value={negativePoints} onChange={(e) => setNegativePoints(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">9. {questionItems[8]}</Label>
+                <Select value={offeredAlternative} onValueChange={setOfferedAlternative}>
+                  <SelectTrigger><SelectValue placeholder="Оберіть відповідь" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNSET">Не вказано</SelectItem>
+                    <SelectItem value="YES">Так</SelectItem>
+                    <SelectItem value="NO">Ні</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">10. {questionItems[9]}</Label>
+                <Textarea value={alternativeDetails} onChange={(e) => setAlternativeDetails(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">11. {questionItems[10]}</Label>
+                <Select value={wasPolite} onValueChange={setWasPolite}>
+                  <SelectTrigger><SelectValue placeholder="Оберіть відповідь" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNSET">Не вказано</SelectItem>
+                    <SelectItem value="YES">Так</SelectItem>
+                    <SelectItem value="NO">Ні</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">12. {questionItems[11]}</Label>
+                <Select value={wasEffective} onValueChange={setWasEffective}>
+                  <SelectTrigger><SelectValue placeholder="Оберіть відповідь" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNSET">Не вказано</SelectItem>
+                    <SelectItem value="YES">Так</SelectItem>
+                    <SelectItem value="NO">Ні</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">13. {questionItems[12]}</Label>
+                <Textarea value={improvements} onChange={(e) => setImprovements(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">ПІБ співробітника групи, який проводив Callback</Label>
+                <Input value={operatorName} onChange={(e) => setOperatorName(e.target.value)} placeholder="Прізвище Ім'я По батькові" />
+              </div>
             </div>
           </div>
         </div>

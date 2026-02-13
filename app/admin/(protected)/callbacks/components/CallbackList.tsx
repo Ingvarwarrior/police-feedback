@@ -57,10 +57,6 @@ function userLabel(user: UserRow | null) {
   return `${user.lastName || ""} ${user.firstName || ""}`.trim() || user.username
 }
 
-function scoreLabel(value: number | null | undefined) {
-  return value ? `${value}/5` : "—"
-}
-
 export default function CallbackList({ initialCallbacks, officers, currentUser }: Props) {
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState<"ALL" | "PENDING" | "COMPLETED">("ALL")
@@ -179,33 +175,6 @@ export default function CallbackList({ initialCallbacks, officers, currentUser }
                       {`${o.lastName || ""} ${o.firstName || ""}`.trim()} ({o.badgeNumber})
                     </span>
                   ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ввічливість</p>
-                  <p className="text-sm font-black text-slate-900">{scoreLabel(cb.qPoliteness)}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Професіоналізм</p>
-                  <p className="text-sm font-black text-slate-900">{scoreLabel(cb.qProfessionalism)}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Законність дій</p>
-                  <p className="text-sm font-black text-slate-900">{scoreLabel(cb.qLawfulness)}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Оперативність</p>
-                  <p className="text-sm font-black text-slate-900">{scoreLabel(cb.qResponseSpeed)}</p>
-                </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Корисність допомоги</p>
-                  <p className="text-sm font-black text-slate-900">{scoreLabel(cb.qHelpfulness)}</p>
-                </div>
-                <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-500">Загальна оцінка</p>
-                  <p className="text-sm font-black text-blue-900">{scoreLabel(cb.qOverall)}</p>
                 </div>
               </div>
 
