@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -14,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, Loader2, Search, PhoneCall } from "lucide-react"
+import { Plus, Loader2, Search, PhoneCall, UserPlus, XCircle } from "lucide-react"
 import { toast } from "sonner"
 import { createCallback } from "../actions/callbackActions"
 
@@ -27,28 +26,20 @@ interface OfficerOption {
   department: string | null
 }
 
-interface UserOption {
-  id: string
-  firstName: string | null
-  lastName: string | null
-  username: string
-}
-
 interface Props {
   officers: OfficerOption[]
-  users: UserOption[]
 }
 
 const questionItems = [
-  { key: "qPoliteness", label: "1. Чи були поліцейські ввічливими та коректними?" },
-  { key: "qProfessionalism", label: "2. Чи діяли поліцейські професійно?" },
-  { key: "qLawfulness", label: "3. Чи були дії поліцейських законними та обґрунтованими?" },
-  { key: "qResponseSpeed", label: "4. Чи оперативно прибув наряд на виклик?" },
-  { key: "qHelpfulness", label: "5. Чи була надана реальна допомога заявнику?" },
-  { key: "qOverall", label: "6. Загальна оцінка роботи наряду" },
+  { key: "qResponseSpeed", label: "1. Після дзвінка на 102 наряд прибув оперативно?" },
+  { key: "qPoliteness", label: "2. Під час прибуття поліцейські були ввічливими та коректними?" },
+  { key: "qProfessionalism", label: "3. Під час спілкування поліцейські діяли професійно та впевнено?" },
+  { key: "qLawfulness", label: "4. Дії поліцейських були законними та зрозумілими для вас?" },
+  { key: "qHelpfulness", label: "5. За результатом ви отримали реальну допомогу/вирішення?" },
+  { key: "qOverall", label: "6. Загальна оцінка роботи наряду за цей виклик" },
 ] as const
 
-export default function CreateCallbackDialog({ officers, users }: Props) {
+export default function CreateCallbackDialog({ officers }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [officerQuery, setOfficerQuery] = useState("")
@@ -57,7 +48,6 @@ export default function CreateCallbackDialog({ officers, users }: Props) {
   const [eoNumber, setEoNumber] = useState("")
   const [applicantName, setApplicantName] = useState("")
   const [applicantPhone, setApplicantPhone] = useState("")
-  const [assignedUserId, setAssignedUserId] = useState<string>("UNASSIGNED")
   const [selectedOfficerIds, setSelectedOfficerIds] = useState<string[]>([])
   const [surveyNotes, setSurveyNotes] = useState("")
   const [ratings, setRatings] = useState<Record<string, string>>({})
@@ -76,19 +66,21 @@ export default function CreateCallbackDialog({ officers, users }: Props) {
     setEoNumber("")
     setApplicantName("")
     setApplicantPhone("")
-    setAssignedUserId("UNASSIGNED")
     setSelectedOfficerIds([])
     setSurveyNotes("")
     setRatings({})
     setOfficerQuery("")
   }
 
-  const toggleOfficer = (officerId: string, checked: boolean) => {
-    setSelectedOfficerIds((prev) => {
-      if (checked) return [...prev, officerId]
-      return prev.filter((id) => id !== officerId)
-    })
-  }
+  const selectedOfficers = useMemo(
+    () => officers.filter((o) => selectedOfficerIds.includes(o.id)),
+    [officers, selectedOfficerIds]
+  )
+
+  const searchResults = useMemo(
+    () => filteredOfficers.filter((o) => !selectedOfficerIds.includes(o.id)),
+    [filteredOfficers, selectedOfficerIds]
+  )
 
   const handleSubmit = async () => {
     if (!eoNumber.trim()) {
@@ -116,7 +108,6 @@ export default function CreateCallbackDialog({ officers, users }: Props) {
         applicantName,
         applicantPhone,
         officerIds: selectedOfficerIds,
-        assignedUserId: assignedUserId === "UNASSIGNED" ? null : assignedUserId,
         qPoliteness: ratings.qPoliteness ? Number(ratings.qPoliteness) : undefined,
         qProfessionalism: ratings.qProfessionalism ? Number(ratings.qProfessionalism) : undefined,
         qLawfulness: ratings.qLawfulness ? Number(ratings.qLawfulness) : undefined,
@@ -171,25 +162,24 @@ export default function CreateCallbackDialog({ officers, users }: Props) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Виконавець callback (опціонально)</Label>
-            <Select value={assignedUserId} onValueChange={setAssignedUserId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Не призначено" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="UNASSIGNED">Не призначено</SelectItem>
-                {users.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {`${u.lastName || ""} ${u.firstName || ""}`.trim() || u.username}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           <div className="space-y-3 rounded-2xl border border-slate-200 p-4">
             <Label>Поліцейські, яких стосується callback</Label>
+            {selectedOfficers.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {selectedOfficers.map((o) => (
+                  <div key={o.id} className="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-black text-blue-700">
+                    <span>{`${o.lastName || ""} ${o.firstName || ""}`.trim()} ({o.badgeNumber})</span>
+                    <button
+                      onClick={() => setSelectedOfficerIds((prev) => prev.filter((id) => id !== o.id))}
+                      className="hover:text-blue-900"
+                      type="button"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
@@ -200,20 +190,32 @@ export default function CreateCallbackDialog({ officers, users }: Props) {
               />
             </div>
             <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-slate-100 p-2">
-              {filteredOfficers.map((o) => {
+              {searchResults.map((o) => {
                 const fullName = `${o.lastName || ""} ${o.firstName || ""}`.trim()
                 const subtitle = [o.rank, o.department].filter(Boolean).join(", ")
-                const checked = selectedOfficerIds.includes(o.id)
                 return (
-                  <label key={o.id} className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-100 p-3 hover:bg-slate-50">
-                    <Checkbox checked={checked} onCheckedChange={(val) => toggleOfficer(o.id, val === true)} />
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedOfficerIds((prev) => [...prev, o.id])
+                      setOfficerQuery("")
+                    }}
+                    className="flex w-full items-start justify-between gap-3 rounded-xl border border-slate-100 p-3 text-left hover:bg-slate-50"
+                  >
                     <div>
                       <p className="text-sm font-bold text-slate-900">{fullName}</p>
                       <p className="text-xs text-slate-500">{o.badgeNumber}{subtitle ? ` • ${subtitle}` : ""}</p>
                     </div>
-                  </label>
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                      <UserPlus className="h-4 w-4" />
+                    </div>
+                  </button>
                 )
               })}
+              {searchResults.length === 0 && (
+                <p className="px-2 py-4 text-center text-xs font-semibold text-slate-400">Нічого не знайдено</p>
+              )}
             </div>
           </div>
 

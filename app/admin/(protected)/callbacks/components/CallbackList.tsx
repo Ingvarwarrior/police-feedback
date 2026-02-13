@@ -46,7 +46,6 @@ interface CallbackRow {
 interface Props {
   initialCallbacks: CallbackRow[]
   officers: OfficerRow[]
-  users: UserRow[]
   currentUser: {
     id: string
     role: string
@@ -62,7 +61,7 @@ function scoreLabel(value: number | null | undefined) {
   return value ? `${value}/5` : "—"
 }
 
-export default function CallbackList({ initialCallbacks, officers, users, currentUser }: Props) {
+export default function CallbackList({ initialCallbacks, officers, currentUser }: Props) {
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState<"ALL" | "PENDING" | "COMPLETED">("ALL")
 
@@ -123,7 +122,7 @@ export default function CallbackList({ initialCallbacks, officers, users, curren
           >
             Завершено
           </button>
-          {(currentUser.role === "ADMIN" || users.length > 0) && <CreateCallbackDialog officers={officers} users={users} />}
+          <CreateCallbackDialog officers={officers} />
         </div>
       </div>
 

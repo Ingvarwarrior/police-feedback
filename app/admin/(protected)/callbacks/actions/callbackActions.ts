@@ -11,7 +11,6 @@ const callbackSchema = z.object({
   applicantName: z.string().trim().min(1, "Вкажіть ПІБ заявника"),
   applicantPhone: z.string().trim().min(1, "Вкажіть номер телефону"),
   officerIds: z.array(z.string()).min(1, "Оберіть хоча б одного поліцейського"),
-  assignedUserId: z.string().optional().nullable(),
   qPoliteness: z.number().int().min(1).max(5).optional(),
   qProfessionalism: z.number().int().min(1).max(5).optional(),
   qLawfulness: z.number().int().min(1).max(5).optional(),
@@ -93,32 +92,20 @@ export async function getCallbackReferenceData() {
     throw new Error("У вас немає прав для перегляду callback-карток")
   }
 
-  const [officers, users] = await Promise.all([
-    prisma.officer.findMany({
-      where: { status: "ACTIVE" },
-      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        badgeNumber: true,
-        rank: true,
-        department: true,
-      },
-    }),
-    prisma.user.findMany({
-      where: { active: true, role: { in: ["ADMIN", "VIEWER"] } },
-      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-      },
-    }),
-  ])
+  const officers = await prisma.officer.findMany({
+    where: { status: "ACTIVE" },
+    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      badgeNumber: true,
+      rank: true,
+      department: true,
+    },
+  })
 
-  return { officers, users }
+  return { officers }
 }
 
 export async function createCallback(input: z.input<typeof callbackSchema>) {
@@ -137,7 +124,7 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
       applicantName: parsed.applicantName,
       applicantPhone: parsed.applicantPhone,
       createdById: user.id,
-      assignedUserId: parsed.assignedUserId || null,
+      assignedUserId: user.id,
       status: hasAnyAnswer(parsed) ? "COMPLETED" : "PENDING",
       qPoliteness: parsed.qPoliteness,
       qProfessionalism: parsed.qProfessionalism,

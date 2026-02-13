@@ -70,7 +70,6 @@ export default async function CallbacksPage() {
       <CallbackList
         initialCallbacks={callbacks as any[]}
         officers={refs.officers}
-        users={refs.users}
         currentUser={currentUser}
       />
     </div>
