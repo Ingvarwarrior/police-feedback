@@ -158,7 +158,14 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
     },
   })
 
-  await Promise.all(parsed.officerIds.map((officerId) => refreshOfficerStats(officerId)))
+  for (const officerId of parsed.officerIds) {
+    try {
+      await refreshOfficerStats(officerId)
+    } catch (error) {
+      // Callback is already saved; stats recalculation should not break user flow.
+      console.error("Failed to refresh officer stats from callback", { officerId, error })
+    }
+  }
 
   revalidatePath("/admin/callbacks")
   revalidatePath("/admin/officers")

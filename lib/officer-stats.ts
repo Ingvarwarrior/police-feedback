@@ -45,15 +45,21 @@ export async function refreshOfficerStats(officerId: string) {
         }
     })
 
-    const callbackRatings = await (prisma as any).callback.findMany({
-        where: {
-            officers: { some: { id: officerId } },
-            qOverall: { gt: 0 }
-        },
-        select: {
-            qOverall: true
-        }
-    })
+    let callbackRatings: Array<{ qOverall: number | null }> = []
+    try {
+        callbackRatings = await (prisma as any).callback.findMany({
+            where: {
+                officers: { some: { id: officerId } },
+                qOverall: { gt: 0 }
+            },
+            select: {
+                qOverall: true
+            }
+        })
+    } catch (error) {
+        // Keep stats refresh resilient for environments where callback schema may lag behind.
+        console.error("Callback ratings query failed during officer stats refresh", { officerId, error })
+    }
 
     let totalPoints = 0
     let totalCount = 0
