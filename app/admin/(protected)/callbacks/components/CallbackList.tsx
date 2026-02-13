@@ -157,6 +157,11 @@ export default function CallbackList({ initialCallbacks, officers, currentUser }
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {typeof cb.qOverall === "number" && cb.qOverall > 0 ? (
+                    <span className="inline-flex rounded-xl bg-blue-100 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-700">
+                      Оцінка {cb.qOverall}/5
+                    </span>
+                  ) : null}
                   <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-black uppercase tracking-widest ${cb.status === "COMPLETED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
                     {cb.status === "COMPLETED" ? "Завершено" : "Очікує"}
                   </span>

@@ -70,6 +70,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
   const [wasPolite, setWasPolite] = useState<string>("UNSET")
   const [wasEffective, setWasEffective] = useState<string>("UNSET")
   const [improvements, setImprovements] = useState("")
+  const [teamRating, setTeamRating] = useState<string>("UNSET")
 
   const filteredOfficers = useMemo(() => {
     const q = officerQuery.trim().toLowerCase()
@@ -100,6 +101,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
     setWasPolite("UNSET")
     setWasEffective("UNSET")
     setImprovements("")
+    setTeamRating("UNSET")
     setOfficerQuery("")
   }
 
@@ -174,6 +176,8 @@ export default function CreateCallbackDialog({ officers }: Props) {
         "",
         `13. ${questionItems[12]}`,
         improvements || "—",
+        "",
+        `Оцінка роботи наряду (1-5): ${teamRating === "UNSET" ? "не вказано" : teamRating}`,
       ].join("\n")
 
       await createCallback({
@@ -182,6 +186,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
         applicantName,
         applicantPhone,
         officerIds: selectedOfficerIds,
+        qOverall: teamRating === "UNSET" ? undefined : Number(teamRating),
         surveyNotes: renderedSurvey,
       })
       toast.success("Callback-картку створено")
@@ -385,6 +390,20 @@ export default function CreateCallbackDialog({ officers }: Props) {
               <div className="space-y-2">
                 <Label className="font-semibold text-slate-700">13. {questionItems[12]}</Label>
                 <Textarea value={improvements} onChange={(e) => setImprovements(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">Оцініть, будь ласка, роботу наряду (від 1 до 5)</Label>
+                <Select value={teamRating} onValueChange={setTeamRating}>
+                  <SelectTrigger><SelectValue placeholder="Оберіть оцінку" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNSET">Не вказано</SelectItem>
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                    <SelectItem value="3">3</SelectItem>
+                    <SelectItem value="4">4</SelectItem>
+                    <SelectItem value="5">5</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

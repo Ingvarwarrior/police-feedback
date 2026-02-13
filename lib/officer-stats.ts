@@ -45,6 +45,16 @@ export async function refreshOfficerStats(officerId: string) {
         }
     })
 
+    const callbackRatings = await (prisma as any).callback.findMany({
+        where: {
+            officers: { some: { id: officerId } },
+            qOverall: { gt: 0 }
+        },
+        select: {
+            qOverall: true
+        }
+    })
+
     let totalPoints = 0
     let totalCount = 0
 
@@ -68,6 +78,13 @@ export async function refreshOfficerStats(officerId: string) {
     citizenFeedback.forEach((f: any) => {
         if (f.rateOverall && f.rateOverall > 0) {
             totalPoints += f.rateOverall
+            totalCount++
+        }
+    })
+
+    callbackRatings.forEach((cb: any) => {
+        if (cb.qOverall && cb.qOverall > 0) {
+            totalPoints += cb.qOverall
             totalCount++
         }
     })

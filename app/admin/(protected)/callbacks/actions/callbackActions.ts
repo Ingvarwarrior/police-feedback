@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import { refreshOfficerStats } from "@/lib/officer-stats"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
@@ -157,6 +158,9 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
     },
   })
 
+  await Promise.all(parsed.officerIds.map((officerId) => refreshOfficerStats(officerId)))
+
   revalidatePath("/admin/callbacks")
+  revalidatePath("/admin/officers")
   return { success: true, id: created.id }
 }
