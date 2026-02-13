@@ -70,6 +70,7 @@ export default async function CallbacksPage() {
       <CallbackList
         initialCallbacks={callbacks as any[]}
         officers={refs.officers}
+        canDelete={currentUser.role === "ADMIN"}
       />
     </div>
   )

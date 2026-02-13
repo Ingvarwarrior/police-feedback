@@ -67,6 +67,12 @@ interface OfficerDetailData {
         recentEvaluations: any[]
         recentFeedback: any[]
         taggedFeedback: any[]
+        callbackStats: {
+            total: number
+            rated: number
+            avgRating: number
+        }
+        recentCallbacks: any[]
         unifiedRecords: any[]
     }
 }
@@ -147,7 +153,8 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
 
     const { officer, stats } = data
     const scores = stats.avgScores
-    const isRedFlag = scores.overall > 0 && scores.overall < 3.0
+    const overallDisplay = officer.avgScore && officer.avgScore > 0 ? Number(officer.avgScore) : scores.overall
+    const isRedFlag = overallDisplay > 0 && overallDisplay < 3.0
 
     return (
         <div className="space-y-8">
@@ -159,7 +166,7 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                     </div>
                     <div>
                         <h3 className="font-black uppercase tracking-tight text-sm">Низький рейтинг компетенцій</h3>
-                        <p className="text-sm font-medium opacity-80 italic">Загальний показник ({scores.overall}/5) нижче норми. Рекомендується перегляд професійної діяльності.</p>
+                        <p className="text-sm font-medium opacity-80 italic">Загальний показник ({overallDisplay}/5) нижче норми. Рекомендується перегляд професійної діяльності.</p>
                     </div>
                 </div>
             )}
@@ -418,17 +425,17 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
 
             {/* Summary Stats Cards */}
             {canViewStats && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 no-print">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 no-print">
                     <Card className="bg-slate-900 dark:bg-slate-800 text-white border-none shadow-xl rounded-[2rem] overflow-hidden relative transition-colors duration-300">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2" />
                         <CardContent className="pt-8 pb-8 relative z-10">
                             <div className="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-4">Середній рейтинг</div>
                             <div className="text-5xl font-black flex items-baseline gap-2 italic">
-                                {scores.overall || '0'} <span className="text-lg text-slate-600 not-italic">/ 5.0</span>
+                                {overallDisplay || '0'} <span className="text-lg text-slate-600 not-italic">/ 5.0</span>
                             </div>
                             <div className="mt-6 flex gap-1.5">
                                 {[1, 2, 3, 4, 5].map(star => (
-                                    <Star key={star} className={`w-5 h-5 ${star <= scores.overall ? 'fill-yellow-400 text-yellow-400' : 'text-slate-700'}`} />
+                                    <Star key={star} className={`w-5 h-5 ${star <= overallDisplay ? 'fill-yellow-400 text-yellow-400' : 'text-slate-700'}`} />
                                 ))}
                             </div>
                         </CardContent>
@@ -437,6 +444,7 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                     <StatsCard title="Комунікація" value={scores.communication} icon="💬" />
                     <StatsCard title="Тактика" value={scores.tactics} icon="⚡" />
                     <StatsCard title="Знання НПА" value={scores.knowledge} icon="📚" />
+                    <StatsCard title="Callback" value={stats.callbackStats.avgRating} icon="📞" />
                 </div>
             )}
 
@@ -562,6 +570,70 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
 
                 {/* Citizen Feedback & Tagged Reports */}
                 <div className="lg:col-span-1 space-y-12">
+                    {/* Callback Feedback */}
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-3 italic">
+                            <div className="w-1.5 h-6 bg-blue-500" />
+                            <Phone className="w-5 h-5 text-blue-500" />
+                            Callback опитування
+                        </h2>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-3 gap-2">
+                                <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-3 py-2">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-blue-500">Всього</p>
+                                    <p className="text-lg font-black text-slate-900">{stats.callbackStats.total}</p>
+                                </div>
+                                <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-3 py-2">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-blue-500">З оцінкою</p>
+                                    <p className="text-lg font-black text-slate-900">{stats.callbackStats.rated}</p>
+                                </div>
+                                <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-3 py-2">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-blue-500">Середня</p>
+                                    <p className="text-lg font-black text-slate-900">{stats.callbackStats.avgRating || 0}</p>
+                                </div>
+                            </div>
+
+                            {stats.recentCallbacks.length === 0 ? (
+                                <div className="text-center py-10 bg-slate-50 dark:bg-slate-800 rounded-[2rem] border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[10px] transition-colors duration-300">
+                                    Callback-опитувань немає
+                                </div>
+                            ) : (
+                                stats.recentCallbacks.map((cb: any) => (
+                                    <div key={cb.id} className="p-5 rounded-[1.5rem] border shadow-sm bg-blue-50/30 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">
+                                                    ЄО №{cb.eoNumber}
+                                                </p>
+                                                <p className="text-xs font-bold text-slate-500 mt-1">
+                                                    {new Date(cb.callDate).toLocaleDateString()} • {cb.applicantName}
+                                                </p>
+                                            </div>
+                                            {cb.qOverall ? (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-black text-amber-500 border border-amber-100">
+                                                    {cb.qOverall}
+                                                    <Star className="w-3 h-3 fill-current" />
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase text-slate-400 border border-slate-100">
+                                                    Без оцінки
+                                                </span>
+                                            )}
+                                        </div>
+                                        {cb.surveyNotes ? (
+                                            <p className="mt-3 text-xs text-slate-600 line-clamp-3">
+                                                {cb.surveyNotes}
+                                            </p>
+                                        ) : null}
+                                        <Link href="/admin/callbacks" className="text-[10px] font-black uppercase text-blue-600 hover:underline mt-3 inline-flex items-center gap-2 tracking-[0.2em]">
+                                            Переглянути callback <ArrowLeft className="w-3 h-3 rotate-180" />
+                                        </Link>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
                     {/* Tagged Reports First (As requested) */}
                     {stats.taggedFeedback.length > 0 && (
                         <div className="space-y-6">

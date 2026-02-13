@@ -176,3 +176,54 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
   revalidatePath("/admin/officers")
   return { success: true, id: created.id }
 }
+
+export async function deleteCallback(callbackId: string) {
+  const user = await getCurrentUser()
+
+  if (user.role !== "ADMIN") {
+    throw new Error("Лише адміністратор може видаляти callback-картки")
+  }
+
+  const callback = await (prisma as any).callback.findUnique({
+    where: { id: callbackId },
+    select: {
+      id: true,
+      eoNumber: true,
+      officers: { select: { id: true } },
+    },
+  })
+
+  if (!callback) {
+    throw new Error("Callback-картку не знайдено")
+  }
+
+  await (prisma as any).callback.delete({
+    where: { id: callbackId },
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      actorUserId: user.id,
+      action: "DELETE_CALLBACK",
+      entityType: "CALLBACK",
+      entityId: callback.id,
+      metadata: JSON.stringify({ eoNumber: callback.eoNumber }),
+    },
+  })
+
+  for (const officer of callback.officers || []) {
+    try {
+      await refreshOfficerStats(officer.id)
+    } catch (error) {
+      console.error("Failed to refresh officer stats after callback deletion", {
+        callbackId,
+        officerId: officer.id,
+        error,
+      })
+    }
+  }
+
+  revalidatePath("/admin/callbacks")
+  revalidatePath("/admin/officers")
+  return { success: true }
+}

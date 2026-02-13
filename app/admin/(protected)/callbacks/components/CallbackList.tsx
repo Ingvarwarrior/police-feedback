@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import {
   Search,
   User,
@@ -13,9 +14,13 @@ import {
   ClipboardCheck,
   ChevronRight,
   Hash,
+  Star,
+  Trash2,
 } from "lucide-react"
 import { format } from "date-fns"
 import { uk } from "date-fns/locale"
+import { toast } from "sonner"
+import { deleteCallback } from "../actions/callbackActions"
 import CreateCallbackDialog from "./CreateCallbackDialog"
 
 interface OfficerRow {
@@ -52,6 +57,7 @@ interface CallbackRow {
 interface Props {
   initialCallbacks: CallbackRow[]
   officers: OfficerRow[]
+  canDelete: boolean
 }
 
 function userLabel(user: UserRow | null) {
@@ -68,13 +74,29 @@ function officerLabel(officer: OfficerRow) {
   return `${officer.lastName || ""} ${officer.firstName || ""}`.trim() || officer.badgeNumber
 }
 
-export default function CallbackList({ initialCallbacks, officers }: Props) {
+function RatingStars({ value }: { value: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`h-3.5 w-3.5 ${star <= value ? "fill-amber-400 text-amber-500" : "text-slate-300"}`}
+        />
+      ))}
+    </span>
+  )
+}
+
+export default function CallbackList({ initialCallbacks, officers, canDelete }: Props) {
+  const [callbacks, setCallbacks] = useState(initialCallbacks)
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState<"ALL" | "PENDING" | "COMPLETED">("ALL")
   const [selectedCallback, setSelectedCallback] = useState<CallbackRow | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<CallbackRow | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const filtered = useMemo(() => {
-    let data = [...initialCallbacks]
+    let data = [...callbacks]
 
     if (status !== "ALL") {
       data = data.filter((cb) => cb.status === status)
@@ -98,7 +120,25 @@ export default function CallbackList({ initialCallbacks, officers }: Props) {
     }
 
     return data.sort((a, b) => new Date(b.callDate).getTime() - new Date(a.callDate).getTime())
-  }, [initialCallbacks, search, status])
+  }, [callbacks, search, status])
+
+  const handleDeleteCallback = async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      await deleteCallback(deleteTarget.id)
+      setCallbacks((prev) => prev.filter((cb) => cb.id !== deleteTarget.id))
+      if (selectedCallback?.id === deleteTarget.id) {
+        setSelectedCallback(null)
+      }
+      toast.success("Callback-картку видалено")
+      setDeleteTarget(null)
+    } catch (error: any) {
+      toast.error(error?.message || "Не вдалося видалити callback-картку")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -194,8 +234,9 @@ export default function CallbackList({ initialCallbacks, officers }: Props) {
 
                   <div className="flex items-center gap-2">
                     {typeof cb.qOverall === "number" && cb.qOverall > 0 ? (
-                      <span className="inline-flex rounded-xl bg-blue-100 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-700">
-                        Оцінка {cb.qOverall}/5
+                      <span className="inline-flex items-center gap-1.5 rounded-xl bg-blue-100 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-700">
+                        <RatingStars value={cb.qOverall} />
+                        {cb.qOverall}/5
                       </span>
                     ) : null}
                     <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-black uppercase tracking-widest ${cb.status === "COMPLETED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
@@ -254,18 +295,53 @@ export default function CallbackList({ initialCallbacks, officers }: Props) {
           {selectedCallback ? (
             <div>
               <div className="space-y-3 bg-slate-900 p-6 text-white">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-200">
-                    <Hash className="h-3.5 w-3.5" />
-                    {formatCallbackNumber(selectedCallback.callbackNumber)}
-                  </span>
-                  <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-black uppercase tracking-widest ${selectedCallback.status === "COMPLETED" ? "bg-emerald-500/20 text-emerald-200" : "bg-amber-500/20 text-amber-200"}`}>
-                    {selectedCallback.status === "COMPLETED" ? "Завершено" : "Очікує"}
-                  </span>
-                  {typeof selectedCallback.qOverall === "number" && selectedCallback.qOverall > 0 ? (
-                    <span className="inline-flex rounded-xl bg-blue-500/20 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-200">
-                      Оцінка {selectedCallback.qOverall}/5
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-200">
+                      <Hash className="h-3.5 w-3.5" />
+                      {formatCallbackNumber(selectedCallback.callbackNumber)}
                     </span>
+                    <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-black uppercase tracking-widest ${selectedCallback.status === "COMPLETED" ? "bg-emerald-500/20 text-emerald-200" : "bg-amber-500/20 text-amber-200"}`}>
+                      {selectedCallback.status === "COMPLETED" ? "Завершено" : "Очікує"}
+                    </span>
+                    {typeof selectedCallback.qOverall === "number" && selectedCallback.qOverall > 0 ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-xl bg-blue-500/20 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-200">
+                        <RatingStars value={selectedCallback.qOverall} />
+                        {selectedCallback.qOverall}/5
+                      </span>
+                    ) : null}
+                  </div>
+                  {canDelete ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(selectedCallback)}
+                          className="inline-flex items-center gap-2 rounded-xl bg-rose-500/20 px-3 py-1.5 text-xs font-black uppercase tracking-widest text-rose-200 hover:bg-rose-500/30"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Видалити
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-2xl">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="font-black uppercase">Видалити callback?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Картка буде видалена безповоротно.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="rounded-xl font-bold">Скасувати</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDeleteCallback}
+                            disabled={isDeleting}
+                            className="rounded-xl bg-rose-600 font-black hover:bg-rose-700"
+                          >
+                            {isDeleting ? "Видалення..." : "Видалити"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   ) : null}
                 </div>
                 <DialogHeader>

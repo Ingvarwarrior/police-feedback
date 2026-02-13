@@ -41,7 +41,8 @@ export async function GET(
                     select: {
                         evaluations: true,
                         responses: true,
-                        taggedInResponses: true
+                        taggedInResponses: true,
+                        callbacks: true
                     }
                 },
                 taggedInResponses: {
@@ -53,6 +54,21 @@ export async function GET(
                         status: true,
                         isConfirmed: true
                     } as any,
+                    orderBy: { createdAt: 'desc' },
+                    take: 10
+                },
+                callbacks: {
+                    select: {
+                        id: true,
+                        createdAt: true,
+                        callDate: true,
+                        eoNumber: true,
+                        applicantName: true,
+                        applicantPhone: true,
+                        status: true,
+                        qOverall: true,
+                        surveyNotes: true
+                    },
                     orderBy: { createdAt: 'desc' },
                     take: 10
                 },
@@ -105,6 +121,12 @@ export async function GET(
 
         // Calculate aggregate scores
         const evaluations = officer.evaluations
+        const callbacks = (officer as any).callbacks || []
+        const ratedCallbacks = callbacks.filter((cb: any) => typeof cb.qOverall === "number" && cb.qOverall > 0)
+        const callbackAvgRating =
+            ratedCallbacks.length > 0
+                ? Number((ratedCallbacks.reduce((sum: number, cb: any) => sum + cb.qOverall, 0) / ratedCallbacks.length).toFixed(2))
+                : 0
         const avgScores = {
             knowledge: 0,
             tactics: 0,
@@ -194,6 +216,12 @@ export async function GET(
                 recentEvaluations: officer.evaluations.slice(0, 5),
                 recentFeedback: officer.responses,
                 taggedFeedback: ((officer as any).taggedInResponses || []).filter((tf: any) => !officer.responses.some((rf: any) => rf.id === tf.id)),
+                callbackStats: {
+                    total: officer._count.callbacks,
+                    rated: ratedCallbacks.length,
+                    avgRating: callbackAvgRating
+                },
+                recentCallbacks: callbacks,
                 unifiedRecords: (officer as any).unifiedRecords || [],
                 qrUrl: surveyUrl
             }

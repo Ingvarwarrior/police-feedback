@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, Loader2, Search, PhoneCall, UserPlus, XCircle } from "lucide-react"
+import { Plus, Loader2, Search, PhoneCall, UserPlus, XCircle, Star } from "lucide-react"
 import { toast } from "sonner"
 import { createCallback } from "../actions/callbackActions"
 
@@ -70,7 +70,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
   const [wasPolite, setWasPolite] = useState<string>("UNSET")
   const [wasEffective, setWasEffective] = useState<string>("UNSET")
   const [improvements, setImprovements] = useState("")
-  const [teamRating, setTeamRating] = useState<string>("UNSET")
+  const [teamRating, setTeamRating] = useState(0)
 
   const filteredOfficers = useMemo(() => {
     const q = officerQuery.trim().toLowerCase()
@@ -101,7 +101,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
     setWasPolite("UNSET")
     setWasEffective("UNSET")
     setImprovements("")
-    setTeamRating("UNSET")
+    setTeamRating(0)
     setOfficerQuery("")
   }
 
@@ -177,7 +177,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
         `13. ${questionItems[12]}`,
         improvements || "—",
         "",
-        `Оцінка роботи наряду (1-5): ${teamRating === "UNSET" ? "не вказано" : teamRating}`,
+        `Оцінка роботи наряду (1-5): ${teamRating > 0 ? teamRating : "не вказано"}`,
       ].join("\n")
 
       await createCallback({
@@ -186,7 +186,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
         applicantName,
         applicantPhone,
         officerIds: selectedOfficerIds,
-        qOverall: teamRating === "UNSET" ? undefined : Number(teamRating),
+        qOverall: teamRating > 0 ? teamRating : undefined,
         surveyNotes: renderedSurvey,
       })
       toast.success("Callback-картку створено")
@@ -393,17 +393,28 @@ export default function CreateCallbackDialog({ officers }: Props) {
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-slate-700">Оцініть, будь ласка, роботу наряду (від 1 до 5)</Label>
-                <Select value={teamRating} onValueChange={setTeamRating}>
-                  <SelectTrigger><SelectValue placeholder="Оберіть оцінку" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UNSET">Не вказано</SelectItem>
-                    <SelectItem value="1">1</SelectItem>
-                    <SelectItem value="2">2</SelectItem>
-                    <SelectItem value="3">3</SelectItem>
-                    <SelectItem value="4">4</SelectItem>
-                    <SelectItem value="5">5</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() => setTeamRating((prev) => (prev === rating ? 0 : rating))}
+                      className="rounded-lg p-1 hover:bg-amber-50"
+                      aria-label={`Оцінка ${rating}`}
+                    >
+                      <Star
+                        className={`h-7 w-7 ${rating <= teamRating ? "fill-amber-400 text-amber-500" : "text-slate-300"}`}
+                      />
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setTeamRating(0)}
+                    className="ml-2 rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50"
+                  >
+                    Очистити
+                  </button>
+                </div>
               </div>
             </div>
           </div>
