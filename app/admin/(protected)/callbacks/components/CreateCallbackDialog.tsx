@@ -54,7 +54,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
 
   const filteredOfficers = useMemo(() => {
     const q = officerQuery.trim().toLowerCase()
-    if (!q) return officers
+    if (q.length < 2) return []
     return officers.filter((o) => {
       const fullName = `${o.lastName || ""} ${o.firstName || ""}`.toLowerCase()
       return fullName.includes(q) || o.badgeNumber.toLowerCase().includes(q)
@@ -190,6 +190,11 @@ export default function CreateCallbackDialog({ officers }: Props) {
               />
             </div>
             <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-slate-100 p-2">
+              {officerQuery.trim().length < 2 && (
+                <p className="px-2 py-4 text-center text-xs font-semibold text-slate-400">
+                  Введіть мінімум 2 символи для пошуку поліцейського
+                </p>
+              )}
               {searchResults.map((o) => {
                 const fullName = `${o.lastName || ""} ${o.firstName || ""}`.trim()
                 const subtitle = [o.rank, o.department].filter(Boolean).join(", ")
@@ -213,7 +218,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
                   </button>
                 )
               })}
-              {searchResults.length === 0 && (
+              {officerQuery.trim().length >= 2 && searchResults.length === 0 && (
                 <p className="px-2 py-4 text-center text-xs font-semibold text-slate-400">Нічого не знайдено</p>
               )}
             </div>
