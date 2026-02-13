@@ -724,7 +724,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     <CardContent className="p-6">
                         <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1">Прийнято рішень</p>
                         <h3 className="text-3xl font-black text-slate-900">
-                            {filteredRecords.filter(r => r.resolution).length}
+                            {filteredRecords.filter(r => r.status === 'PROCESSED').length}
                         </h3>
                     </CardContent>
                 </Card>
