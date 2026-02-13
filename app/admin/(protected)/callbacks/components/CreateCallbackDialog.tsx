@@ -70,7 +70,6 @@ export default function CreateCallbackDialog({ officers }: Props) {
   const [wasPolite, setWasPolite] = useState<string>("UNSET")
   const [wasEffective, setWasEffective] = useState<string>("UNSET")
   const [improvements, setImprovements] = useState("")
-  const [operatorName, setOperatorName] = useState("")
 
   const filteredOfficers = useMemo(() => {
     const q = officerQuery.trim().toLowerCase()
@@ -101,7 +100,6 @@ export default function CreateCallbackDialog({ officers }: Props) {
     setWasPolite("UNSET")
     setWasEffective("UNSET")
     setImprovements("")
-    setOperatorName("")
     setOfficerQuery("")
   }
 
@@ -176,8 +174,6 @@ export default function CreateCallbackDialog({ officers }: Props) {
         "",
         `13. ${questionItems[12]}`,
         improvements || "—",
-        "",
-        `ПІБ співробітника, який проводив Callback: ${operatorName || "—"}`,
       ].join("\n")
 
       await createCallback({
@@ -389,10 +385,6 @@ export default function CreateCallbackDialog({ officers }: Props) {
               <div className="space-y-2">
                 <Label className="font-semibold text-slate-700">13. {questionItems[12]}</Label>
                 <Textarea value={improvements} onChange={(e) => setImprovements(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">ПІБ співробітника групи, який проводив Callback</Label>
-                <Input value={operatorName} onChange={(e) => setOperatorName(e.target.value)} placeholder="Прізвище Ім'я По батькові" />
               </div>
             </div>
           </div>

@@ -41,6 +41,9 @@ async function getCurrentUser() {
     select: {
       id: true,
       role: true,
+      firstName: true,
+      lastName: true,
+      username: true,
       permViewReports: true,
       permAssignReports: true,
       permChangeStatus: true,
@@ -116,6 +119,11 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
   }
 
   const parsed = callbackSchema.parse(input)
+  const operatorDisplayName =
+    [user.lastName, user.firstName].filter(Boolean).join(" ").trim() || user.username
+  const surveyNotesWithOperator = [parsed.surveyNotes?.trim(), `ПІБ співробітника, який проводив Callback: ${operatorDisplayName}`]
+    .filter(Boolean)
+    .join("\n\n")
 
   const created = await (prisma as any).callback.create({
     data: {
@@ -132,7 +140,7 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
       qResponseSpeed: parsed.qResponseSpeed,
       qHelpfulness: parsed.qHelpfulness,
       qOverall: parsed.qOverall,
-      surveyNotes: parsed.surveyNotes || null,
+      surveyNotes: surveyNotesWithOperator || null,
       officers: {
         set: parsed.officerIds.map((id) => ({ id })),
       },
