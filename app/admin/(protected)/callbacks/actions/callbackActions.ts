@@ -26,6 +26,15 @@ const callbackDuplicateCheckSchema = z.object({
   callDate: z.coerce.date(),
 })
 
+function getYearRange(date: Date) {
+  const year = date.getFullYear()
+  return {
+    year,
+    from: new Date(Date.UTC(year, 0, 1, 0, 0, 0)),
+    to: new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0)),
+  }
+}
+
 function hasAnyAnswer(data: z.infer<typeof callbackSchema>) {
   return Boolean(
     data.qPoliteness ||
@@ -130,6 +139,21 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
 
   const parsed = callbackSchema.parse(input)
   const uniqueOfficerIds = Array.from(new Set(parsed.officerIds))
+  const { year, from, to } = getYearRange(parsed.callDate)
+  const duplicateCount = await (prisma as any).callback.count({
+    where: {
+      eoNumber: parsed.eoNumber,
+      callDate: {
+        gte: from,
+        lt: to,
+      },
+    },
+  })
+
+  if (duplicateCount > 0) {
+    throw new Error(`Callback по № ЄО ${parsed.eoNumber} у ${year} році вже здійснювався`)
+  }
+
   const operatorDisplayName =
     [user.lastName, user.firstName].filter(Boolean).join(" ").trim() || user.username
   const surveyNotesWithOperator = [parsed.surveyNotes?.trim(), `ПІБ співробітника, який проводив Callback: ${operatorDisplayName}`]
@@ -191,10 +215,7 @@ export async function checkCallbackDuplicateByEo(input: z.input<typeof callbackD
 
   const parsed = callbackDuplicateCheckSchema.parse(input)
   const eoNumber = parsed.eoNumber.trim()
-  const year = parsed.callDate.getFullYear()
-
-  const from = new Date(Date.UTC(year, 0, 1, 0, 0, 0))
-  const to = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0))
+  const { year, from, to } = getYearRange(parsed.callDate)
 
   const duplicates = await (prisma as any).callback.findMany({
     where: {

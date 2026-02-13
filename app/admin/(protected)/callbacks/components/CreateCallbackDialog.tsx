@@ -77,6 +77,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
     count: number
     year: number | null
   }>({ exists: false, count: 0, year: null })
+  const isDuplicateBlocked = eoDuplicateInfo.exists
 
   const filteredOfficers = useMemo(() => {
     const q = officerQuery.trim().toLowerCase()
@@ -122,8 +123,8 @@ export default function CreateCallbackDialog({ officers }: Props) {
     }
 
     let cancelled = false
+    setIsCheckingEo(true)
     const timer = setTimeout(async () => {
-      setIsCheckingEo(true)
       try {
         const result = await checkCallbackDuplicateByEo({
           eoNumber: eo,
@@ -162,6 +163,14 @@ export default function CreateCallbackDialog({ officers }: Props) {
   )
 
   const handleSubmit = async () => {
+    if (isCheckingEo) {
+      toast.error("Триває перевірка № ЄО. Зачекайте декілька секунд.")
+      return
+    }
+    if (isDuplicateBlocked) {
+      toast.error(`Callback по № ЄО ${eoNumber.trim()} у ${eoDuplicateInfo.year} році вже здійснювався`)
+      return
+    }
     if (!eoNumber.trim()) {
       toast.error("Вкажіть № ЄО виклику")
       return
@@ -286,15 +295,28 @@ export default function CreateCallbackDialog({ officers }: Props) {
             </div>
             <div className="space-y-2">
               <Label>ПІБ заявника</Label>
-              <Input value={applicantName} onChange={(e) => setApplicantName(e.target.value)} placeholder="Прізвище Ім'я По батькові" />
+              <Input
+                value={applicantName}
+                onChange={(e) => setApplicantName(e.target.value)}
+                placeholder="Прізвище Ім'я По батькові"
+                disabled={isDuplicateBlocked}
+              />
             </div>
             <div className="space-y-2">
               <Label>Номер телефону заявника</Label>
-              <Input value={applicantPhone} onChange={(e) => setApplicantPhone(e.target.value)} placeholder="+380..." />
+              <Input
+                value={applicantPhone}
+                onChange={(e) => setApplicantPhone(e.target.value)}
+                placeholder="+380..."
+                disabled={isDuplicateBlocked}
+              />
             </div>
           </div>
 
-          <div className="space-y-3 rounded-2xl border border-slate-200 p-4">
+          <fieldset
+            disabled={isDuplicateBlocked}
+            className={`space-y-3 rounded-2xl border border-slate-200 p-4 ${isDuplicateBlocked ? "opacity-60" : ""}`}
+          >
             <Label>Поліцейські, яких стосується callback</Label>
             {selectedOfficers.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2">
@@ -354,9 +376,12 @@ export default function CreateCallbackDialog({ officers }: Props) {
                 <p className="px-2 py-4 text-center text-xs font-semibold text-slate-400">Нічого не знайдено</p>
               )}
             </div>
-          </div>
+          </fieldset>
 
-          <div className="space-y-3 rounded-2xl border border-blue-200 bg-blue-50/40 p-4">
+          <fieldset
+            disabled={isDuplicateBlocked}
+            className={`space-y-3 rounded-2xl border border-blue-200 bg-blue-50/40 p-4 ${isDuplicateBlocked ? "opacity-60" : ""}`}
+          >
             <h3 className="text-xs font-black uppercase tracking-widest text-blue-700">Питання для опитування заявника</h3>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -476,12 +501,16 @@ export default function CreateCallbackDialog({ officers }: Props) {
                 </div>
               </div>
             </div>
-          </div>
+          </fieldset>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)} className="rounded-xl">Скасувати</Button>
-          <Button onClick={handleSubmit} disabled={isLoading} className="rounded-xl">
+          <Button
+            onClick={handleSubmit}
+            disabled={isLoading || isCheckingEo || isDuplicateBlocked}
+            className="rounded-xl"
+          >
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Зберегти callback
           </Button>
