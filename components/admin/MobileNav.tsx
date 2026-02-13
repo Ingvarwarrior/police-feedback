@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Menu, X, LayoutDashboard, FileText, Users, Settings, LogOut, ShieldCheck, Map as MapIcon, Activity, ClipboardList } from "lucide-react"
+import { Menu, X, LayoutDashboard, FileText, Users, Settings, LogOut, ShieldCheck, Map as MapIcon, Activity, ClipboardList, PhoneCall } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
@@ -53,6 +53,12 @@ export default function MobileNav({ user }: MobileNavProps) {
             href: "/admin/unified-record",
             label: "Єдиний облік",
             icon: ClipboardList,
+            permission: user.role !== 'OFFICER_VIEWER'
+        },
+        {
+            href: "/admin/callbacks",
+            label: "Callback",
+            icon: PhoneCall,
             permission: user.role !== 'OFFICER_VIEWER'
         },
         {

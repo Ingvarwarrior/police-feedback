@@ -69,6 +69,8 @@ model User {
   evaluations               OfficerEvaluation[] @relation("Evaluations")
   assignedResponses         Response[]          @relation("AssignedTo")
   assignedUnifiedRecords    UnifiedRecord[]     @relation("AssignedUnifiedRecords")
+  createdCallbacks          Callback[]          @relation("CallbackCreatedBy")
+  assignedCallbacks         Callback[]          @relation("CallbackAssignedTo")
 }
 
 model Settings {
@@ -213,10 +215,38 @@ model Officer {
   responses         Response[]          @relation("OfficerFeedback")
   taggedInResponses Response[]          @relation("TaggedOfficers")
   unifiedRecords    UnifiedRecord[]     @relation("UnifiedRecordOfficers")
+  callbacks         Callback[]          @relation("CallbackOfficers")
 
   @@index([lastName, firstName])
   @@index([badgeNumber])
   @@index([avgScore])
+}
+
+model Callback {
+  id                 String    @id @default(uuid())
+  callDate           DateTime
+  eoNumber           String
+  applicantName      String
+  applicantPhone     String
+  assignedUserId     String?
+  createdById        String?
+  status             String    @default("PENDING") // PENDING, COMPLETED
+  qPoliteness        Int?
+  qProfessionalism   Int?
+  qLawfulness        Int?
+  qResponseSpeed     Int?
+  qHelpfulness       Int?
+  qOverall           Int?
+  surveyNotes        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  assignedUser       User?     @relation("CallbackAssignedTo", fields: [assignedUserId], references: [id])
+  createdBy          User?     @relation("CallbackCreatedBy", fields: [createdById], references: [id])
+  officers           Officer[] @relation("CallbackOfficers")
+
+  @@index([eoNumber])
+  @@index([callDate])
+  @@index([status])
 }
 
 model OfficerEvaluation {

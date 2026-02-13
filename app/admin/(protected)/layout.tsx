@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { ShieldCheck, LayoutDashboard, FileText, Settings, Users, Map as MapIcon, Activity, ClipboardList } from "lucide-react"
+import { ShieldCheck, LayoutDashboard, FileText, Settings, Users, Map as MapIcon, Activity, ClipboardList, PhoneCall } from "lucide-react"
 import Image from "next/image"
 import { Toaster } from "sonner"
 import SignOutButton from "@/components/admin/SignOutButton"
@@ -78,6 +78,10 @@ export default async function AdminLayout({
                                 <Link href="/admin/unified-record" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
                                     <ClipboardList className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
                                     Єдиний облік
+                                </Link>
+                                <Link href="/admin/callbacks" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
+                                    <PhoneCall className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                                    Callback
                                 </Link>
                                 <Link href="/admin/map" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
                                     <MapIcon className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
