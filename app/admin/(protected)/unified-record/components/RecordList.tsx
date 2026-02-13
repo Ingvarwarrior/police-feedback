@@ -890,19 +890,40 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-slate-500">
                                                         <FileText className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-black uppercase tracking-widest">{isApplicationLike(record) ? 'Дата народження' : 'Результат'}</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest">
+                                                            {isApplicationLike(record) ? 'Дата народження / дії' : 'Результат'}
+                                                        </span>
                                                     </div>
 
                                                     <div className="space-y-1">
-                                                        <div className={cn(
-                                                            "text-sm font-bold italic transition-colors duration-300",
-                                                            record.status === 'PROCESSED' ? "text-emerald-700 dark:text-emerald-400" : (record.assignedUserId ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")
-                                                        )}>
-                                                            {isApplicationLike(record)
-                                                                ? getApplicationBirthDate(record)
-                                                                : (record.status === 'PROCESSED' ? (record.resolution || 'Виконано') : (record.assignedUserId ? (record.resolution ? 'Потребує доопрацювання/В процесі...' : 'В процесі розгляду...') : 'Не призначено'))}
-                                                        </div>
-                                                        {!isApplicationLike(record) && record.resolutionDate && (
+                                                        {isApplicationLike(record) ? (
+                                                            <>
+                                                                <div className="text-sm font-bold italic text-slate-700 dark:text-slate-300 transition-colors duration-300">
+                                                                    {getApplicationBirthDate(record)}
+                                                                </div>
+                                                                <div className={cn(
+                                                                    "text-sm font-bold italic transition-colors duration-300",
+                                                                    record.status === 'PROCESSED'
+                                                                        ? "text-emerald-700 dark:text-emerald-400"
+                                                                        : (record.assignedUserId ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")
+                                                                )}>
+                                                                    {record.status === 'PROCESSED'
+                                                                        ? (record.resolution || 'Виконано')
+                                                                        : (record.assignedUserId ? (record.resolution ? 'Потребує доопрацювання/В процесі...' : 'В процесі розгляду...') : 'Не призначено')}
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <div className={cn(
+                                                                "text-sm font-bold italic transition-colors duration-300",
+                                                                record.status === 'PROCESSED' ? "text-emerald-700 dark:text-emerald-400" : (record.assignedUserId ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")
+                                                            )}>
+                                                                {record.status === 'PROCESSED'
+                                                                    ? (record.resolution || 'Виконано')
+                                                                    : (record.assignedUserId ? (record.resolution ? 'Потребує доопрацювання/В процесі...' : 'В процесі розгляду...') : 'Не призначено')}
+                                                            </div>
+                                                        )}
+
+                                                        {record.resolutionDate && (
                                                             <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium italic">
                                                                 <CalendarIcon className="w-3 h-3" />
                                                                 Виконано: {format(new Date(record.resolutionDate), "dd.MM.yyyy", { locale: uk })}
@@ -912,11 +933,13 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 </div>
 
                                                 {/* Tagged Officers */}
-                                                {!isApplicationLike(record) && record.concernsBpp && record.officers && record.officers.length > 0 && (
+                                                {((isApplicationLike(record) || record.concernsBpp) && record.officers && record.officers.length > 0) && (
                                                     <div className="space-y-3 col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-1">
                                                         <div className="flex items-center gap-2 text-slate-500">
                                                             <Shield className="w-4 h-4 shrink-0" />
-                                                            <span className="text-xs font-black uppercase tracking-widest">Прив'язані поліцейські</span>
+                                                            <span className="text-xs font-black uppercase tracking-widest">
+                                                                {isApplicationLike(record) ? "Поліцейські, яких стосується" : "Прив'язані поліцейські"}
+                                                            </span>
                                                         </div>
                                                         <div className="flex flex-wrap gap-2">
                                                             {record.officers.map((officer: any) => (
@@ -925,6 +948,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                 </div>
                                                             ))}
                                                         </div>
+                                                    </div>
+                                                )}
+                                                {(isApplicationLike(record) && (!record.officers || record.officers.length === 0)) && (
+                                                    <div className="space-y-3 col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-1">
+                                                        <div className="flex items-center gap-2 text-slate-500">
+                                                            <Shield className="w-4 h-4 shrink-0" />
+                                                            <span className="text-xs font-black uppercase tracking-widest">Поліцейські, яких стосується</span>
+                                                        </div>
+                                                        <p className="text-xs font-bold italic text-slate-400">Не вказано</p>
                                                     </div>
                                                 )}
 
