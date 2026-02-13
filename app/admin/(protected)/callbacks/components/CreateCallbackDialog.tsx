@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select"
 import { Plus, Loader2, Search, PhoneCall, UserPlus, XCircle, Star } from "lucide-react"
 import { toast } from "sonner"
-import { createCallback } from "../actions/callbackActions"
+import { checkCallbackDuplicateByEo, createCallback } from "../actions/callbackActions"
 
 interface OfficerOption {
   id: string
@@ -71,6 +71,12 @@ export default function CreateCallbackDialog({ officers }: Props) {
   const [wasEffective, setWasEffective] = useState<string>("UNSET")
   const [improvements, setImprovements] = useState("")
   const [teamRating, setTeamRating] = useState(0)
+  const [isCheckingEo, setIsCheckingEo] = useState(false)
+  const [eoDuplicateInfo, setEoDuplicateInfo] = useState<{
+    exists: boolean
+    count: number
+    year: number | null
+  }>({ exists: false, count: 0, year: null })
 
   const filteredOfficers = useMemo(() => {
     const q = officerQuery.trim().toLowerCase()
@@ -102,8 +108,48 @@ export default function CreateCallbackDialog({ officers }: Props) {
     setWasEffective("UNSET")
     setImprovements("")
     setTeamRating(0)
+    setEoDuplicateInfo({ exists: false, count: 0, year: null })
+    setIsCheckingEo(false)
     setOfficerQuery("")
   }
+
+  useEffect(() => {
+    const eo = eoNumber.trim()
+    if (!eo || !callDate) {
+      setEoDuplicateInfo({ exists: false, count: 0, year: null })
+      setIsCheckingEo(false)
+      return
+    }
+
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      setIsCheckingEo(true)
+      try {
+        const result = await checkCallbackDuplicateByEo({
+          eoNumber: eo,
+          callDate,
+        })
+        if (!cancelled) {
+          setEoDuplicateInfo({
+            exists: Boolean(result.exists),
+            count: Number(result.count || 0),
+            year: Number(result.year || new Date(callDate).getFullYear()),
+          })
+        }
+      } catch {
+        if (!cancelled) {
+          setEoDuplicateInfo({ exists: false, count: 0, year: null })
+        }
+      } finally {
+        if (!cancelled) setIsCheckingEo(false)
+      }
+    }, 350)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [eoNumber, callDate])
 
   const selectedOfficers = useMemo(
     () => officers.filter((o) => selectedOfficerIds.includes(o.id)),
@@ -223,7 +269,20 @@ export default function CreateCallbackDialog({ officers }: Props) {
             </div>
             <div className="space-y-2">
               <Label>№ ЄО виклику</Label>
-              <Input value={eoNumber} onChange={(e) => setEoNumber(e.target.value)} placeholder="Напр. 1245" />
+              <Input
+                value={eoNumber}
+                onChange={(e) => setEoNumber(e.target.value)}
+                placeholder="Напр. 1245"
+                className={eoDuplicateInfo.exists ? "border-amber-400 focus-visible:ring-amber-200" : ""}
+              />
+              {isCheckingEo && (
+                <p className="text-[11px] font-semibold text-slate-400">Перевіряємо № ЄО у реєстрі...</p>
+              )}
+              {!isCheckingEo && eoDuplicateInfo.exists && (
+                <p className="text-[11px] font-bold text-amber-700">
+                  Callback по № ЄО {eoNumber.trim()} у {eoDuplicateInfo.year} році вже здійснювався ({eoDuplicateInfo.count}).
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>ПІБ заявника</Label>

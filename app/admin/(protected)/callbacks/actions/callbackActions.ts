@@ -21,6 +21,11 @@ const callbackSchema = z.object({
   surveyNotes: z.string().optional().nullable(),
 })
 
+const callbackDuplicateCheckSchema = z.object({
+  eoNumber: z.string().trim().min(1),
+  callDate: z.coerce.date(),
+})
+
 function hasAnyAnswer(data: z.infer<typeof callbackSchema>) {
   return Boolean(
     data.qPoliteness ||
@@ -175,6 +180,45 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
   revalidatePath("/admin/callbacks")
   revalidatePath("/admin/officers")
   return { success: true, id: created.id }
+}
+
+export async function checkCallbackDuplicateByEo(input: z.input<typeof callbackDuplicateCheckSchema>) {
+  const user = await getCurrentUser()
+
+  if (user.role !== "ADMIN" && !user.permAssignReports && !user.permChangeStatus && !user.permViewReports) {
+    throw new Error("У вас немає прав для перевірки callback-карток")
+  }
+
+  const parsed = callbackDuplicateCheckSchema.parse(input)
+  const eoNumber = parsed.eoNumber.trim()
+  const year = parsed.callDate.getFullYear()
+
+  const from = new Date(Date.UTC(year, 0, 1, 0, 0, 0))
+  const to = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0))
+
+  const duplicates = await (prisma as any).callback.findMany({
+    where: {
+      eoNumber,
+      callDate: {
+        gte: from,
+        lt: to,
+      },
+    },
+    select: {
+      id: true,
+      callDate: true,
+      applicantName: true,
+    },
+    orderBy: { callDate: "desc" },
+    take: 5,
+  })
+
+  return {
+    exists: duplicates.length > 0,
+    count: duplicates.length,
+    year,
+    examples: duplicates,
+  }
 }
 
 export async function deleteCallback(callbackId: string) {
