@@ -28,7 +28,16 @@ export default async function UnifiedRecordPage() {
         getUsersForAssignment(),
         prisma.user.findUnique({
             where: { username: session.user.email },
-            select: { id: true, role: true, firstName: true, lastName: true, username: true }
+            select: {
+                id: true,
+                role: true,
+                firstName: true,
+                lastName: true,
+                username: true,
+                permProcessUnifiedRecords: true,
+                permAssignUnifiedRecords: true,
+                permManageUnifiedRecords: true,
+            }
         })
     ])
 
