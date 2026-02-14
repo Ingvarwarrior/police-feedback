@@ -92,6 +92,21 @@ export default function RecordProcessPopover({
         return () => clearTimeout(timer)
     }, [officerSearchQuery, taggedOfficers])
 
+    const resolutionTemplates = isApplicationMode
+        ? [
+            "дії правомірні - списано в справу",
+            "дії не правомірні - ініційовано проведення СР",
+            "потрібна службова перевірка за фактом застосування",
+            "потрібні додаткові пояснення від працівників поліції",
+        ]
+        : [
+            "Списано до справи",
+            "Надано письмову відповідь",
+            "Надіслано до іншого органу/підрозділу",
+            "Повернуто на доопрацювання",
+            "Потребує повторної перевірки",
+        ]
+
     const handleProcessClick = async (resolution: string) => {
         if (isProcessing) return
         setIsProcessing(true)
@@ -266,7 +281,64 @@ export default function RecordProcessPopover({
 
             {!isApplicationMode && (
                 <div className="pt-2 border-t border-slate-100 space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 px-2">Шаблони рішення:</p>
+                    <select
+                        value=""
+                        className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700"
+                        onChange={(e) => {
+                            if (!e.target.value) return
+                            setCustomResolution(e.target.value)
+                        }}
+                    >
+                        <option value="">Оберіть шаблон...</option>
+                        {resolutionTemplates.map((template) => (
+                            <option key={template} value={template}>
+                                {template}
+                            </option>
+                        ))}
+                    </select>
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 px-2">Свій варіант:</p>
+                    <Textarea
+                        placeholder="Вкажіть рішення..."
+                        disabled={isProcessing}
+                        className="rounded-xl bg-slate-50 border-none min-h-[100px] font-medium"
+                        value={customResolution}
+                        onChange={(e) => setCustomResolution(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.ctrlKey && !isProcessing) {
+                                handleProcessClick(customResolution)
+                            }
+                        }}
+                    />
+                    <Button
+                        disabled={isProcessing || !customResolution.trim()}
+                        className="w-full bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest text-xs h-10 gap-2"
+                        onClick={() => handleProcessClick(customResolution)}
+                    >
+                        {isProcessing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        Зберегти свій варіант
+                    </Button>
+                </div>
+            )}
+
+            {isApplicationMode && (
+                <div className="pt-2 border-t border-slate-100 space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 px-2">Шаблони рішення:</p>
+                    <select
+                        value=""
+                        className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700"
+                        onChange={(e) => {
+                            if (!e.target.value) return
+                            setCustomResolution(e.target.value)
+                        }}
+                    >
+                        <option value="">Оберіть шаблон...</option>
+                        {resolutionTemplates.map((template) => (
+                            <option key={template} value={template}>
+                                {template}
+                            </option>
+                        ))}
+                    </select>
                     <Textarea
                         placeholder="Вкажіть рішення..."
                         disabled={isProcessing}

@@ -48,9 +48,17 @@ interface Props {
   mode?: "desktop" | "mobile"
 }
 
+type QuickAction = {
+  id: string
+  title: string
+  subtitle: string
+  href: string
+}
+
 export default function GlobalSearch({ mode = "desktop" }: Props) {
   const router = useRouter()
   const rootRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<ResultRow[]>([])
@@ -107,10 +115,54 @@ export default function GlobalSearch({ mode = "desktop" }: Props) {
     }
   }, [query, effectiveOpen])
 
+  useEffect(() => {
+    if (mode !== "desktop") return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault()
+        setIsOpen(true)
+        setTimeout(() => inputRef.current?.focus(), 0)
+      }
+      if (event.key === "Escape") {
+        setIsOpen(false)
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [mode])
+
+  const quickActions = useMemo<QuickAction[]>(() => ([
+    {
+      id: "create-eo",
+      title: "Створити ЄО / запис",
+      subtitle: "Перейти в Єдиний облік",
+      href: "/admin/unified-record",
+    },
+    {
+      id: "open-overdue",
+      title: "Прострочені дедлайни",
+      subtitle: "Показати прострочені записи",
+      href: "/admin/unified-record?quickPreset=OVERDUE",
+    },
+    {
+      id: "open-unassigned",
+      title: "Без виконавця",
+      subtitle: "Показати непризначені записи",
+      href: "/admin/unified-record?quickPreset=UNASSIGNED",
+    },
+    {
+      id: "create-callback",
+      title: "Створити callback",
+      subtitle: "Перейти до callback-карток",
+      href: "/admin/callbacks",
+    },
+  ]), [])
+
   const showPanel = useMemo(() => {
-    const enoughQuery = query.trim().length >= 2
-    return effectiveOpen && isOpen && enoughQuery
-  }, [effectiveOpen, isOpen, query])
+    return effectiveOpen && isOpen
+  }, [effectiveOpen, isOpen])
 
   const onSelect = (item: ResultRow) => {
     setIsOpen(false)
@@ -140,6 +192,7 @@ export default function GlobalSearch({ mode = "desktop" }: Props) {
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
+                ref={inputRef}
                 value={query}
                 onChange={(event) => {
                   setQuery(event.target.value)
@@ -162,13 +215,27 @@ export default function GlobalSearch({ mode = "desktop" }: Props) {
               </button>
             </div>
             {showPanel ? (
-              <SearchResults
-                isLoading={isLoading}
-                query={query}
-                results={results}
-                onSelect={onSelect}
-                className="mt-2 max-h-[45vh] overflow-y-auto"
-              />
+              query.trim().length >= 2 ? (
+                <SearchResults
+                  isLoading={isLoading}
+                  query={query}
+                  results={results}
+                  onSelect={onSelect}
+                  className="mt-2 max-h-[45vh] overflow-y-auto"
+                />
+              ) : (
+                <QuickActionsList
+                  actions={quickActions}
+                  onSelect={(action) => onSelect({
+                    id: action.id,
+                    type: "unified-record",
+                    title: action.title,
+                    subtitle: action.subtitle,
+                    href: action.href,
+                  })}
+                  className="mt-2 max-h-[45vh] overflow-y-auto"
+                />
+              )
             ) : null}
           </div>
         ) : null}
@@ -180,6 +247,7 @@ export default function GlobalSearch({ mode = "desktop" }: Props) {
     <div ref={rootRef} className="relative w-full max-w-md">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
       <Input
+        ref={inputRef}
         value={query}
         onFocus={() => setIsOpen(true)}
         onChange={(event) => {
@@ -187,17 +255,59 @@ export default function GlobalSearch({ mode = "desktop" }: Props) {
           setIsOpen(true)
         }}
         className="h-10 rounded-xl border-slate-200 bg-slate-50 pl-9 pr-3 text-sm"
-        placeholder="Глобальний пошук: ЄО, ПІБ, жетон, протокол, callback"
+        placeholder="Глобальний пошук (Ctrl+K): ЄО, ПІБ, жетон, протокол, callback"
       />
       {showPanel ? (
-        <SearchResults
-          isLoading={isLoading}
-          query={query}
-          results={results}
-          onSelect={onSelect}
-          className="absolute left-0 top-[44px] z-[60] max-h-[65vh] w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl"
-        />
+        query.trim().length >= 2 ? (
+          <SearchResults
+            isLoading={isLoading}
+            query={query}
+            results={results}
+            onSelect={onSelect}
+            className="absolute left-0 top-[44px] z-[60] max-h-[65vh] w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl"
+          />
+        ) : (
+          <QuickActionsList
+            actions={quickActions}
+            onSelect={(action) => onSelect({
+              id: action.id,
+              type: "unified-record",
+              title: action.title,
+              subtitle: action.subtitle,
+              href: action.href,
+            })}
+            className="absolute left-0 top-[44px] z-[60] max-h-[65vh] w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl"
+          />
+        )
       ) : null}
+    </div>
+  )
+}
+
+function QuickActionsList({
+  actions,
+  onSelect,
+  className,
+}: {
+  actions: QuickAction[]
+  onSelect: (action: QuickAction) => void
+  className?: string
+}) {
+  return (
+    <div className={cn("space-y-1", className)}>
+      <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Швидкі дії</p>
+      {actions.map((action) => (
+        <button
+          key={action.id}
+          type="button"
+          onClick={() => onSelect(action)}
+          className="w-full rounded-xl border border-transparent p-2.5 text-left hover:border-blue-200 hover:bg-blue-50/40"
+        >
+          <p className="text-sm font-semibold text-slate-900">{action.title}</p>
+          <p className="mt-0.5 text-xs text-slate-500">{action.subtitle}</p>
+        </button>
+      ))}
+      <p className="px-2 pt-1 text-[11px] text-slate-500">Підказка: натисніть <span className="font-semibold">Ctrl+K</span></p>
     </div>
   )
 }

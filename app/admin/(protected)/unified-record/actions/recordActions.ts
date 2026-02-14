@@ -5,7 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import * as XLSX from 'xlsx'
 import { z } from "zod"
-import { sendUnifiedAssignmentEmail } from "@/lib/mail"
+import { sendUnifiedAssignmentEmail, sendUnifiedRecordReminderEmail } from "@/lib/mail"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "")
@@ -145,6 +145,66 @@ export async function reviewExtensionAction(id: string, approved: boolean) {
 
     revalidatePath('/admin/unified-record')
     return { success: true }
+}
+
+export async function triggerUnifiedRecordRemindersAction() {
+    const session = await auth()
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { role: true, permManageUnifiedRecords: true, permManageSettings: true }
+    })
+
+    if (user?.role !== 'ADMIN' && !user?.permManageUnifiedRecords && !user?.permManageSettings) {
+        throw new Error("У вас немає прав для запуску нагадувань")
+    }
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const tomorrow = new Date(today)
+    tomorrow.setDate(today.getDate() + 1)
+
+    const theDayAfterTomorrow = new Date(tomorrow)
+    theDayAfterTomorrow.setDate(tomorrow.getDate() + 1)
+
+    const recordsToRemind = await prisma.unifiedRecord.findMany({
+        where: {
+            status: { not: 'PROCESSED' },
+            assignedUserId: { not: null },
+            deadline: {
+                gte: today,
+                lt: theDayAfterTomorrow
+            }
+        },
+        include: {
+            assignedUser: {
+                select: { email: true, firstName: true, lastName: true }
+            }
+        }
+    })
+
+    const settings = await prisma.settings.findUnique({ where: { id: "global" } })
+    if (settings?.sendAssignmentEmails === false) {
+        return { success: true, sentCount: 0, total: recordsToRemind.length, disabled: true }
+    }
+
+    let sentCount = 0
+    for (const record of recordsToRemind) {
+        if (!record.assignedUser?.email || !record.deadline) continue
+
+        const deadlineDate = new Date(record.deadline)
+        deadlineDate.setHours(0, 0, 0, 0)
+        const daysLeft = Math.round((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+        if (daysLeft === 0 || daysLeft === 1) {
+            const sent = await sendUnifiedRecordReminderEmail(record.assignedUser, record, daysLeft)
+            if (sent) sentCount++
+        }
+    }
+
+    return { success: true, sentCount, total: recordsToRemind.length, disabled: false }
 }
 
 export async function getUnifiedRecords(params?: {
