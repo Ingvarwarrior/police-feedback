@@ -119,20 +119,16 @@
     @apply inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700;
   }
 
-  .status-chip-base {
-    @apply inline-flex items-center gap-1 rounded-xl px-3 py-1 text-xs font-semibold;
-  }
-
   .status-chip-waiting {
-    @apply status-chip-base bg-amber-100 text-amber-700;
+    @apply inline-flex items-center gap-1 rounded-xl px-3 py-1 text-xs font-semibold bg-amber-100 text-amber-700;
   }
 
   .status-chip-progress {
-    @apply status-chip-base bg-blue-100 text-blue-700;
+    @apply inline-flex items-center gap-1 rounded-xl px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-700;
   }
 
   .status-chip-processed {
-    @apply status-chip-base bg-emerald-100 text-emerald-700;
+    @apply inline-flex items-center gap-1 rounded-xl px-3 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700;
   }
 
   .ds-empty-state {
