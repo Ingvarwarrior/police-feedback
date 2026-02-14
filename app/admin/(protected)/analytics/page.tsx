@@ -30,6 +30,7 @@ function getTypeLabel(type: string) {
 
 function getStatusLabel(status: string) {
   if (status === "PROCESSED") return "Опрацьовано"
+  if (status === "REVIEW") return "На перевірці"
   if (status === "IN_PROGRESS") return "В роботі"
   if (status === "PENDING") return "Очікує"
   return "Інше"
@@ -133,9 +134,13 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
   const statusMap: Record<string, number> = {
     PENDING: 0,
     IN_PROGRESS: 0,
+    REVIEW: 0,
     PROCESSED: 0,
     OTHER: 0,
   }
+
+  let totalInProgressBusiness = 0
+  let totalPendingBusiness = 0
 
   const executorMap: Record<
     string,
@@ -155,7 +160,7 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
 
   for (const row of records) {
     const type = normalizeRecordType(row.recordType, row.eoNumber)
-    const status = row.status && ["PENDING", "IN_PROGRESS", "PROCESSED"].includes(row.status) ? row.status : "OTHER"
+    const status = row.status && ["PENDING", "IN_PROGRESS", "REVIEW", "PROCESSED"].includes(row.status) ? row.status : "OTHER"
     const effectiveDate = row.eoDate || row.createdAt
     const dateKey = format(new Date(effectiveDate), "dd.MM")
 
@@ -189,9 +194,20 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
     }
 
     executorMap[executorId].assigned += 1
-    if (status === "PROCESSED") executorMap[executorId].processed += 1
-    if (status === "PENDING") executorMap[executorId].pending += 1
-    if (status === "IN_PROGRESS") executorMap[executorId].inProgress += 1
+    const isDone = status === "PROCESSED"
+    const isAssigned = executorId !== "unassigned"
+    const isInProgressBusiness =
+      status === "IN_PROGRESS" ||
+      status === "REVIEW" ||
+      (status === "PENDING" && isAssigned)
+    const isPendingBusiness = status === "PENDING" && !isAssigned
+
+    if (isDone) executorMap[executorId].processed += 1
+    if (isInProgressBusiness) executorMap[executorId].inProgress += 1
+    if (isPendingBusiness) executorMap[executorId].pending += 1
+
+    if (isInProgressBusiness) totalInProgressBusiness += 1
+    if (isPendingBusiness) totalPendingBusiness += 1
 
     if (type === "EO") executorMap[executorId].eo += 1
     if (type === "ZVERN") executorMap[executorId].zvern += 1
@@ -245,8 +261,8 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
         overview={{
           totalRecords: records.length,
           totalProcessed: statusMap.PROCESSED || 0,
-          totalInProgress: statusMap.IN_PROGRESS || 0,
-          totalPending: statusMap.PENDING || 0,
+          totalInProgress: totalInProgressBusiness,
+          totalPending: totalPendingBusiness,
         }}
         trendData={trendData}
         typeData={typeData}
