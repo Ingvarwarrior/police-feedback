@@ -63,6 +63,8 @@ const getPriority = (response: any): 'urgent' | 'important' | 'standard' => {
     return 'standard'
 }
 
+const REPORTS_FILTERS_KEY = "pf:filters:reports"
+
 export default function ReportsList({ initialResponses, users = [], currentUser }: ReportsListProps) {
     const isAdmin = currentUser?.role === 'ADMIN'
     const canDelete = isAdmin || currentUser?.permDeleteReports
@@ -82,6 +84,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
     const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') || 'ALL')
     const [quickFilter, setQuickFilter] = useState(() => searchParams.get('quick') || 'ALL')
     const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || "")
+    const [executorFilter, setExecutorFilter] = useState(() => searchParams.get('executor') || 'ALL')
     const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
         const from = searchParams.get('from')
         const to = searchParams.get('to')
@@ -170,6 +173,46 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
         return () => clearInterval(interval)
     }, [soundEnabled, router])
 
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(REPORTS_FILTERS_KEY)
+            if (!raw) return
+            const parsed = JSON.parse(raw)
+            if (typeof parsed.mainTab === 'string') setMainTab(parsed.mainTab)
+            if (typeof parsed.statusFilter === 'string') setStatusFilter(parsed.statusFilter)
+            if (typeof parsed.quickFilter === 'string') setQuickFilter(parsed.quickFilter)
+            if (typeof parsed.searchTerm === 'string') setSearchTerm(parsed.searchTerm)
+            if (typeof parsed.sortBy === 'string') setSortBy(parsed.sortBy)
+            if (typeof parsed.executorFilter === 'string') setExecutorFilter(parsed.executorFilter)
+            if (parsed.dateRange?.from) {
+                setDateRange({
+                    from: new Date(parsed.dateRange.from),
+                    to: parsed.dateRange.to ? new Date(parsed.dateRange.to) : undefined,
+                })
+            }
+        } catch {
+            // ignore malformed local storage
+        }
+    }, [])
+
+    useEffect(() => {
+        localStorage.setItem(
+            REPORTS_FILTERS_KEY,
+            JSON.stringify({
+                mainTab,
+                statusFilter,
+                quickFilter,
+                searchTerm,
+                sortBy,
+                executorFilter,
+                dateRange: {
+                    from: dateRange?.from?.toISOString() || null,
+                    to: dateRange?.to?.toISOString() || null,
+                },
+            })
+        )
+    }, [mainTab, statusFilter, quickFilter, searchTerm, sortBy, executorFilter, dateRange])
+
     const processedResponses = useMemo(() => {
         let result = [...initialResponses]
 
@@ -202,6 +245,13 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
         } else if (quickFilter === 'TODAY') {
             const today = new Date().toDateString()
             result = result.filter(r => new Date(r.createdAt).toDateString() === today)
+        }
+
+        // 2.1 Assigned executor filter
+        if (executorFilter === 'UNASSIGNED') {
+            result = result.filter((r) => !r.assignedToId)
+        } else if (executorFilter !== 'ALL') {
+            result = result.filter((r) => r.assignedToId === executorFilter)
         }
 
         // 3. Date Range Filter (Inclusive)
@@ -244,7 +294,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
         })
 
         return result
-    }, [initialResponses, mainTab, statusFilter, quickFilter, searchTerm, sortBy, dateRange])
+    }, [initialResponses, mainTab, statusFilter, quickFilter, searchTerm, sortBy, dateRange, executorFilter])
 
     const exportToCSV = (items = processedResponses) => {
         const csvData = items.map(r => ({
@@ -315,6 +365,15 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
         doc.save(`reports_registry_${new Date().toISOString().slice(0, 10)}.pdf`)
     }
 
+    const resetFilters = () => {
+        setStatusFilter("ALL")
+        setQuickFilter("ALL")
+        setSearchTerm("")
+        setSortBy("newest")
+        setExecutorFilter("ALL")
+        setDateRange(undefined)
+    }
+
     return (
         <div className="space-y-6">
             {/* Main Tabs (Simpler) */}
@@ -344,224 +403,163 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                     variant="ghost"
                     size="sm"
                     onClick={() => setSoundEnabled(!soundEnabled)}
-                    className={`rounded-full text-[10px] font-black uppercase tracking-wider gap-2 transition-all ${soundEnabled ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`rounded-full text-[10px] font-semibold tracking-wide gap-2 transition-all ${soundEnabled ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' : 'text-slate-500 hover:text-slate-700'}`}
                 >
                     {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
                     {soundEnabled ? 'Звук увімкнено' : 'Звук вимкнено'}
                 </Button>
             </div>
 
-            <div className="flex flex-col gap-6">
-                {/* Search & Sort Row */}
-                <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-                    <div className="relative flex-1 w-full">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                        <Input
-                            placeholder="Пошук звіту..."
-                            className="pl-11 h-12 rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm dark:text-white transition-colors duration-300"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                        <Select value={sortBy} onValueChange={setSortBy}>
-                            <SelectTrigger className="w-full sm:w-[180px] h-12 rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm font-bold text-xs uppercase tracking-tight dark:text-slate-200 transition-colors duration-300">
-                                <ArrowUpDown className="w-3.5 h-3.5 mr-2 text-primary" />
-                                <SelectValue placeholder="Сортування" />
+            <div className="flex flex-col gap-4">
+                <div className="ds-filter-panel space-y-3">
+                    <div className="grid grid-cols-1 gap-3 xl:grid-cols-5">
+                        <div className="relative xl:col-span-2">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <Input
+                                placeholder="Пошук: локація, об'єкт, коментар, офіцер, жетон"
+                                className="h-11 rounded-xl pl-9"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="h-11 rounded-xl">
+                                <SelectValue placeholder="Статус" />
                             </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900 dark:text-slate-200">
-                                <SelectItem value="newest" className="font-bold text-xs uppercase tracking-tight">Спочатку нові</SelectItem>
-                                <SelectItem value="oldest" className="font-bold text-xs uppercase tracking-tight">Спочатку старі</SelectItem>
-                                <SelectItem value="rating-high" className="font-bold text-xs uppercase tracking-tight">Найвищий рейтинг</SelectItem>
-                                <SelectItem value="rating-low" className="font-bold text-xs uppercase tracking-tight">Найнижчий рейтинг</SelectItem>
+                            <SelectContent>
+                                <SelectItem value="ALL">Всі статуси</SelectItem>
+                                {(mainTab === 'active' ? ['NEW', 'ASSIGNED'] : mainTab === 'processed' ? ['RESOLVED', 'ARCHIVED', 'REVIEWED'] : ['NEW', 'ASSIGNED', 'RESOLVED', 'ARCHIVED', 'REVIEWED']).map((statusValue) => (
+                                    <SelectItem key={statusValue} value={statusValue}>
+                                        {statusValue === 'NEW' ? 'Очікує' : statusValue === 'ASSIGNED' ? 'В роботі' : statusValue === 'RESOLVED' ? 'Опрацьовано' : statusValue === 'ARCHIVED' ? 'Архів' : 'Переглянуто'}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
 
-                        {canExport && (
-                            <>
+                        <Select value={executorFilter} onValueChange={setExecutorFilter}>
+                            <SelectTrigger className="h-11 rounded-xl">
+                                <SelectValue placeholder="Виконавець" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">Всі виконавці</SelectItem>
+                                <SelectItem value="UNASSIGNED">Без виконавця</SelectItem>
+                                {users.map((u) => (
+                                    <SelectItem key={u.id} value={u.id}>
+                                        {u.firstName || u.lastName ? `${u.lastName || ''} ${u.firstName || ''}`.trim() : u.email}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={sortBy} onValueChange={setSortBy}>
+                            <SelectTrigger className="h-11 rounded-xl">
+                                <ArrowUpDown className="mr-2 h-4 w-4 text-slate-400" />
+                                <SelectValue placeholder="Сортування" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="newest">Спочатку нові</SelectItem>
+                                <SelectItem value="oldest">Спочатку старі</SelectItem>
+                                <SelectItem value="rating-high">Найвищий рейтинг</SelectItem>
+                                <SelectItem value="rating-low">Найнижчий рейтинг</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                        <Popover>
+                            <PopoverTrigger asChild>
                                 <Button
-                                    onClick={() => exportToCSV()}
                                     variant="outline"
-                                    className="h-12 gap-2 rounded-2xl font-bold border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 dark:text-slate-200 px-6 shrink-0 transition-colors duration-300 flex-1 sm:flex-none"
+                                    className={cn(
+                                        "h-11 justify-start rounded-xl text-left font-medium",
+                                        dateRange?.from && "bg-slate-900 text-white hover:bg-slate-800"
+                                    )}
                                 >
-                                    <Download className="w-4 h-4" />
-                                    <span className="hidden sm:inline">CSV</span>
-                                </Button>
-
-                                <Button
-                                    onClick={exportToPDF}
-                                    className="h-12 gap-2 rounded-2xl font-bold shadow-lg shadow-primary/10 bg-primary hover:bg-primary/90 px-6 shrink-0 flex-1 sm:flex-none"
-                                >
-                                    <FileText className="w-4 h-4" />
-                                    <span className="hidden sm:inline">PDF</span>
-                                </Button>
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                {/* Quick Filters */}
-                <div className="flex flex-wrap items-center gap-2 py-3 border-b border-slate-100 dark:border-slate-800 transition-colors duration-300">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 w-full mb-1 lg:w-auto lg:mb-0 lg:mr-2 shrink-0">Швидкі фільтри:</p>
-
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant="outline"
-                                className={cn(
-                                    "h-9 rounded-full px-4 text-[10px] font-black uppercase tracking-tight gap-2",
-                                    dateRange?.from && "bg-slate-900 text-white hover:bg-slate-800"
-                                )}
-                            >
-                                <LucideCalendar className="w-3 h-3" />
-                                {dateRange?.from ? (
-                                    dateRange.to ? (
-                                        <>
-                                            {format(dateRange.from, "dd.MM", { locale: uk })} - {format(dateRange.to, "dd.MM", { locale: uk })}
-                                        </>
+                                    <LucideCalendar className="mr-2 h-4 w-4" />
+                                    {dateRange?.from ? (
+                                        dateRange.to ? (
+                                            <>
+                                                {format(dateRange.from, "dd.MM", { locale: uk })} - {format(dateRange.to, "dd.MM", { locale: uk })}
+                                            </>
+                                        ) : (
+                                            format(dateRange.from, "dd MMMM", { locale: uk })
+                                        )
                                     ) : (
-                                        format(dateRange.from, "dd MMMM", { locale: uk })
-                                    )
-                                ) : (
-                                    "Вибрати період"
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 rounded-[2rem] border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900" align="start">
-                            <Calendar
-                                initialFocus
-                                mode="range"
-                                defaultMonth={dateRange?.from}
-                                selected={dateRange}
-                                onSelect={setDateRange}
-                                numberOfMonths={1}
-                                locale={uk}
-                            />
-                            {dateRange?.from && (
-                                <div className="p-3 border-t border-slate-100 dark:border-slate-800 flex justify-end transition-colors duration-300">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-[10px] font-black uppercase"
-                                        onClick={() => setDateRange(undefined)}
-                                    >
-                                        Скинути
-                                    </Button>
-                                </div>
-                            )}
-                        </PopoverContent>
-                    </Popover>
-
-                    {[
-                        { id: 'ALL', label: '🔍 Всі', color: 'slate' },
-                        { id: 'URGENT', label: '🔴 Терміново', color: 'red' },
-                        { id: 'WITH_PHOTO', label: '📸 З медіа', color: 'blue' },
-                        { id: 'WITH_CONTACT', label: '☎️ З контактом', color: 'emerald' },
-                    ].map(f => (
-                        <Button
-                            key={f.id}
-                            variant={quickFilter === f.id ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setQuickFilter(f.id)}
-                            className="rounded-full text-[10px] font-black px-4 shrink-0"
-                        >
-                            {f.label}
-                        </Button>
-                    ))}
-                </div>
-
-                {/* Status Tabs (Desktop) & Filter Trigger (Mobile) */}
-                <div className="flex items-center justify-between gap-4">
-                    <div className="hidden lg:flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-                        <Button
-                            variant={statusFilter === 'ALL' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setStatusFilter('ALL')}
-                            className="rounded-full text-[10px] uppercase font-black px-6"
-                        >
-                            Усі ({mainTab === 'active' ? initialResponses.filter(r => ['NEW', 'ASSIGNED'].includes(r.status)).length : mainTab === 'processed' ? initialResponses.filter(r => ['RESOLVED', 'ARCHIVED', 'REVIEWED'].includes(r.status)).length : initialResponses.length})
-                        </Button>
-                        {(mainTab === 'active' ? ['NEW', 'ASSIGNED'] : mainTab === 'processed' ? ['RESOLVED', 'ARCHIVED', 'REVIEWED'] : ['NEW', 'ASSIGNED', 'RESOLVED', 'ARCHIVED', 'REVIEWED']).map(s => {
-                            const count = initialResponses.filter(r => r.status === s).length
-                            return (
-                                <Button
-                                    key={s}
-                                    variant={statusFilter === s ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => setStatusFilter(s)}
-                                    className="rounded-full text-[10px] uppercase font-black px-6 shrink-0"
-                                >
-                                    {s === 'NEW' ? 'Нові' : s === 'ASSIGNED' ? 'В роботі' : s === 'RESOLVED' ? 'Вирішено' : s === 'ARCHIVED' ? 'Архів' : 'Переглянуто'} ({count})
-                                </Button>
-                            )
-                        })}
-                    </div>
-
-                    <div className="lg:hidden w-full flex gap-2">
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button variant="outline" className="flex-1 h-12 rounded-2xl font-bold gap-2">
-                                    <Search className="w-4 h-4" />
-                                    Фільтри
-                                    {(statusFilter !== 'ALL' || quickFilter !== 'ALL') && (
-                                        <span className="ml-1 w-2 h-2 rounded-full bg-primary" />
+                                        "Період"
                                     )}
                                 </Button>
-                            </DialogTrigger>
-                            <DialogContent className="rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-8">
-                                <DialogHeader>
-                                    <DialogTitle className="text-xl font-black uppercase italic tracking-tight">Налаштування фільтрів</DialogTitle>
-                                </DialogHeader>
-                                <div className="space-y-8 py-4">
-                                    <div className="space-y-4">
-                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Статус звіту</h4>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {['ALL', ...(mainTab === 'active' ? ['NEW', 'ASSIGNED'] : ['RESOLVED', 'ARCHIVED', 'REVIEWED'])].map(s => (
-                                                <Button
-                                                    key={s}
-                                                    variant={statusFilter === s ? 'default' : 'outline'}
-                                                    size="sm"
-                                                    onClick={() => setStatusFilter(s)}
-                                                    className="rounded-xl text-[10px] font-black uppercase"
-                                                >
-                                                    {s === 'ALL' ? 'Всі' : s === 'NEW' ? 'Нові' : s === 'ASSIGNED' ? 'В роботі' : s === 'RESOLVED' ? 'Вирішено' : s === 'ARCHIVED' ? 'Архів' : 'Переглянуто'}
-                                                </Button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Категорії</h4>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {[
-                                                { id: 'ALL', label: 'Всі' },
-                                                { id: 'URGENT', label: 'Терміново' },
-                                                { id: 'WITH_PHOTO', label: 'З медіа' },
-                                                { id: 'WITH_CONTACT', label: 'З контактом' },
-                                                { id: 'TODAY', label: 'Сьогодні' },
-                                            ].map(f => (
-                                                <Button
-                                                    key={f.id}
-                                                    variant={quickFilter === f.id ? 'default' : 'outline'}
-                                                    size="sm"
-                                                    onClick={() => setQuickFilter(f.id)}
-                                                    className="rounded-xl text-[10px] font-black uppercase"
-                                                >
-                                                    {f.label}
-                                                </Button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="pt-4">
-                                    <DialogTrigger asChild>
-                                        <Button className="w-full h-12 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/20">
-                                            Застосувати
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 rounded-2xl border-slate-200 shadow-2xl" align="start">
+                                <Calendar
+                                    initialFocus
+                                    mode="range"
+                                    defaultMonth={dateRange?.from}
+                                    selected={dateRange}
+                                    onSelect={setDateRange}
+                                    numberOfMonths={1}
+                                    locale={uk}
+                                />
+                                {dateRange?.from && (
+                                    <div className="flex justify-end border-t border-slate-100 p-3">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-xs font-semibold"
+                                            onClick={() => setDateRange(undefined)}
+                                        >
+                                            Скинути
                                         </Button>
-                                    </DialogTrigger>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
+                                    </div>
+                                )}
+                            </PopoverContent>
+                        </Popover>
+
+                        <div className="md:col-span-2 flex flex-wrap gap-2">
+                            {[
+                                { id: 'ALL', label: 'Всі' },
+                                { id: 'URGENT', label: 'Терміново' },
+                                { id: 'WITH_PHOTO', label: 'З медіа' },
+                                { id: 'WITH_CONTACT', label: 'З контактом' },
+                                { id: 'TODAY', label: 'Сьогодні' },
+                            ].map((f) => (
+                                <Button
+                                    key={f.id}
+                                    variant={quickFilter === f.id ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setQuickFilter(f.id)}
+                                    className="rounded-xl text-xs font-semibold"
+                                >
+                                    {f.label}
+                                </Button>
+                            ))}
+                        </div>
+
+                        <Button variant="outline" className="h-11 rounded-xl" onClick={resetFilters}>
+                            Скинути фільтри
+                        </Button>
                     </div>
+
+                    {canExport && (
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                            <Button
+                                onClick={() => exportToCSV()}
+                                variant="outline"
+                                className="h-10 gap-2 rounded-xl font-semibold"
+                            >
+                                <Download className="w-4 h-4" />
+                                CSV
+                            </Button>
+
+                            <Button
+                                onClick={exportToPDF}
+                                className="h-10 gap-2 rounded-xl font-semibold"
+                            >
+                                <FileText className="w-4 h-4" />
+                                PDF
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -593,7 +591,22 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-300">
-                        {processedResponses.map((resp: any) => {
+                        {processedResponses.length === 0 ? (
+                            <tr>
+                                <td colSpan={10} className="px-8 py-12">
+                                    <div className="ds-empty-state">
+                                        <FileText className="mx-auto h-8 w-8 text-slate-300" />
+                                        <p className="ds-empty-title">Немає звітів за поточними фільтрами</p>
+                                        <p className="ds-empty-description">Скиньте фільтри і спробуйте знову.</p>
+                                        <div className="ds-empty-actions">
+                                            <Button variant="outline" className="rounded-xl" onClick={resetFilters}>
+                                                Скинути фільтри
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : processedResponses.map((resp: any) => {
                             const priority = getPriority(resp)
                             return (
                                 <tr
@@ -635,11 +648,11 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                         </span>
                                     </td>
                                     <td className="px-8 py-4 align-middle text-center">
-                                        {resp.status === 'NEW' && <span className="bg-blue-600 text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm">Новий</span>}
-                                        {resp.status === 'ASSIGNED' && <span className="bg-amber-500 text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm">В роботі</span>}
-                                        {resp.status === 'RESOLVED' && <span className="bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm">Вирішено</span>}
-                                        {resp.status === 'REVIEWED' && <span className="bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm">Переглянуто</span>}
-                                        {resp.status === 'ARCHIVED' && <span className="bg-slate-400 text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm">Архівовано</span>}
+                                        {resp.status === 'NEW' && <span className="status-chip-waiting">Очікує</span>}
+                                        {resp.status === 'ASSIGNED' && <span className="status-chip-progress">В роботі</span>}
+                                        {resp.status === 'RESOLVED' && <span className="status-chip-processed">Опрацьовано</span>}
+                                        {resp.status === 'REVIEWED' && <span className="status-chip-processed">Опрацьовано</span>}
+                                        {resp.status === 'ARCHIVED' && <span className="ds-chip-muted">Архів</span>}
                                     </td>
                                     <td className="px-8 py-4 align-middle text-center">
                                         {resp.assignedTo ? (
@@ -750,12 +763,18 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
             < div className="lg:hidden space-y-4" >
                 {
                     processedResponses.length === 0 ? (
-                        <div className="px-8 py-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm transition-colors duration-300">
-                            <div className="flex flex-col items-center gap-4">
+                        <div className="ds-empty-state">
+                            <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition-colors duration-300">
                                     <FileText className="w-8 h-8 text-slate-400 dark:text-slate-500" />
                                 </div>
-                                <p className="text-slate-900 dark:text-white font-bold text-lg transition-colors duration-300">Немає звітів</p>
+                                <p className="ds-empty-title transition-colors duration-300">Немає звітів</p>
+                                <p className="ds-empty-description transition-colors duration-300">Змініть або скиньте фільтри.</p>
+                                <div className="ds-empty-actions">
+                                    <Button variant="outline" className="rounded-xl" onClick={resetFilters}>
+                                        Скинути фільтри
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     ) : (
@@ -796,9 +815,11 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
                                             <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase">
                                                 {resp.patrolRef || 'Невідомий об\'єкт'}
                                             </span>
-                                            {resp.status === 'NEW' && <span className="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase">Новий</span>}
-                                            {resp.status === 'ASSIGNED' && <span className="bg-amber-100 text-amber-700 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase">В роботі</span>}
-                                            {resp.status === 'RESOLVED' && <span className="bg-green-100 text-green-700 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase">Вирішено</span>}
+                                            {resp.status === 'NEW' && <span className="status-chip-waiting">Очікує</span>}
+                                            {resp.status === 'ASSIGNED' && <span className="status-chip-progress">В роботі</span>}
+                                            {resp.status === 'RESOLVED' && <span className="status-chip-processed">Опрацьовано</span>}
+                                            {resp.status === 'REVIEWED' && <span className="status-chip-processed">Опрацьовано</span>}
+                                            {resp.status === 'ARCHIVED' && <span className="ds-chip-muted">Архів</span>}
                                             {resp.wantContact && <span className="bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase">📞 Контакт</span>}
                                             {(resp._count?.attachments || 0) > 0 && <span className="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase">📸 {resp._count.attachments}</span>}
                                         </div>

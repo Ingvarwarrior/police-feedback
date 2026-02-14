@@ -95,7 +95,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
 
                         <div>
                             <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Картка реєстру</p>
-                            <DialogTitle className="text-2xl sm:text-3xl md:text-4xl font-black italic uppercase tracking-tighter leading-none break-words">
+                            <DialogTitle className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight leading-none break-words">
                                 {headerTitle}
                             </DialogTitle>
                         </div>
@@ -111,7 +111,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                     <Calendar className="w-5 h-5" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    <p className="text-xs font-semibold tracking-wide text-slate-500">
                                         {isDetentionProtocol ? "Дата протоколу" : isApplication ? "Дата рапорту" : "Дата реєстрації"}
                                     </p>
                                     <p className="font-bold text-slate-900">
@@ -125,7 +125,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                     <User className="w-5 h-5" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    <p className="text-xs font-semibold tracking-wide text-slate-500">
                                         {isDetentionProtocol ? "ПІБ кого затримали" : isApplication ? "ПІБ до кого застосовано" : "Заявник"}
                                     </p>
                                     <p className="font-bold text-slate-900">{record.applicant || "Не вказано"}</p>
@@ -139,12 +139,12 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                     {isSpecialCard ? <Calendar className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    <p className="text-xs font-semibold tracking-wide text-slate-500">
                                         {isSpecialCard ? "Дата народження" : "Місце події (Адреса)"}
                                     </p>
                                     <p className="font-bold text-slate-900">{isSpecialCard ? getBirthDateFromAddress() : (record.address || "Не вказано")}</p>
                                     {!isSpecialCard && record.district && (
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter italic">{record.district} район</p>
+                                        <p className="text-xs font-medium text-slate-500">{record.district} район</p>
                                     )}
                                 </div>
                             </div>
@@ -154,7 +154,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                     <Shield className="w-5 h-5" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Відповідальний виконавець</p>
+                                    <p className="text-xs font-semibold tracking-wide text-slate-500">Відповідальний виконавець</p>
                                     {record.assignedUser ? (
                                         <p className="font-bold text-slate-900">
                                             {record.assignedUser.lastName} {record.assignedUser.firstName}
@@ -174,7 +174,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Shield className="w-4 h-4 text-blue-600" />
-                                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-900">Поліцейські (учасники)</h3>
+                                    <h3 className="text-sm font-semibold tracking-wide text-slate-900">Поліцейські (учасники)</h3>
                                 </div>
                                 {!record.concernsBpp && (
                                     <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-amber-100 italic">
@@ -209,9 +209,9 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                     <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 space-y-3 shadow-sm">
                         <div className="flex items-center gap-2">
                             <ClipboardList className="w-4 h-4 text-slate-400" />
-                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-900">Фабула / Опис події</h3>
+                            <h3 className="text-sm font-semibold tracking-wide text-slate-900">Фабула / Опис події</h3>
                         </div>
-                        <p className="text-sm font-black text-slate-900 leading-relaxed uppercase italic">
+                        <p className="text-sm font-semibold text-slate-900 leading-relaxed">
                             {record.description}
                         </p>
                     </div>
@@ -221,13 +221,13 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                         <div className="p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100 space-y-3">
                             <div className="flex items-center gap-2">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                <h3 className="text-xs font-black uppercase tracking-widest text-emerald-900">Результат розгляду (Рішення)</h3>
+                                <h3 className="text-sm font-semibold tracking-wide text-emerald-900">Результат розгляду (Рішення)</h3>
                             </div>
                             <p className="text-sm font-bold text-emerald-800 leading-relaxed">
                                 {record.resolution}
                             </p>
                             <div className="flex justify-between items-center pt-2">
-                                <p className="text-[10px] font-black uppercase tracking-tighter text-emerald-600 italic">Списано в справу</p>
+                                <p className="text-xs font-semibold tracking-wide text-emerald-700">Списано в справу</p>
                                 {record.resolutionDate && (
                                     <p className="text-[10px] font-bold text-emerald-600">
                                         {safeFormat(record.resolutionDate, "dd.MM.yyyy HH:mm")}
@@ -242,7 +242,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                         <div className="p-6 border border-slate-200 rounded-3xl space-y-3 bg-white shadow-sm">
                             <div className="flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-slate-500" />
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-600">Термін виконання</h4>
+                                <h4 className="text-xs font-semibold tracking-wide text-slate-600">Термін виконання</h4>
                             </div>
                             <div className="flex items-end justify-between">
                                 <p className={cn("text-xl font-black italic",
@@ -262,7 +262,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                             <div className="p-6 bg-amber-50 border border-amber-100 rounded-3xl space-y-3 animate-pulse">
                                 <div className="flex items-center gap-2">
                                     <AlertCircle className="w-4 h-4 text-amber-600" />
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-600">Запит на продовження</h4>
+                                    <h4 className="text-xs font-semibold tracking-wide text-amber-700">Запит на продовження</h4>
                                 </div>
                                 <p className="text-xs font-bold text-amber-800 italic">"{record.extensionReason}"</p>
                             </div>
@@ -287,7 +287,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                 <DialogFooter className="p-4 sm:p-8 bg-slate-50 border-t border-slate-100 shrink-0 sticky bottom-0">
                     <Button
                         onClick={() => onOpenChange(false)}
-                        className="w-full h-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 transition-all hover:scale-[1.01]"
+                        className="w-full h-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-semibold tracking-wide shadow-xl shadow-slate-900/10 transition-all hover:scale-[1.01]"
                     >
                         Закрити
                     </Button>

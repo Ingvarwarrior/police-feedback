@@ -251,12 +251,38 @@ export default function AnalyticsClient({
       {tab === 'executors' && (
         <Card className="rounded-3xl border-slate-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wide">
               <Users className="h-4 w-4" /> Навантаження виконавців
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="space-y-3 md:hidden">
+              {executorData.map((row) => {
+                const progress = row.assigned ? Math.round((row.processed / row.assigned) * 100) : 0
+                return (
+                  <div key={row.id} className="rounded-2xl border border-slate-200 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{row.name}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">Всього: {row.assigned}</p>
+                      </div>
+                      <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{progress}%</span>
+                    </div>
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, progress)}%` }} />
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div className="rounded-xl bg-emerald-50 px-2.5 py-2 text-emerald-700">Опрацьовано: {row.processed}</div>
+                      <div className="rounded-xl bg-blue-50 px-2.5 py-2 text-blue-700">В роботі: {row.inProgress}</div>
+                      <div className="rounded-xl bg-amber-50 px-2.5 py-2 text-amber-700">Очікує: {row.pending}</div>
+                      <div className="rounded-xl bg-slate-100 px-2.5 py-2 text-slate-700">ЄО/Зв/Заст/Затр: {row.eo}/{row.zvern}/{row.application}/{row.detention}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[920px] text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 text-left text-[11px] uppercase tracking-wider text-slate-400">

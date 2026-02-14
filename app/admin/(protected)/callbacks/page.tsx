@@ -48,7 +48,7 @@ export default async function CallbacksPage() {
             </div>
             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400/80">Контроль якості</h2>
           </div>
-          <h1 className="text-4xl font-black uppercase italic leading-none tracking-tighter md:text-5xl">
+          <h1 className="text-4xl font-black leading-none tracking-tight md:text-5xl">
             Callback-картки <br />
             <span className="text-blue-400">оцінювання нарядів</span>
           </h1>

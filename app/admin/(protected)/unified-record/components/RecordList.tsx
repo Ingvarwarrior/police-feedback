@@ -26,7 +26,6 @@ import {
     UserPlus,
     XCircle,
     Loader2,
-    CalendarCheck2,
     Eye,
     Shield
 } from "lucide-react"
@@ -44,7 +43,6 @@ import { toast } from "sonner"
 import * as XLSX from "xlsx"
 import {
     Tabs,
-    TabsContent,
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs"
@@ -101,6 +99,8 @@ interface RecordListProps {
     }
 }
 
+const FILTERS_STORAGE_KEY = "pf:filters:unified-record"
+
 export default function RecordList({ initialRecords, users = [], currentUser }: RecordListProps) {
     const [records, setRecords] = useState(
         initialRecords
@@ -115,7 +115,9 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const [filterEoNumber, setFilterEoNumber] = useState("")
     const [filterInspector, setFilterInspector] = useState("ALL")
     const [sortBy, setSortBy] = useState("newest")
-    const [showOnlyMine, setShowOnlyMine] = useState(false)
+    const [periodFrom, setPeriodFrom] = useState("")
+    const [periodTo, setPeriodTo] = useState("")
+    const [quickPreset, setQuickPreset] = useState<"ALL" | "MINE" | "OVERDUE" | "UNASSIGNED">("ALL")
 
     // View state
     const [viewRecord, setViewRecord] = useState<any>(null)
@@ -136,6 +138,60 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 .map((r: any) => ({ ...r, recordType: normalizeRecordType(r.recordType, r.eoNumber) }))
         )
     }, [initialRecords])
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(FILTERS_STORAGE_KEY)
+            if (!raw) return
+            const parsed = JSON.parse(raw)
+            if (typeof parsed.filterSearch === "string") setFilterSearch(parsed.filterSearch)
+            if (typeof parsed.filterCategory === "string") setFilterCategory(parsed.filterCategory)
+            if (typeof parsed.filterStatus === "string") setFilterStatus(parsed.filterStatus)
+            if (typeof parsed.filterAssignment === "string") setFilterAssignment(parsed.filterAssignment)
+            if (typeof parsed.filterEoNumber === "string") setFilterEoNumber(parsed.filterEoNumber)
+            if (typeof parsed.filterInspector === "string") setFilterInspector(parsed.filterInspector)
+            if (typeof parsed.sortBy === "string") setSortBy(parsed.sortBy)
+            if (typeof parsed.periodFrom === "string") setPeriodFrom(parsed.periodFrom)
+            if (typeof parsed.periodTo === "string") setPeriodTo(parsed.periodTo)
+            if (typeof parsed.quickPreset === "string") setQuickPreset(parsed.quickPreset)
+            if (typeof parsed.activeTab === "string" && ["ALL", "EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL"].includes(parsed.activeTab)) {
+                setActiveTab(parsed.activeTab)
+            }
+        } catch {
+            // ignore malformed local storage
+        }
+    }, [])
+
+    useEffect(() => {
+        localStorage.setItem(
+            FILTERS_STORAGE_KEY,
+            JSON.stringify({
+                filterSearch,
+                filterCategory,
+                filterStatus,
+                filterAssignment,
+                filterEoNumber,
+                filterInspector,
+                sortBy,
+                periodFrom,
+                periodTo,
+                quickPreset,
+                activeTab,
+            })
+        )
+    }, [
+        filterSearch,
+        filterCategory,
+        filterStatus,
+        filterAssignment,
+        filterEoNumber,
+        filterInspector,
+        sortBy,
+        periodFrom,
+        periodTo,
+        quickPreset,
+        activeTab,
+    ])
 
     // Auto-view record if recordId is in URL
     useEffect(() => {
@@ -205,9 +261,30 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             result = result.filter(r => r.assignedUserId === filterInspector)
         }
 
-        // Apply "show only mine" filter
-        if (showOnlyMine) {
+        if (quickPreset === "MINE") {
             result = result.filter(r => r.assignedUserId === currentUser.id)
+        }
+
+        if (quickPreset === "UNASSIGNED") {
+            result = result.filter(r => r.assignedUserId === null)
+        }
+
+        if (quickPreset === "OVERDUE") {
+            const now = new Date()
+            result = result.filter((r) => r.status !== "PROCESSED" && r.deadline && new Date(r.deadline) < now)
+        }
+
+        // Apply period filter (inclusive)
+        if (periodFrom) {
+            const from = new Date(periodFrom)
+            from.setHours(0, 0, 0, 0)
+            result = result.filter((r) => new Date(r.eoDate) >= from)
+        }
+
+        if (periodTo) {
+            const to = new Date(periodTo)
+            to.setHours(23, 59, 59, 999)
+            result = result.filter((r) => new Date(r.eoDate) <= to)
         }
 
         // Apply sorting
@@ -227,7 +304,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         })
 
         return result
-    }, [records, filterSearch, filterCategory, activeTab, filterStatus, filterAssignment, filterEoNumber, filterInspector, sortBy, showOnlyMine, currentUser.id])
+    }, [records, filterSearch, filterCategory, activeTab, filterStatus, filterAssignment, filterEoNumber, filterInspector, sortBy, quickPreset, periodFrom, periodTo, currentUser.id])
 
     const categories = useMemo(() => {
         const cats = new Set(initialRecords.map(r => r.category).filter(Boolean))
@@ -402,11 +479,24 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         toast.success(`Експортовано ${itemsToExport.length} записів`)
     }
 
+    const resetFilters = () => {
+        setFilterSearch("")
+        setFilterEoNumber("")
+        setFilterCategory("ALL")
+        setFilterStatus("ALL")
+        setFilterAssignment("ALL")
+        setFilterInspector("ALL")
+        setSortBy("newest")
+        setPeriodFrom("")
+        setPeriodTo("")
+        setQuickPreset("ALL")
+    }
+
     return (
         <div className="space-y-6">
             {/* Tabs & Actions Bar */}
             <div className="space-y-3">
-                <Tabs defaultValue="EO" className="w-full" onValueChange={(v) => setActiveTab(v as any)}>
+                <Tabs value={activeTab} className="w-full" onValueChange={(v) => setActiveTab(v as any)}>
                     <TabsList className="bg-white/80 backdrop-blur-md p-1.5 rounded-[2rem] border border-slate-300 shadow-xl min-h-16 h-auto flex flex-wrap items-stretch justify-start w-full gap-1">
                         <TabsTrigger
                             value="ALL"
@@ -469,210 +559,128 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 )}
             </div>
 
-            {/* Status Tabs (Combined with Type tabs for a logical flow) */}
-            <div className="flex flex-wrap items-center gap-2 p-2 bg-slate-100 rounded-[2.5rem] border border-slate-300 w-full sm:w-fit shadow-inner">
-                <button
-                    onClick={() => setFilterStatus('PENDING')}
-                    className={cn(
-                        "px-6 sm:px-8 py-3 rounded-[1.8rem] text-[11px] font-black uppercase tracking-widest transition-all gap-3 flex items-center flex-1 sm:flex-none justify-center border-none",
-                        filterStatus === 'PENDING' ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg ring-2 ring-blue-200" : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
-                    )}
-                >
-                    <Clock className={cn("w-4 h-4", filterStatus === 'PENDING' ? "text-white" : "text-blue-500")} />
-                    В роботі
-                    <span className={cn(
-                        "px-2.5 py-1 rounded-xl text-[9px] font-black min-w-[20px] shadow-sm",
-                        filterStatus === 'PENDING' ? "bg-white/20 text-white" : "bg-blue-100 text-blue-600"
-                    )}>
-                        {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && r.status !== 'PROCESSED').length}
-                    </span>
-                </button>
-                <button
-                    onClick={() => setFilterStatus('PROCESSED')}
-                    className={cn(
-                        "px-6 sm:px-8 py-3 rounded-[1.8rem] text-[11px] font-black uppercase tracking-widest transition-all gap-3 flex items-center flex-1 sm:flex-none justify-center border-none",
-                        filterStatus === 'PROCESSED' ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-lg ring-2 ring-emerald-200" : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
-                    )}
-                >
-                    <CheckCircle2 className={cn("w-4 h-4", filterStatus === 'PROCESSED' ? "text-white" : "text-emerald-500")} />
-                    Опрацьовані
-                    <span className={cn(
-                        "px-2.5 py-1 rounded-xl text-[9px] font-black min-w-[20px] shadow-sm",
-                        filterStatus === 'PROCESSED' ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-600"
-                    )}>
-                        {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && r.status === 'PROCESSED').length}
-                    </span>
-                </button>
-                <button
-                    onClick={() => setFilterStatus('ALL')}
-                    className={cn(
-                        "px-6 sm:px-8 py-3 rounded-[1.8rem] text-[11px] font-black uppercase tracking-widest transition-all gap-3 flex items-center flex-1 sm:flex-none justify-center border-none",
-                        filterStatus === 'ALL' ? "bg-gradient-to-r from-slate-700 to-slate-900 text-white shadow-lg ring-2 ring-slate-300" : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
-                    )}
-                >
-                    <ClipboardList className={cn("w-4 h-4", filterStatus === 'ALL' ? "text-white" : "text-slate-400")} />
-                    Всі
-                    <span className={cn(
-                        "px-2.5 py-1 rounded-xl text-[9px] font-black min-w-[20px] shadow-sm",
-                        filterStatus === 'ALL' ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
-                    )}>
-                        {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab)).length}
-                    </span>
-                </button>
-            </div>
-
-            {/* Assignment Filters (Admin Only) */}
-            {
-                currentUser.role === 'ADMIN' && (
-                    <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100 rounded-[2.2rem] border border-slate-300 w-full sm:w-fit shadow-inner">
-                        <button
-                            onClick={() => setFilterAssignment('ALL')}
-                            className={cn(
-                                "flex-1 sm:flex-none px-6 sm:px-7 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all gap-2.5 flex items-center justify-center border-none",
-                                filterAssignment === 'ALL' ? "bg-gradient-to-r from-slate-800 to-slate-950 text-white shadow-md ring-2 ring-slate-200" : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
-                            )}
-                        >
-                            Всі
-                            <span className={cn(
-                                "px-2 py-0.5 rounded-xl text-[9px] font-black min-w-[20px] shadow-xs transition-colors duration-300",
-                                filterAssignment === 'ALL' ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
-                            )}>
-                                {records.filter(r => (activeTab === 'ALL' || r.recordType === activeTab) && (filterStatus === 'ALL' || (filterStatus === 'PENDING' ? r.status !== 'PROCESSED' : r.status === 'PROCESSED'))).length}
-                            </span>
-                        </button>
-                        <button
-                            onClick={() => setFilterAssignment('ASSIGNED')}
-                            className={cn(
-                                "flex-1 sm:flex-none px-6 sm:px-7 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all gap-2.5 flex items-center justify-center border-none",
-                                filterAssignment === 'ASSIGNED' ? "bg-gradient-to-r from-indigo-500 to-blue-700 text-white shadow-md ring-2 ring-blue-100 dark:ring-blue-900" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
-                            )}
-                        >
-                            <User className={cn("w-3.5 h-3.5", filterAssignment === 'ASSIGNED' ? "text-white" : "text-indigo-500")} />
-                            Призначені
-                            <span className={cn(
-                                "px-2 py-0.5 rounded-xl text-[9px] font-black min-w-[20px] shadow-xs",
-                                filterAssignment === 'ASSIGNED' ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-700"
-                            )}>
-                                {filteredRecords.filter(r => r.assignedUserId !== null).length}
-                            </span>
-                        </button>
-                        <button
-                            onClick={() => setFilterAssignment('UNASSIGNED')}
-                            className={cn(
-                                "flex-1 sm:flex-none px-6 sm:px-7 py-2.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all gap-2.5 flex items-center justify-center border-none",
-                                filterAssignment === 'UNASSIGNED' ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md ring-2 ring-amber-100 dark:ring-amber-900" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
-                            )}
-                        >
-                            <UserPlus className={cn("w-3.5 h-3.5", filterAssignment === 'UNASSIGNED' ? "text-white" : "text-amber-500")} />
-                            Непризначені
-                            <span className={cn(
-                                "px-2 py-0.5 rounded-xl text-[9px] font-black min-w-[20px] shadow-xs",
-                                filterAssignment === 'UNASSIGNED' ? "bg-white/20 text-white" : "bg-amber-100 text-amber-700"
-                            )}>
-                                {filteredRecords.filter(r => r.assignedUserId === null).length}
-                            </span>
-                        </button>
-                    </div>
-                )
-            }
             {/* Filters Bar */}
-            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-5 md:p-7 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 flex flex-col xl:flex-row gap-5 items-center justify-between transition-all hover:shadow-2xl hover:shadow-slate-300/50 dark:hover:shadow-slate-900/50">
-                <div className="flex flex-col md:flex-row gap-5 w-full xl:w-auto flex-1">
-                    <div className="relative group flex-1 md:max-w-xs transition-all">
-                        <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+            <div className="ds-filter-panel space-y-3">
+                <div className="grid grid-cols-1 gap-3 xl:grid-cols-5">
+                    <div className="relative xl:col-span-2">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <Input
-                            placeholder="№ ЄО..."
-                            className="pl-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl h-14 focus-visible:ring-4 focus-visible:ring-blue-500/10 dark:focus-visible:ring-blue-500/20 focus-visible:border-blue-500 font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 border-2 transition-all"
-                            value={filterEoNumber}
-                            onChange={(e) => setFilterEoNumber(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="relative group flex-[2] transition-all">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                        <Input
-                            placeholder="Пошук за подією або прізвищем..."
-                            className="pl-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl h-14 focus-visible:ring-4 focus-visible:ring-blue-500/10 dark:focus-visible:ring-blue-500/20 focus-visible:border-blue-500 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 border-2 transition-all font-medium"
+                            placeholder="Пошук: № ЄО, подія, ПІБ, поліцейський"
+                            className="h-11 rounded-xl pl-9"
                             value={filterSearch}
                             onChange={(e) => setFilterSearch(e.target.value)}
                         />
                     </div>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-                    {currentUser.role === 'ADMIN' && (
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                        <SelectTrigger className="h-11 rounded-xl">
+                            <SelectValue placeholder="Статус" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">Всі статуси</SelectItem>
+                            <SelectItem value="PENDING">В роботі</SelectItem>
+                            <SelectItem value="PROCESSED">Опрацьовано</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {currentUser.role === 'ADMIN' ? (
                         <Select value={filterInspector} onValueChange={setFilterInspector}>
-                            <SelectTrigger className="flex-1 md:w-[220px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 h-14 font-black uppercase tracking-widest text-[10px] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-400 transition-all">
-                                <User className="w-4 h-4 mr-2 text-slate-400" />
-                                <SelectValue placeholder="Інспектор" />
+                            <SelectTrigger className="h-11 rounded-xl">
+                                <SelectValue placeholder="Виконавець" />
                             </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-slate-200 shadow-2xl overflow-hidden p-1 bg-white/95 backdrop-blur-sm">
-                                <SelectItem value="ALL" className="rounded-xl font-bold text-slate-500 uppercase tracking-widest text-[9px] focus:bg-slate-100 transition-colors">Всі інспектори</SelectItem>
+                            <SelectContent>
+                                <SelectItem value="ALL">Всі виконавці</SelectItem>
                                 {users.map(u => (
-                                    <SelectItem key={u.id} value={u.id} className="rounded-xl font-black uppercase tracking-widest text-[10px] focus:bg-blue-50 focus:text-blue-700 transition-colors">
+                                    <SelectItem key={u.id} value={u.id}>
                                         {u.lastName} {u.firstName?.charAt(0)}.
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
+                    ) : (
+                        <Select value={filterAssignment} onValueChange={setFilterAssignment}>
+                            <SelectTrigger className="h-11 rounded-xl">
+                                <SelectValue placeholder="Виконавець" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">Всі</SelectItem>
+                                <SelectItem value="ASSIGNED">Призначені</SelectItem>
+                                <SelectItem value="UNASSIGNED">Без виконавця</SelectItem>
+                            </SelectContent>
+                        </Select>
                     )}
 
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger className="h-11 rounded-xl">
+                            <ArrowUpDown className="mr-2 h-4 w-4 text-slate-400" />
+                            <SelectValue placeholder="Сортування" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="newest">Спочатку нові</SelectItem>
+                            <SelectItem value="oldest">Спочатку старі</SelectItem>
+                            <SelectItem value="eo_asc">№ ЄО (зростання)</SelectItem>
+                            <SelectItem value="eo_desc">№ ЄО (спадання)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                    <Input type="date" value={periodFrom} onChange={(e) => setPeriodFrom(e.target.value)} className="h-11 rounded-xl" />
+                    <Input type="date" value={periodTo} onChange={(e) => setPeriodTo(e.target.value)} className="h-11 rounded-xl" />
+
                     <Select value={filterCategory} onValueChange={setFilterCategory}>
-                        <SelectTrigger className="flex-1 md:w-[200px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 h-14 font-black uppercase tracking-widest text-[10px] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-400 transition-all">
-                            <Filter className="w-4 h-4 mr-2 text-slate-400" />
+                        <SelectTrigger className="h-11 rounded-xl">
+                            <Filter className="mr-2 h-4 w-4 text-slate-400" />
                             <SelectValue placeholder="Категорія" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-slate-200 shadow-2xl overflow-hidden p-1 bg-white/95 backdrop-blur-sm">
-                            <SelectItem value="ALL" className="rounded-xl font-bold text-slate-500 uppercase tracking-widest text-[9px] focus:bg-slate-100 transition-colors">Всі категорії</SelectItem>
+                        <SelectContent>
+                            <SelectItem value="ALL">Всі категорії</SelectItem>
                             {categories.map(cat => (
-                                <SelectItem key={cat} value={cat} className="rounded-xl font-black uppercase tracking-widest text-[10px] focus:bg-blue-50 focus:text-blue-700 transition-colors">
+                                <SelectItem key={cat} value={cat}>
                                     {cat}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
 
-                    <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger className="flex-1 md:w-[200px] rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 h-14 font-black uppercase tracking-widest text-[10px] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-400 transition-all">
-                            <ArrowUpDown className="w-4 h-4 mr-2 text-slate-400" />
-                            <SelectValue placeholder="Сортування" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-slate-200 shadow-2xl overflow-hidden p-1 bg-white/95 backdrop-blur-sm">
-                            <SelectItem value="newest" className="rounded-xl font-black uppercase tracking-widest text-[10px] focus:bg-blue-50 focus:text-blue-700 transition-colors">Спочатку нові</SelectItem>
-                            <SelectItem value="oldest" className="rounded-xl font-black uppercase tracking-widest text-[10px] focus:bg-blue-50 focus:text-blue-700 transition-colors">Спочатку старі</SelectItem>
-                            <SelectItem value="eo_asc" className="rounded-xl font-black uppercase tracking-widest text-[10px] focus:bg-blue-50 focus:text-blue-700 transition-colors">№ ЄО (зростання)</SelectItem>
-                            <SelectItem value="eo_desc" className="rounded-xl font-black uppercase tracking-widest text-[10px] focus:bg-blue-50 focus:text-blue-700 transition-colors">№ ЄО (спадання)</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <div className="h-10 w-px bg-slate-200 hidden sm:block mx-1" />
-
                     <Button
-                        variant={showOnlyMine ? "default" : "outline"}
-                        onClick={() => setShowOnlyMine(!showOnlyMine)}
-                        className={cn(
-                            "h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all px-8 gap-3 border-2 shrink-0",
-                            showOnlyMine ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-xl border-blue-400" : "border-slate-200 text-slate-700 hover:bg-white hover:border-blue-400 bg-slate-50"
-                        )}
+                        variant="outline"
+                        className="h-11 rounded-xl"
+                        onClick={resetFilters}
                     >
-                        <CalendarCheck2 className={cn("w-4 h-4", showOnlyMine ? "text-white" : "text-blue-500")} />
-                        {showOnlyMine ? "Мої завдання" : "Всі записи"}
+                        Скинути фільтри
                     </Button>
+                </div>
 
-                    <Button
-                        variant="ghost"
-                        className="h-14 w-14 rounded-2xl bg-slate-100 border-2 border-slate-200 text-slate-400 hover:bg-white hover:text-red-500 hover:border-red-400 transition-all group shrink-0"
-                        onClick={() => {
-                            setFilterSearch("");
-                            setFilterEoNumber("");
-                            setFilterCategory("ALL");
-                            setFilterStatus("ALL");
-                            setFilterAssignment("ALL");
-                            setFilterInspector("ALL");
-                        }}
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setQuickPreset("ALL")}
+                        className={cn("ds-chip-muted", quickPreset === "ALL" && "ds-chip-active")}
                     >
-                        <Filter className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                    </Button>
+                        Всі
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setQuickPreset("MINE")}
+                        className={cn("ds-chip-muted", quickPreset === "MINE" && "ds-chip-active")}
+                    >
+                        Мої
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setQuickPreset("OVERDUE")}
+                        className={cn("ds-chip-muted", quickPreset === "OVERDUE" && "ds-chip-active")}
+                    >
+                        Прострочені
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setQuickPreset("UNASSIGNED")}
+                        className={cn("ds-chip-muted", quickPreset === "UNASSIGNED" && "ds-chip-active")}
+                    >
+                        Без виконавця
+                    </button>
                 </div>
             </div>
             <div className="flex items-center justify-between gap-4">
@@ -712,7 +720,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     </div>
                     <CardContent className="p-6">
                         <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">
-                            {filterSearch || filterCategory !== 'ALL' || activeTab !== 'ALL' || showOnlyMine ? "Знайдено записів" : "Всього записів"}
+                            {filterSearch || filterCategory !== 'ALL' || activeTab !== 'ALL' || quickPreset !== "ALL" ? "Знайдено записів" : "Всього записів"}
                         </p>
                         <h3 className="text-3xl font-black text-slate-900">{filteredRecords.length}</h3>
                     </CardContent>
@@ -733,13 +741,28 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             {/* Records List */}
             <div className="space-y-4">
                 {filteredRecords.length === 0 ? (
-                    <div className="bg-white border-2 border-dashed border-slate-200 rounded-[3rem] p-20 text-center space-y-4">
+                    <div className="ds-empty-state">
                         <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-slate-300 dark:text-slate-600 transition-colors duration-300">
                             <FileText className="w-10 h-10" />
                         </div>
                         <div className="space-y-1">
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tight transition-colors duration-300">Записів не знайдено</h3>
-                            <p className="text-slate-500 dark:text-slate-400 transition-colors duration-300">Завантажте Excel-файл або змініть параметри пошуку</p>
+                            <h3 className="ds-empty-title transition-colors duration-300">Записів не знайдено</h3>
+                            <p className="ds-empty-description transition-colors duration-300">Скиньте фільтри або створіть/імпортуйте новий запис.</p>
+                        </div>
+                        <div className="ds-empty-actions">
+                            <Button variant="outline" className="rounded-xl" onClick={resetFilters}>
+                                Скинути фільтри
+                            </Button>
+                            {currentUser.role === "ADMIN" ? (
+                                <>
+                                    <CreateRecordDialog
+                                        users={users}
+                                        initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }}
+                                        lockRecordType={activeTab !== 'ALL'}
+                                    />
+                                    {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}
+                                </>
+                            ) : null}
                         </div>
                     </div>
                 ) : (
@@ -784,7 +807,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             setViewRecord(record)
                                                             setIsViewOpen(true)
                                                         }}
-                                                        className="text-base md:text-lg font-black text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase tracking-tight leading-tight mt-2 break-words cursor-pointer"
+                                                        className="mt-2 cursor-pointer break-words text-base font-semibold leading-tight text-slate-900 transition-colors group-hover:text-blue-600 dark:text-slate-100 dark:group-hover:text-blue-400 md:text-lg"
                                                     >
                                                         {record.recordType === 'APPLICATION'
                                                             ? `Рапорт №${record.eoNumber}`
@@ -793,10 +816,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                 : (record.description || 'Без опису')}
                                                     </h3>
                                                     {record.recordType === 'APPLICATION' && (
-                                                        <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mt-1">Застосування сили/спецзасобів</p>
+                                                        <p className="mt-1 text-xs font-semibold tracking-wide text-slate-500">Застосування сили/спецзасобів</p>
                                                     )}
                                                     {record.recordType === 'DETENTION_PROTOCOL' && (
-                                                        <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mt-1">Протоколи затримання</p>
+                                                        <p className="mt-1 text-xs font-semibold tracking-wide text-slate-500">Протоколи затримання</p>
                                                     )}
                                                 </div>
 

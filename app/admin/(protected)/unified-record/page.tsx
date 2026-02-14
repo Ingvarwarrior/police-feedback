@@ -49,7 +49,7 @@ export default async function UnifiedRecordPage() {
                         </div>
                         <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400/80">Центр адміністрування</h2>
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-none">
+                    <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none">
                         Єдиний облік <br />
                         <span className="text-blue-400">& звернення</span>
                     </h1>

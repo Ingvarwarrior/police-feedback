@@ -1,10 +1,13 @@
 'use client'
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Search,
   User,
@@ -16,10 +19,13 @@ import {
   Hash,
   Star,
   Trash2,
+  RotateCcw,
+  Filter,
 } from "lucide-react"
 import { format } from "date-fns"
 import { uk } from "date-fns/locale"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import { deleteCallback } from "../actions/callbackActions"
 import CreateCallbackDialog from "./CreateCallbackDialog"
 
@@ -60,6 +66,8 @@ interface Props {
   canDelete: boolean
 }
 
+const FILTERS_STORAGE_KEY = "pf:filters:callbacks"
+
 function userLabel(user: UserRow | null) {
   if (!user) return "Не призначено"
   return `${user.lastName || ""} ${user.firstName || ""}`.trim() || user.username
@@ -88,18 +96,89 @@ function RatingStars({ value }: { value: number }) {
 }
 
 export default function CallbackList({ initialCallbacks, officers, canDelete }: Props) {
+  const searchParams = useSearchParams()
   const [callbacks, setCallbacks] = useState(initialCallbacks)
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState<"ALL" | "PENDING" | "COMPLETED">("ALL")
+  const [executor, setExecutor] = useState<string>("ALL")
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "rating_desc" | "rating_asc">("newest")
+  const [periodFrom, setPeriodFrom] = useState("")
+  const [periodTo, setPeriodTo] = useState("")
   const [selectedCallback, setSelectedCallback] = useState<CallbackRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CallbackRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  useEffect(() => {
+    setCallbacks(initialCallbacks)
+  }, [initialCallbacks])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FILTERS_STORAGE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw)
+      if (typeof parsed.search === "string") setSearch(parsed.search)
+      if (["ALL", "PENDING", "COMPLETED"].includes(parsed.status)) setStatus(parsed.status)
+      if (typeof parsed.executor === "string") setExecutor(parsed.executor)
+      if (["newest", "oldest", "rating_desc", "rating_asc"].includes(parsed.sortBy)) setSortBy(parsed.sortBy)
+      if (typeof parsed.periodFrom === "string") setPeriodFrom(parsed.periodFrom)
+      if (typeof parsed.periodTo === "string") setPeriodTo(parsed.periodTo)
+    } catch {
+      // ignore malformed local storage
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem(
+      FILTERS_STORAGE_KEY,
+      JSON.stringify({ search, status, executor, sortBy, periodFrom, periodTo })
+    )
+  }, [search, status, executor, sortBy, periodFrom, periodTo])
+
+  useEffect(() => {
+    const callbackId = searchParams.get("callbackId")
+    if (!callbackId) return
+    const callback = callbacks.find((item) => item.id === callbackId)
+    if (callback) {
+      setSelectedCallback(callback)
+    }
+  }, [searchParams, callbacks])
+
+  const executorOptions = useMemo(() => {
+    const map = new Map<string, string>()
+    callbacks.forEach((cb) => {
+      if (cb.assignedUser) {
+        map.set(cb.assignedUser.id, userLabel(cb.assignedUser))
+      }
+    })
+    return Array.from(map.entries())
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "uk"))
+  }, [callbacks])
 
   const filtered = useMemo(() => {
     let data = [...callbacks]
 
     if (status !== "ALL") {
       data = data.filter((cb) => cb.status === status)
+    }
+
+    if (executor === "UNASSIGNED") {
+      data = data.filter((cb) => !cb.assignedUser?.id)
+    } else if (executor !== "ALL") {
+      data = data.filter((cb) => cb.assignedUser?.id === executor)
+    }
+
+    if (periodFrom) {
+      const from = new Date(periodFrom)
+      from.setHours(0, 0, 0, 0)
+      data = data.filter((cb) => new Date(cb.callDate) >= from)
+    }
+
+    if (periodTo) {
+      const to = new Date(periodTo)
+      to.setHours(23, 59, 59, 999)
+      data = data.filter((cb) => new Date(cb.callDate) <= to)
     }
 
     if (search.trim()) {
@@ -119,8 +198,28 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
       })
     }
 
-    return data.sort((a, b) => new Date(b.callDate).getTime() - new Date(a.callDate).getTime())
-  }, [callbacks, search, status])
+    return data.sort((a, b) => {
+      if (sortBy === "oldest") {
+        return new Date(a.callDate).getTime() - new Date(b.callDate).getTime()
+      }
+      if (sortBy === "rating_desc") {
+        return (b.qOverall || 0) - (a.qOverall || 0)
+      }
+      if (sortBy === "rating_asc") {
+        return (a.qOverall || 0) - (b.qOverall || 0)
+      }
+      return new Date(b.callDate).getTime() - new Date(a.callDate).getTime()
+    })
+  }, [callbacks, search, status, executor, sortBy, periodFrom, periodTo])
+
+  const resetFilters = () => {
+    setSearch("")
+    setStatus("ALL")
+    setExecutor("ALL")
+    setSortBy("newest")
+    setPeriodFrom("")
+    setPeriodTo("")
+  }
 
   const handleDeleteCallback = async () => {
     if (!deleteTarget) return
@@ -142,56 +241,87 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 rounded-[2rem] border border-slate-200 bg-white/90 p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-12 rounded-xl pl-9"
-            placeholder="Пошук за № callback, № ЄО, заявником, телефоном або поліцейським"
-          />
+      <div className="ds-filter-panel">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative w-full lg:max-w-lg">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-11 rounded-xl pl-9"
+              placeholder="Пошук: № callback, № ЄО, заявник, телефон, поліцейський"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={resetFilters}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Скинути
+            </Button>
+            <CreateCallbackDialog officers={officers} />
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setStatus("ALL")}
-            className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest ${status === "ALL" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"}`}
-          >
-            Всі
-          </button>
-          <button
-            onClick={() => setStatus("PENDING")}
-            className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest ${status === "PENDING" ? "bg-amber-600 text-white" : "bg-slate-100 text-slate-500"}`}
-          >
-            Очікує
-          </button>
-          <button
-            onClick={() => setStatus("COMPLETED")}
-            className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest ${status === "COMPLETED" ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}
-          >
-            Завершено
-          </button>
-          <CreateCallbackDialog officers={officers} />
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <Select value={status} onValueChange={(value) => setStatus(value as "ALL" | "PENDING" | "COMPLETED")}>
+            <SelectTrigger className="h-11 rounded-xl">
+              <SelectValue placeholder="Статус" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Всі статуси</SelectItem>
+              <SelectItem value="PENDING">Очікує</SelectItem>
+              <SelectItem value="COMPLETED">Опрацьовано</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={executor} onValueChange={setExecutor}>
+            <SelectTrigger className="h-11 rounded-xl">
+              <SelectValue placeholder="Виконавець" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Всі виконавці</SelectItem>
+              <SelectItem value="UNASSIGNED">Без виконавця</SelectItem>
+              {executorOptions.map((item) => (
+                <SelectItem key={item.id} value={item.id}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={(value) => setSortBy(value as "newest" | "oldest" | "rating_desc" | "rating_asc")}>
+            <SelectTrigger className="h-11 rounded-xl">
+              <SelectValue placeholder="Сортування" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Спочатку нові</SelectItem>
+              <SelectItem value="oldest">Спочатку старі</SelectItem>
+              <SelectItem value="rating_desc">Рейтинг (вищий)</SelectItem>
+              <SelectItem value="rating_asc">Рейтинг (нижчий)</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Input type="date" value={periodFrom} onChange={(e) => setPeriodFrom(e.target.value)} className="h-11 rounded-xl" />
+          <Input type="date" value={periodTo} onChange={(e) => setPeriodTo(e.target.value)} className="h-11 rounded-xl" />
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Card className="rounded-3xl border-slate-200">
           <CardContent className="p-5">
-            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Всього callback</p>
+            <p className="ds-field-label">Всього callback</p>
             <p className="mt-2 text-3xl font-black text-slate-900">{filtered.length}</p>
           </CardContent>
         </Card>
         <Card className="rounded-3xl border-slate-200">
           <CardContent className="p-5">
-            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Очікують опитування</p>
+            <p className="ds-field-label">Очікують опитування</p>
             <p className="mt-2 text-3xl font-black text-amber-600">{filtered.filter((cb) => cb.status === "PENDING").length}</p>
           </CardContent>
         </Card>
         <Card className="rounded-3xl border-slate-200">
           <CardContent className="p-5">
-            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Завершені</p>
+            <p className="ds-field-label">Опрацьовані</p>
             <p className="mt-2 text-3xl font-black text-emerald-600">{filtered.filter((cb) => cb.status === "COMPLETED").length}</p>
           </CardContent>
         </Card>
@@ -209,14 +339,14 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1 rounded-xl bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600">
+                      <span className="ds-chip-muted">
                         <Hash className="h-3 w-3" /> {formatCallbackNumber(cb.callbackNumber)}
                       </span>
-                      <h3 className="text-lg font-black uppercase italic tracking-tight text-slate-900">
+                      <h3 className="text-lg font-semibold tracking-tight text-slate-900">
                         Callback до ЄО №{cb.eoNumber}
                       </h3>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-500">
+                    <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500">
                       <span className="inline-flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
                         {format(new Date(cb.callDate), "dd MMMM yyyy", { locale: uk })}
@@ -234,28 +364,28 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
 
                   <div className="flex items-center gap-2">
                     {typeof cb.qOverall === "number" && cb.qOverall > 0 ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-xl bg-blue-100 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-700">
+                      <span className="ds-chip-active">
                         <RatingStars value={cb.qOverall} />
                         {cb.qOverall}/5
                       </span>
                     ) : null}
-                    <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-black uppercase tracking-widest ${cb.status === "COMPLETED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                      {cb.status === "COMPLETED" ? "Завершено" : "Очікує"}
+                    <span className={cn(cb.status === "COMPLETED" ? "status-chip-processed" : "status-chip-waiting")}>
+                      {cb.status === "COMPLETED" ? "Опрацьовано" : "Очікує"}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Поліцейські, яких стосується</p>
+                  <p className="mb-2 ds-field-label">Поліцейські, яких стосується</p>
                   <div className="flex flex-wrap gap-2">
                     {cb.officers.slice(0, 2).map((o) => (
-                      <span key={o.id} className="inline-flex rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-700">
+                      <span key={o.id} className="inline-flex rounded-xl border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
                         <Users className="mr-1 h-3 w-3" />
                         {officerLabel(o)} ({o.badgeNumber})
                       </span>
                     ))}
                     {cb.officers.length > 2 ? (
-                      <span className="inline-flex rounded-xl border border-slate-200 px-3 py-1 text-xs font-bold text-slate-500">
+                      <span className="inline-flex rounded-xl border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500">
                         +{cb.officers.length - 2} ще
                       </span>
                     ) : null}
@@ -265,16 +395,16 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div className="rounded-xl border border-slate-100 p-3">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Створив</p>
-                    <p className="text-sm font-bold text-slate-900">{userLabel(cb.createdBy)}</p>
+                    <p className="ds-field-label">Створив</p>
+                    <p className="text-sm font-semibold text-slate-900">{userLabel(cb.createdBy)}</p>
                   </div>
                   <div className="rounded-xl border border-slate-100 p-3">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Виконавець callback</p>
-                    <p className="text-sm font-bold text-slate-900">{userLabel(cb.assignedUser)}</p>
+                    <p className="ds-field-label">Виконавець callback</p>
+                    <p className="text-sm font-semibold text-slate-900">{userLabel(cb.assignedUser)}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end text-xs font-black uppercase tracking-widest text-blue-600">
+                <div className="flex items-center justify-end text-xs font-semibold tracking-wide text-blue-600">
                   Детальніше <ChevronRight className="ml-1 h-4 w-4" />
                 </div>
               </CardContent>
@@ -283,29 +413,39 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
         ))}
 
         {filtered.length === 0 && (
-          <div className="rounded-[2rem] border border-dashed border-slate-200 p-12 text-center">
+          <div className="ds-empty-state">
             <ClipboardCheck className="mx-auto h-10 w-10 text-slate-300" />
-            <p className="mt-3 text-sm font-bold text-slate-500">Немає callback-карток за обраними фільтрами</p>
+            <p className="ds-empty-title">Немає callback-карток за поточними фільтрами</p>
+            <p className="ds-empty-description">Скиньте фільтри або створіть нову callback-картку.</p>
+            <div className="ds-empty-actions">
+              <Button type="button" variant="outline" className="rounded-xl" onClick={resetFilters}>
+                <Filter className="mr-2 h-4 w-4" />
+                Скинути фільтри
+              </Button>
+              <CreateCallbackDialog officers={officers} />
+            </div>
           </div>
         )}
       </div>
 
       <Dialog open={Boolean(selectedCallback)} onOpenChange={(open) => !open && setSelectedCallback(null)}>
-        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto rounded-[2rem] p-0">
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden rounded-[2rem] p-0">
           {selectedCallback ? (
-            <div>
+            <div className="flex max-h-[90vh] flex-col">
               <div className="space-y-3 bg-slate-900 p-6 text-white">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-200">
+                    <span className="ds-chip bg-white/10 text-blue-100 border-white/15">
                       <Hash className="h-3.5 w-3.5" />
                       {formatCallbackNumber(selectedCallback.callbackNumber)}
                     </span>
-                    <span className={`inline-flex rounded-xl px-3 py-1 text-xs font-black uppercase tracking-widest ${selectedCallback.status === "COMPLETED" ? "bg-emerald-500/20 text-emerald-200" : "bg-amber-500/20 text-amber-200"}`}>
-                      {selectedCallback.status === "COMPLETED" ? "Завершено" : "Очікує"}
+                    <span className={cn(
+                      selectedCallback.status === "COMPLETED" ? "status-chip-processed" : "status-chip-waiting"
+                    )}>
+                      {selectedCallback.status === "COMPLETED" ? "Опрацьовано" : "Очікує"}
                     </span>
                     {typeof selectedCallback.qOverall === "number" && selectedCallback.qOverall > 0 ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-xl bg-blue-500/20 px-3 py-1 text-xs font-black uppercase tracking-widest text-blue-200">
+                      <span className="ds-chip-active">
                         <RatingStars value={selectedCallback.qOverall} />
                         {selectedCallback.qOverall}/5
                       </span>
@@ -317,7 +457,7 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
                         <button
                           type="button"
                           onClick={() => setDeleteTarget(selectedCallback)}
-                          className="inline-flex items-center gap-2 rounded-xl bg-rose-500/20 px-3 py-1.5 text-xs font-black uppercase tracking-widest text-rose-200 hover:bg-rose-500/30"
+                          className="inline-flex items-center gap-2 rounded-xl bg-rose-500/20 px-3 py-1.5 text-xs font-semibold tracking-wide text-rose-200 hover:bg-rose-500/30"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                           Видалити
@@ -325,17 +465,17 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
                       </AlertDialogTrigger>
                       <AlertDialogContent className="rounded-2xl">
                         <AlertDialogHeader>
-                          <AlertDialogTitle className="font-black uppercase">Видалити callback?</AlertDialogTitle>
+                          <AlertDialogTitle className="font-semibold">Видалити callback?</AlertDialogTitle>
                           <AlertDialogDescription>
                             Картка буде видалена безповоротно.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel className="rounded-xl font-bold">Скасувати</AlertDialogCancel>
+                          <AlertDialogCancel className="rounded-xl font-semibold">Скасувати</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={handleDeleteCallback}
                             disabled={isDeleting}
-                            className="rounded-xl bg-rose-600 font-black hover:bg-rose-700"
+                            className="rounded-xl bg-rose-600 font-semibold hover:bg-rose-700"
                           >
                             {isDeleting ? "Видалення..." : "Видалити"}
                           </AlertDialogAction>
@@ -345,47 +485,45 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
                   ) : null}
                 </div>
                 <DialogHeader>
-                  <DialogTitle className="text-2xl font-black uppercase italic tracking-tight">
+                  <DialogTitle className="text-2xl font-semibold tracking-tight">
                     Callback до ЄО №{selectedCallback.eoNumber}
                   </DialogTitle>
                 </DialogHeader>
               </div>
 
-              <div className="space-y-4 p-6">
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Дата виклику</p>
-                    <p className="mt-1 text-base font-black text-slate-900">
-                      {format(new Date(selectedCallback.callDate), "dd MMMM yyyy", { locale: uk })}
-                    </p>
+              <div className="space-y-4 overflow-y-auto p-6">
+                <div className="ds-detail-grid">
+                  <div className="ds-detail-item">
+                    <p className="ds-detail-label">Дата виклику</p>
+                    <p className="ds-detail-value">{format(new Date(selectedCallback.callDate), "dd MMMM yyyy", { locale: uk })}</p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">ПІБ заявника</p>
-                    <p className="mt-1 text-base font-black text-slate-900">{selectedCallback.applicantName}</p>
+                  <div className="ds-detail-item">
+                    <p className="ds-detail-label">ПІБ заявника</p>
+                    <p className="ds-detail-value">{selectedCallback.applicantName}</p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Телефон заявника</p>
-                    <p className="mt-1 text-base font-black text-slate-900">{selectedCallback.applicantPhone}</p>
+                  <div className="ds-detail-item">
+                    <p className="ds-detail-label">Телефон заявника</p>
+                    <p className="ds-detail-value">{selectedCallback.applicantPhone}</p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Створив</p>
-                    <p className="mt-1 text-base font-black text-slate-900">{userLabel(selectedCallback.createdBy)}</p>
+                  <div className="ds-detail-item">
+                    <p className="ds-detail-label">Створив</p>
+                    <p className="ds-detail-value">{userLabel(selectedCallback.createdBy)}</p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Виконавець callback</p>
-                    <p className="mt-1 text-base font-black text-slate-900">{userLabel(selectedCallback.assignedUser)}</p>
+                  <div className="ds-detail-item">
+                    <p className="ds-detail-label">Виконавець callback</p>
+                    <p className="ds-detail-value">{userLabel(selectedCallback.assignedUser)}</p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Номер callback</p>
-                    <p className="mt-1 text-base font-black text-slate-900">№{formatCallbackNumber(selectedCallback.callbackNumber)}</p>
+                  <div className="ds-detail-item">
+                    <p className="ds-detail-label">Номер callback</p>
+                    <p className="ds-detail-value">№{formatCallbackNumber(selectedCallback.callbackNumber)}</p>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 p-4">
-                  <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Поліцейські, яких стосується</p>
+                <div className="ds-detail-panel">
+                  <p className="mb-3 ds-field-label">Поліцейські, яких стосується</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedCallback.officers.map((o) => (
-                      <span key={o.id} className="inline-flex rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700">
+                      <span key={o.id} className="inline-flex rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
                         {officerLabel(o)} ({o.badgeNumber})
                         {o.rank ? ` • ${o.rank}` : ""}
                         {o.department ? ` • ${o.department}` : ""}
@@ -395,9 +533,9 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-blue-600">Результати опитування</p>
-                  <div className="max-h-[36vh] overflow-y-auto rounded-xl border border-blue-100 bg-white p-3 text-sm font-medium leading-relaxed text-slate-700 whitespace-pre-wrap">
+                <div className="rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
+                  <p className="mb-2 ds-field-label text-blue-700">Результати опитування</p>
+                  <div className="max-h-[36vh] overflow-y-auto rounded-xl border border-blue-100 bg-white p-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">
                     {selectedCallback.surveyNotes || "Опитування ще не заповнено."}
                   </div>
                 </div>

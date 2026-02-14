@@ -58,7 +58,7 @@ export default async function ReportsPage() {
         <div className="space-y-8 pb-12">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic transition-colors duration-300">Відгуки громадян</h1>
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white transition-colors duration-300">Відгуки громадян</h1>
                     <p className="text-slate-500 dark:text-slate-400 font-medium tracking-tight transition-colors duration-300">Повний перелік отриманих анкет громадян</p>
                 </div>
             </div>

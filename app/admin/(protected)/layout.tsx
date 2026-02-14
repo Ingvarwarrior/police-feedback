@@ -9,6 +9,7 @@ import SignOutButton from "@/components/admin/SignOutButton"
 import MobileNav from "@/components/admin/MobileNav"
 import NotificationCenter from "@/components/admin/NotificationCenter"
 import BirthdayNotifications from "@/components/admin/BirthdayNotifications"
+import GlobalSearch from "@/components/admin/GlobalSearch"
 import { Providers } from "@/components/Providers"
 import { ThemeToggle } from "@/components/ThemeToggle"
 
@@ -147,8 +148,9 @@ export default async function AdminLayout({
                 <main className="flex-1 flex flex-col h-screen overflow-hidden overflow-x-hidden print:h-auto print:overflow-visible">
                     {/* Desktop Top Header */}
                     <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 hidden md:flex items-center justify-between px-8 no-print shadow-sm relative z-30 transition-colors duration-300">
-                        <div className="flex items-center gap-4">
-                            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 italic">Система оперативного моніторингу</h2>
+                        <div className="flex items-center gap-5 min-w-0">
+                            <h2 className="text-[11px] font-semibold tracking-[0.18em] text-slate-400 dark:text-slate-500 whitespace-nowrap">СИСТЕМА ОПЕРАТИВНОГО МОНІТОРИНГУ</h2>
+                            <GlobalSearch />
                         </div>
                         <div className="flex items-center gap-6">
                             <BirthdayNotifications />
@@ -176,6 +178,7 @@ export default async function AdminLayout({
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
+                            <GlobalSearch mode="mobile" />
                             <BirthdayNotifications />
                             <NotificationCenter />
                             <MobileNav user={user as any} />

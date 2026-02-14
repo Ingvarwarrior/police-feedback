@@ -262,130 +262,143 @@ export default function CreateCallbackDialog({ officers }: Props) {
           Додати callback
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase italic tracking-tight">
+      <DialogContent className="max-h-[92dvh] max-w-4xl overflow-hidden rounded-3xl p-0">
+        <DialogHeader className="border-b border-slate-200 bg-white px-6 py-5">
+          <DialogTitle className="flex items-center gap-2 text-xl font-semibold tracking-tight">
             <PhoneCall className="h-5 w-5 text-blue-500" />
             Нова callback-картка
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-2">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Дата виклику</Label>
-              <Input type="date" value={callDate} onChange={(e) => setCallDate(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>№ ЄО виклику</Label>
-              <Input
-                value={eoNumber}
-                onChange={(e) => setEoNumber(e.target.value)}
-                placeholder="Напр. 1245"
-                className={eoDuplicateInfo.exists ? "border-amber-400 focus-visible:ring-amber-200" : ""}
-              />
-              {isCheckingEo && (
-                <p className="text-[11px] font-semibold text-slate-400">Перевіряємо № ЄО у реєстрі...</p>
-              )}
-              {!isCheckingEo && eoDuplicateInfo.exists && (
-                <p className="text-[11px] font-bold text-amber-700">
-                  Callback по № ЄО {eoNumber.trim()} у {eoDuplicateInfo.year} році вже здійснювався ({eoDuplicateInfo.count}).
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>ПІБ заявника</Label>
-              <Input
-                value={applicantName}
-                onChange={(e) => setApplicantName(e.target.value)}
-                placeholder="Прізвище Ім'я По батькові"
-                disabled={isDuplicateBlocked}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Номер телефону заявника</Label>
-              <Input
-                value={applicantPhone}
-                onChange={(e) => setApplicantPhone(e.target.value)}
-                placeholder="+380..."
-                disabled={isDuplicateBlocked}
-              />
-            </div>
-          </div>
-
-          <fieldset
-            disabled={isDuplicateBlocked}
-            className={`space-y-3 rounded-2xl border border-slate-200 p-4 ${isDuplicateBlocked ? "opacity-60" : ""}`}
-          >
-            <Label>Поліцейські, яких стосується callback</Label>
-            {selectedOfficers.length > 0 && (
-              <div className="mb-2 flex flex-wrap gap-2">
-                {selectedOfficers.map((o) => (
-                  <div key={o.id} className="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-black text-blue-700">
-                    <span>{`${o.lastName || ""} ${o.firstName || ""}`.trim()} ({o.badgeNumber})</span>
-                    <button
-                      onClick={() => setSelectedOfficerIds((prev) => prev.filter((id) => id !== o.id))}
-                      className="hover:text-blue-900"
-                      type="button"
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
+        <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+          <details open className="rounded-2xl border border-slate-200 bg-white">
+            <summary className="cursor-pointer list-none rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900">
+              1. Дані виклику та заявника
+            </summary>
+            <div className="space-y-4 border-t border-slate-100 px-4 py-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="ds-field-label">Дата виклику</Label>
+                  <Input type="date" value={callDate} onChange={(e) => setCallDate(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="ds-field-label">№ ЄО виклику</Label>
+                  <Input
+                    value={eoNumber}
+                    onChange={(e) => setEoNumber(e.target.value)}
+                    placeholder="Напр. 1245"
+                    className={eoDuplicateInfo.exists ? "border-amber-400 focus-visible:ring-amber-200" : ""}
+                  />
+                  {isCheckingEo && (
+                    <p className="text-[11px] font-semibold text-slate-400">Перевіряємо № ЄО у реєстрі...</p>
+                  )}
+                  {!isCheckingEo && eoDuplicateInfo.exists && (
+                    <p className="text-[11px] font-semibold text-amber-700">
+                      Callback по № ЄО {eoNumber.trim()} у {eoDuplicateInfo.year} році вже здійснювався ({eoDuplicateInfo.count}).
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="ds-field-label">ПІБ заявника</Label>
+                  <Input
+                    value={applicantName}
+                    onChange={(e) => setApplicantName(e.target.value)}
+                    placeholder="Прізвище Ім'я По батькові"
+                    disabled={isDuplicateBlocked}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="ds-field-label">Номер телефону заявника</Label>
+                  <Input
+                    value={applicantPhone}
+                    onChange={(e) => setApplicantPhone(e.target.value)}
+                    placeholder="+380..."
+                    disabled={isDuplicateBlocked}
+                  />
+                </div>
               </div>
-            )}
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                className="pl-9"
-                value={officerQuery}
-                onChange={(e) => setOfficerQuery(e.target.value)}
-                placeholder="Пошук за прізвищем або жетоном"
-              />
             </div>
-            <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-slate-100 p-2">
-              {officerQuery.trim().length < 2 && (
-                <p className="px-2 py-4 text-center text-xs font-semibold text-slate-400">
-                  Введіть мінімум 2 символи для пошуку поліцейського
-                </p>
-              )}
-              {searchResults.map((o) => {
-                const fullName = `${o.lastName || ""} ${o.firstName || ""}`.trim()
-                const subtitle = [o.rank, o.department].filter(Boolean).join(", ")
-                return (
-                  <button
-                    key={o.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedOfficerIds((prev) => [...prev, o.id])
-                      setOfficerQuery("")
-                    }}
-                    className="flex w-full items-start justify-between gap-3 rounded-xl border border-slate-100 p-3 text-left hover:bg-slate-50"
-                  >
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">{fullName}</p>
-                      <p className="text-xs text-slate-500">{o.badgeNumber}{subtitle ? ` • ${subtitle}` : ""}</p>
-                    </div>
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                      <UserPlus className="h-4 w-4" />
-                    </div>
-                  </button>
-                )
-              })}
-              {officerQuery.trim().length >= 2 && searchResults.length === 0 && (
-                <p className="px-2 py-4 text-center text-xs font-semibold text-slate-400">Нічого не знайдено</p>
-              )}
-            </div>
-          </fieldset>
+          </details>
 
-          <fieldset
-            disabled={isDuplicateBlocked}
-            className={`space-y-3 rounded-2xl border border-blue-200 bg-blue-50/40 p-4 ${isDuplicateBlocked ? "opacity-60" : ""}`}
-          >
-            <h3 className="text-xs font-black uppercase tracking-widest text-blue-700">Питання для опитування заявника</h3>
-            <div className="space-y-4">
+          <details open className={`rounded-2xl border border-slate-200 bg-white ${isDuplicateBlocked ? "opacity-60" : ""}`}>
+            <summary className="cursor-pointer list-none rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900">
+              2. Поліцейські, яких стосується callback
+            </summary>
+            <fieldset
+              disabled={isDuplicateBlocked}
+              className="space-y-3 border-t border-slate-100 px-4 py-4"
+            >
+              {selectedOfficers.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {selectedOfficers.map((o) => (
+                    <div key={o.id} className="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700">
+                      <span>{`${o.lastName || ""} ${o.firstName || ""}`.trim()} ({o.badgeNumber})</span>
+                      <button
+                        onClick={() => setSelectedOfficerIds((prev) => prev.filter((id) => id !== o.id))}
+                        className="hover:text-blue-900"
+                        type="button"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  className="pl-9"
+                  value={officerQuery}
+                  onChange={(e) => setOfficerQuery(e.target.value)}
+                  placeholder="Пошук за прізвищем або жетоном"
+                />
+              </div>
+              <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-slate-100 p-2">
+                {officerQuery.trim().length < 2 && (
+                  <p className="px-2 py-4 text-center text-xs font-semibold text-slate-400">
+                    Введіть мінімум 2 символи для пошуку поліцейського
+                  </p>
+                )}
+                {searchResults.map((o) => {
+                  const fullName = `${o.lastName || ""} ${o.firstName || ""}`.trim()
+                  const subtitle = [o.rank, o.department].filter(Boolean).join(", ")
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedOfficerIds((prev) => [...prev, o.id])
+                        setOfficerQuery("")
+                      }}
+                      className="flex w-full items-start justify-between gap-3 rounded-xl border border-slate-100 p-3 text-left hover:bg-slate-50"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{fullName}</p>
+                        <p className="text-xs text-slate-500">{o.badgeNumber}{subtitle ? ` • ${subtitle}` : ""}</p>
+                      </div>
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                        <UserPlus className="h-4 w-4" />
+                      </div>
+                    </button>
+                  )
+                })}
+                {officerQuery.trim().length >= 2 && searchResults.length === 0 && (
+                  <p className="px-2 py-4 text-center text-xs font-semibold text-slate-400">Нічого не знайдено</p>
+                )}
+              </div>
+            </fieldset>
+          </details>
+
+          <details open className={`rounded-2xl border border-blue-200 bg-blue-50/40 ${isDuplicateBlocked ? "opacity-60" : ""}`}>
+            <summary className="cursor-pointer list-none rounded-2xl px-4 py-3 text-sm font-semibold text-blue-900">
+              3. Опитування заявника
+            </summary>
+            <fieldset
+              disabled={isDuplicateBlocked}
+              className="space-y-4 border-t border-blue-100 px-4 py-4"
+            >
               <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">Дата проведення Callback</Label>
+                <Label className="font-semibold text-slate-700">Дата проведення callback</Label>
                 <Input type="date" value={callbackDate} onChange={(e) => setCallbackDate(e.target.value)} />
               </div>
               <div className="space-y-2">
@@ -500,11 +513,11 @@ export default function CreateCallbackDialog({ officers }: Props) {
                   </button>
                 </div>
               </div>
-            </div>
-          </fieldset>
+            </fieldset>
+          </details>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="sticky-modal-footer flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
           <Button variant="outline" onClick={() => setIsOpen(false)} className="rounded-xl">Скасувати</Button>
           <Button
             onClick={handleSubmit}
