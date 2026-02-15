@@ -13,7 +13,7 @@ import { updateUser } from '../actions/userActions'
 import { toast } from 'sonner'
 
 import { PERMISSIONS_CONFIG } from '@/lib/permissions-config'
-import { ROLE_PRESETS, buildPermissionsMap, getRolePresetById } from '@/lib/role-presets'
+import { ROLE_PRESETS, buildPermissionsMap, detectPresetIdByPermissions, getRolePresetById } from '@/lib/role-presets'
 
 const PERMISSIONS = PERMISSIONS_CONFIG
 
@@ -39,7 +39,7 @@ export default function UserEditForm({ user }: UserEditFormProps) {
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [role, setRole] = useState(user.role)
-    const [selectedPresetId, setSelectedPresetId] = useState('CUSTOM')
+    const [selectedPresetId, setSelectedPresetId] = useState(() => detectPresetIdByPermissions(user as any))
     const [permissions, setPermissions] = useState<Record<string, boolean>>(() => {
         const initial: Record<string, boolean> = {}
         PERMISSIONS_CONFIG.forEach(p => {

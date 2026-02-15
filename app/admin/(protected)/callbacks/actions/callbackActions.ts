@@ -1,6 +1,7 @@
 'use server'
 
 import { auth } from "@/auth"
+import { normalizeEoNumber, normalizePersonName, normalizePhoneNumber } from "@/lib/normalization"
 import { prisma } from "@/lib/prisma"
 import { refreshOfficerStats } from "@/lib/officer-stats"
 import { revalidatePath } from "next/cache"
@@ -25,6 +26,12 @@ const callbackDuplicateCheckSchema = z.object({
   eoNumber: z.string().trim().min(1),
   callDate: z.coerce.date(),
 })
+
+const DEFAULT_LOW_CALLBACK_RATING_THRESHOLD = 2
+const rawLowRatingThreshold = Number.parseInt(process.env.CALLBACK_LOW_RATING_THRESHOLD || "", 10)
+const LOW_CALLBACK_RATING_THRESHOLD = Number.isFinite(rawLowRatingThreshold)
+  ? Math.min(Math.max(rawLowRatingThreshold, 1), 5)
+  : DEFAULT_LOW_CALLBACK_RATING_THRESHOLD
 
 function getYearRange(date: Date) {
   const year = date.getFullYear()
@@ -67,6 +74,89 @@ async function getCurrentUser() {
 
   if (!user) throw new Error("User not found")
   return user
+}
+
+async function applyLowRatingRiskSignal(params: {
+  eoNumber: string
+  qOverall?: number | null
+  callbackId: string
+  actorUserId: string
+}) {
+  const { eoNumber, qOverall, callbackId, actorUserId } = params
+  if (!qOverall || qOverall > LOW_CALLBACK_RATING_THRESHOLD) return
+
+  const linkedRecord = await prisma.unifiedRecord.findFirst({
+    where: {
+      eoNumber,
+      recordType: { in: ["EO", "ZVERN"] },
+    },
+    select: {
+      id: true,
+      eoNumber: true,
+      status: true,
+      assignedUserId: true,
+    },
+  })
+
+  if (!linkedRecord) return
+
+  const movedToReview = linkedRecord.status !== "REVIEW"
+  if (movedToReview) {
+    await prisma.unifiedRecord.update({
+      where: { id: linkedRecord.id },
+      data: {
+        status: "REVIEW",
+        processedAt: null,
+        resolutionDate: null,
+      },
+    })
+  }
+
+  const userTargets = new Set<string>()
+  if (linkedRecord.assignedUserId) userTargets.add(linkedRecord.assignedUserId)
+  userTargets.add(actorUserId)
+
+  const notificationMessage = movedToReview
+    ? `По ЄО №${linkedRecord.eoNumber} отримано низьку callback-оцінку ${qOverall}/5. Запис переведено у статус "На перевірці".`
+    : `По ЄО №${linkedRecord.eoNumber} отримано низьку callback-оцінку ${qOverall}/5. Запис уже перебуває у статусі "На перевірці".`
+
+  if (userTargets.size === 0) {
+    await prisma.adminNotification.create({
+      data: {
+        title: "Низька callback-оцінка",
+        message: notificationMessage,
+        type: "ALERT",
+        priority: "HIGH",
+        link: `/admin/unified-record?search=${encodeURIComponent(linkedRecord.eoNumber)}`,
+      },
+    })
+  } else {
+    await prisma.adminNotification.createMany({
+      data: Array.from(userTargets).map((userId) => ({
+        userId,
+        title: "Низька callback-оцінка",
+        message: notificationMessage,
+        type: "ALERT",
+        priority: "HIGH",
+        link: `/admin/unified-record?search=${encodeURIComponent(linkedRecord.eoNumber)}`,
+      })),
+    })
+  }
+
+  await prisma.auditLog.create({
+    data: {
+      actorUserId,
+      action: "CALLBACK_LOW_RATING_SIGNAL",
+      entityType: "UNIFIED_RECORD",
+      entityId: linkedRecord.id,
+      metadata: JSON.stringify({
+        callbackId,
+        eoNumber: linkedRecord.eoNumber,
+        qOverall,
+        movedToReview,
+      }),
+    },
+  })
 }
 
 export async function getCallbacks() {
@@ -138,11 +228,14 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
   }
 
   const parsed = callbackSchema.parse(input)
+  const normalizedEoNumber = normalizeEoNumber(parsed.eoNumber) || parsed.eoNumber.trim()
+  const normalizedApplicantName = normalizePersonName(parsed.applicantName) || parsed.applicantName.trim()
+  const normalizedApplicantPhone = normalizePhoneNumber(parsed.applicantPhone) || parsed.applicantPhone.trim()
   const uniqueOfficerIds = Array.from(new Set(parsed.officerIds))
   const { year, from, to } = getYearRange(parsed.callDate)
   const duplicateCount = await (prisma as any).callback.count({
     where: {
-      eoNumber: parsed.eoNumber,
+      eoNumber: normalizedEoNumber,
       callDate: {
         gte: from,
         lt: to,
@@ -151,7 +244,7 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
   })
 
   if (duplicateCount > 0) {
-    throw new Error(`Callback по № ЄО ${parsed.eoNumber} у ${year} році вже здійснювався`)
+    throw new Error(`Callback по № ЄО ${normalizedEoNumber} у ${year} році вже здійснювався`)
   }
 
   const operatorDisplayName =
@@ -163,9 +256,9 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
   const created = await (prisma as any).callback.create({
     data: {
       callDate: parsed.callDate,
-      eoNumber: parsed.eoNumber,
-      applicantName: parsed.applicantName,
-      applicantPhone: parsed.applicantPhone,
+      eoNumber: normalizedEoNumber,
+      applicantName: normalizedApplicantName,
+      applicantPhone: normalizedApplicantPhone,
       createdById: user.id,
       assignedUserId: user.id,
       status: hasAnyAnswer(parsed) ? "COMPLETED" : "PENDING",
@@ -188,7 +281,7 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
       action: "CREATE_CALLBACK",
       entityType: "CALLBACK",
       entityId: created.id,
-      metadata: JSON.stringify({ eoNumber: created.eoNumber }),
+      metadata: JSON.stringify({ eoNumber: created.eoNumber, qOverall: parsed.qOverall || null }),
     },
   })
 
@@ -201,7 +294,17 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
     }
   }
 
+  await applyLowRatingRiskSignal({
+    eoNumber: normalizedEoNumber,
+    qOverall: parsed.qOverall,
+    callbackId: created.id,
+    actorUserId: user.id,
+  })
+
   revalidatePath("/admin/callbacks")
+  revalidatePath("/admin/unified-record")
+  revalidatePath("/admin/analytics")
+  revalidatePath("/admin/dashboard")
   revalidatePath("/admin/officers")
   return { success: true, id: created.id }
 }
@@ -214,7 +317,7 @@ export async function checkCallbackDuplicateByEo(input: z.input<typeof callbackD
   }
 
   const parsed = callbackDuplicateCheckSchema.parse(input)
-  const eoNumber = parsed.eoNumber.trim()
+  const eoNumber = normalizeEoNumber(parsed.eoNumber) || parsed.eoNumber.trim()
   const { year, from, to } = getYearRange(parsed.callDate)
 
   const duplicates = await (prisma as any).callback.findMany({

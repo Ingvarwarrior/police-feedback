@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { auth } from "@/auth"
 import bcrypt from 'bcryptjs'
 import { PERMISSIONS_CONFIG, type PermissionId } from "@/lib/permissions-config"
+import { normalizeBadgeNumber, normalizePersonName, normalizeUsername } from "@/lib/normalization"
 
 type BaseUserInput = {
     username: string;
@@ -45,10 +46,15 @@ export async function createUser(data: CreateUserInput) {
 
     const { username, email, passwordHash, firstName, lastName, badgeNumber, role, ...rawPermissions } = data
     const permissions = extractPermissionData(rawPermissions as Record<string, unknown>)
+    const normalizedUsername = normalizeUsername(username) || username.trim().toLowerCase()
+    const normalizedEmail = email?.trim().toLowerCase() || undefined
+    const normalizedFirstName = normalizePersonName(firstName) || firstName?.trim() || undefined
+    const normalizedLastName = normalizePersonName(lastName) || lastName?.trim() || undefined
+    const normalizedBadgeNumber = normalizeBadgeNumber(badgeNumber) || badgeNumber?.trim() || undefined
 
     // Check if username exists
     const existingUser = await prisma.user.findUnique({
-        where: { username }
+        where: { username: normalizedUsername }
     })
 
     if (existingUser) {
@@ -59,12 +65,12 @@ export async function createUser(data: CreateUserInput) {
 
     const user = await prisma.user.create({
         data: {
-            username,
-            email,
+            username: normalizedUsername,
+            email: normalizedEmail,
             passwordHash: hashedPassword,
-            firstName,
-            lastName,
-            badgeNumber,
+            firstName: normalizedFirstName,
+            lastName: normalizedLastName,
+            badgeNumber: normalizedBadgeNumber,
             role,
             ...permissions,
             active: true
@@ -78,7 +84,7 @@ export async function createUser(data: CreateUserInput) {
                 action: "CREATE_USER",
                 entityType: "USER",
                 entityId: user.id,
-                metadata: JSON.stringify({ username: data.username, email: data.email, role: data.role })
+                metadata: JSON.stringify({ username: normalizedUsername, email: normalizedEmail, role: data.role })
             }
         })
     }
@@ -95,14 +101,19 @@ export async function updateUser(id: string, data: UpdateUserInput) {
 
     const { username, email, firstName, lastName, badgeNumber, role, passwordHash } = data
     const permissionData = extractPermissionData(data as Record<string, unknown>)
+    const normalizedUsername = typeof username === "string" ? normalizeUsername(username) || username.trim().toLowerCase() : undefined
+    const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() || null : undefined
+    const normalizedFirstName = typeof firstName === "string" ? normalizePersonName(firstName) || firstName.trim() || null : undefined
+    const normalizedLastName = typeof lastName === "string" ? normalizePersonName(lastName) || lastName.trim() || null : undefined
+    const normalizedBadgeNumber = typeof badgeNumber === "string" ? normalizeBadgeNumber(badgeNumber) || badgeNumber.trim() || null : undefined
 
     const updateData: any = {
         ...permissionData,
-        username,
-        email,
-        firstName,
-        lastName,
-        badgeNumber,
+        username: normalizedUsername,
+        email: normalizedEmail,
+        firstName: normalizedFirstName,
+        lastName: normalizedLastName,
+        badgeNumber: normalizedBadgeNumber,
         role,
         passwordHash,
     }

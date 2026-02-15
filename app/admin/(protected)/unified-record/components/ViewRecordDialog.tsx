@@ -16,7 +16,8 @@ import {
     AlertCircle,
     Building2,
     Info,
-    History
+    History,
+    FileDown
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getRecordTypeLabel } from "./unifiedRecord.helpers"
@@ -25,6 +26,23 @@ interface ViewRecordDialogProps {
     record: any
     isOpen: boolean
     onOpenChange: (open: boolean) => void
+}
+
+const PDF_SAFE_CHAR_MAP: Record<string, string> = {
+    А: "A", а: "a", Б: "B", б: "b", В: "V", в: "v", Г: "H", г: "h", Ґ: "G", ґ: "g",
+    Д: "D", д: "d", Е: "E", е: "e", Є: "Ye", є: "ie", Ж: "Zh", ж: "zh", З: "Z", з: "z",
+    И: "Y", и: "y", І: "I", і: "i", Ї: "Yi", ї: "i", Й: "Y", й: "i", К: "K", к: "k",
+    Л: "L", л: "l", М: "M", м: "m", Н: "N", н: "n", О: "O", о: "o", П: "P", п: "p",
+    Р: "R", р: "r", С: "S", с: "s", Т: "T", т: "t", У: "U", у: "u", Ф: "F", ф: "f",
+    Х: "Kh", х: "kh", Ц: "Ts", ц: "ts", Ч: "Ch", ч: "ch", Ш: "Sh", ш: "sh", Щ: "Shch", щ: "shch",
+    Ь: "", ь: "", Ю: "Yu", ю: "iu", Я: "Ya", я: "ia",
+}
+
+function toPdfSafeText(value: string) {
+    return value
+        .split("")
+        .map((char) => PDF_SAFE_CHAR_MAP[char] ?? char)
+        .join("")
 }
 
 export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewRecordDialogProps) {
@@ -73,6 +91,61 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
         : isDetentionProtocol
             ? `Протокол ${getProtocolNumberFormatted()}`
             : `№${record.eoNumber || "—"}`
+
+    const handleExportPdf = async () => {
+        const { jsPDF } = await import("jspdf")
+        const doc = new jsPDF({ unit: "pt", format: "a4" })
+        const pageWidth = doc.internal.pageSize.getWidth()
+        const pageHeight = doc.internal.pageSize.getHeight()
+        const margin = 40
+        const contentWidth = pageWidth - margin * 2
+        let y = 48
+
+        const writeParagraph = (text: string, options?: { bold?: boolean; spacing?: number }) => {
+            const safeText = toPdfSafeText(text)
+            const lines = doc.splitTextToSize(safeText, contentWidth)
+            const lineHeight = 14
+            const blockHeight = lines.length * lineHeight
+
+            if (y + blockHeight > pageHeight - margin) {
+                doc.addPage()
+                y = margin
+            }
+
+            doc.setFont("helvetica", options?.bold ? "bold" : "normal")
+            doc.text(lines, margin, y)
+            y += blockHeight + (options?.spacing ?? 8)
+        }
+
+        const officersText = record.officers?.length
+            ? record.officers.map((officer: any) => `${officer.lastName || ""} ${officer.firstName || ""} (#${officer.badgeNumber || "—"})`).join(", ")
+            : "Ne vkazano"
+
+        writeParagraph("Unified Record Card Export", { bold: true, spacing: 12 })
+        writeParagraph(`Number: ${headerTitle}`)
+        writeParagraph(`Type: ${getRecordTypeLabel(record.recordType, record.eoNumber)}`)
+        writeParagraph(`Status: ${currentStatus.label}`)
+        writeParagraph(`Date: ${safeFormat(record.eoDate, "dd.MM.yyyy")}`)
+        writeParagraph(`Applicant: ${record.applicant || "Ne vkazano"}`)
+        writeParagraph(`Birth date / Address: ${isSpecialCard ? getBirthDateFromAddress() : (record.address || "Ne vkazano")}`)
+        writeParagraph(`District: ${record.district || "Ne vkazano"}`)
+        writeParagraph(
+            `Executor: ${record.assignedUser ? `${record.assignedUser.lastName || ""} ${record.assignedUser.firstName || ""}`.trim() : "Ne pryznacheno"}`
+        )
+        writeParagraph(`Officers: ${officersText}`)
+        writeParagraph(`Description: ${record.description || "Ne vkazano"}`)
+        writeParagraph(`Resolution: ${record.resolution || "Ne vkazano"}`)
+        writeParagraph(`Deadline: ${safeFormat(record.deadline, "dd.MM.yyyy")}`)
+        writeParagraph(`Created at: ${safeFormat(record.createdAt, "dd.MM.yyyy HH:mm")}`)
+        if (record.importedAt) {
+            writeParagraph(`Imported at: ${safeFormat(record.importedAt, "dd.MM.yyyy HH:mm")}`)
+        }
+
+        const safeNumber = String(record.eoNumber || record.id || "record")
+            .replace(/[^\w.-]+/g, "_")
+            .slice(0, 60)
+        doc.save(`record_${safeNumber}.pdf`)
+    }
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -285,12 +358,23 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                 </div>
 
                 <DialogFooter className="p-4 sm:p-8 bg-slate-50 border-t border-slate-100 shrink-0 sticky bottom-0">
-                    <Button
-                        onClick={() => onOpenChange(false)}
-                        className="w-full h-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-semibold tracking-wide shadow-xl shadow-slate-900/10 transition-all hover:scale-[1.01]"
-                    >
-                        Закрити
-                    </Button>
+                    <div className="flex w-full flex-col gap-2 sm:flex-row">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleExportPdf}
+                            className="h-12 rounded-2xl border-slate-300 font-semibold tracking-wide"
+                        >
+                            <FileDown className="mr-2 h-4 w-4" />
+                            PDF
+                        </Button>
+                        <Button
+                            onClick={() => onOpenChange(false)}
+                            className="h-12 flex-1 rounded-2xl bg-slate-900 hover:bg-black text-white font-semibold tracking-wide shadow-xl shadow-slate-900/10 transition-all hover:scale-[1.01]"
+                        >
+                            Закрити
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

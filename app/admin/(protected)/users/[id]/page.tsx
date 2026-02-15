@@ -8,6 +8,7 @@ import Link from "next/link"
 import UserEditForm from "./UserEditForm"
 import UserAuditLog from "./UserAuditLog"
 import { auth } from "@/auth"
+import { detectPresetIdByPermissions, getRoleTitleByPermissions } from "@/lib/role-presets"
 
 export default async function EditUserPage({
     params,
@@ -33,6 +34,17 @@ export default async function EditUserPage({
     if (!user) {
         notFound()
     }
+
+    const rolePresetId = detectPresetIdByPermissions(user as any)
+    const roleTitle = getRoleTitleByPermissions(user as any)
+    const roleClass =
+        rolePresetId === "ADMIN"
+            ? "bg-purple-100 text-purple-700"
+            : rolePresetId === "SUPERVISOR"
+                ? "bg-amber-100 text-amber-700"
+                : rolePresetId === "VIEW_ONLY"
+                    ? "bg-slate-100 text-slate-700"
+                    : "bg-blue-100 text-blue-700"
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-12">
@@ -64,9 +76,8 @@ export default async function EditUserPage({
                     <p className="text-slate-500 font-medium font-mono">{user.username} {user.email ? `(${user.email})` : ''}</p>
                 </div>
                 <div className="ml-auto">
-                    <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest ${user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                        }`}>
-                        {user.role}
+                    <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest ${roleClass}`}>
+                        {roleTitle}
                     </span>
                 </div>
             </div>

@@ -36,7 +36,7 @@ export const ROLE_PRESETS: RolePreset[] = [
     },
     {
         id: "SUPERVISOR",
-        title: "Керівник",
+        title: "Керівник зміни",
         shortDesc: "Координація, розподіл і контроль строків",
         fullDesc: "Додатково до інспектора: призначає виконавців, робить масові дії, керує строками та має доступ до аудиту.",
         roleValue: "VIEWER",
@@ -66,6 +66,20 @@ export const ROLE_PRESETS: RolePreset[] = [
             "permViewUsers",
             "permViewAudit",
             "permManageMailAlerts",
+        ],
+    },
+    {
+        id: "VIEW_ONLY",
+        title: "Перегляд",
+        shortDesc: "Тільки перегляд без редагування",
+        fullDesc: "Може переглядати реєстри, карти та базову аналітику без змін даних.",
+        roleValue: "OFFICER_VIEWER",
+        enabledPermissions: [
+            "permViewReports",
+            "permViewUnifiedRecords",
+            "permViewOfficerStats",
+            "permViewAnalytics",
+            "permViewMap",
         ],
     },
     {
@@ -136,4 +150,39 @@ export function buildPermissionsMap(enabledPermissions: PermissionId[]) {
 
 export function getRolePresetById(id: string) {
     return ROLE_PRESETS.find((preset) => preset.id === id)
+}
+
+export function detectPresetIdByPermissions(userLike: Partial<Record<PermissionId, boolean>> & { role?: string | null }) {
+    if (userLike.role === "ADMIN") return "ADMIN"
+    if (userLike.role === "OFFICER_VIEWER") return "VIEW_ONLY"
+
+    const enabled = new Set<PermissionId>()
+    PERMISSIONS_CONFIG.forEach((perm) => {
+        if (userLike[perm.id]) enabled.add(perm.id)
+    })
+
+    const candidates = ROLE_PRESETS.filter((preset) => preset.id !== "ADMIN")
+    let bestPreset: RolePreset | null = null
+    let bestScore = -1
+
+    for (const preset of candidates) {
+        const presetSet = new Set<PermissionId>(preset.enabledPermissions)
+        const intersection = preset.enabledPermissions.filter((perm) => enabled.has(perm)).length
+        const union = new Set<PermissionId>([...enabled, ...presetSet]).size || 1
+        const score = intersection / union
+
+        if (score > bestScore) {
+            bestScore = score
+            bestPreset = preset
+        }
+    }
+
+    return bestPreset && bestScore > 0 ? bestPreset.id : "CUSTOM"
+}
+
+export function getRoleTitleByPermissions(userLike: Partial<Record<PermissionId, boolean>> & { role?: string | null }) {
+    const presetId = detectPresetIdByPermissions(userLike)
+    const preset = getRolePresetById(presetId)
+    if (preset) return preset.title
+    return userLike.role || "Користувач"
 }

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import * as XLSX from 'xlsx'
 import { z } from "zod"
 import { sendUnifiedAssignmentEmail, sendUnifiedRecordReminderEmail } from "@/lib/mail"
+import { normalizeEoNumber, normalizePersonName } from "@/lib/normalization"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "")
@@ -307,7 +308,7 @@ function parseExcelRow(row: any, fileName: string) {
 
     const eoNumberVal = findValue(row, ['№ ЄО', 'Номер ЄО', 'eoNumber', '№', 'Номер', '№ звернення'])
     if (!eoNumberVal) return null
-    const eoNumber = String(eoNumberVal).trim()
+    const eoNumber = normalizeEoNumber(String(eoNumberVal)) || String(eoNumberVal).trim()
 
     const eoDateStr = findValue(row, ['дата, час повідомлення', 'Дата', 'Date', 'дата'])
     let eoDate = new Date()
@@ -339,9 +340,9 @@ function parseExcelRow(row: any, fileName: string) {
         district: findValue(row, ['Район']) || null,
         address: findValue(row, ['Адреса', 'local_address']) || null,
         description: findValue(row, ['подія', 'Event', 'Зміст', 'Content', 'Зміст звернення']) || null,
-        applicant: findValue(row, ['заявник', 'Applicant', 'ПІБ']) || null,
+        applicant: normalizePersonName(findValue(row, ['заявник', 'Applicant', 'ПІБ'])) || null,
         category: findValue(row, ['Категорія']) || null,
-        officerName: findValue(row, ['Рапорт- ПІБ хто склав', 'Офіцер', 'Виконавець']) || null,
+        officerName: normalizePersonName(findValue(row, ['Рапорт- ПІБ хто склав', 'Офіцер', 'Виконавець'])) || null,
         resolution: findValue(row, ['Рішення', 'Resolution']) || null,
         resolutionDate: findValue(row, ['Дата рішення']) ? new Date(findValue(row, ['Дата рішення'])) : null,
         sourceFile: fileName
@@ -397,6 +398,9 @@ export async function saveUnifiedRecordsAction(records: any[]) {
             // Need to convert date strings back to Date objects if they came from client
             const formattedRecord = {
                 ...record,
+                eoNumber: normalizeEoNumber(record.eoNumber) || String(record.eoNumber || "").trim(),
+                applicant: normalizePersonName(record.applicant) || null,
+                officerName: normalizePersonName(record.officerName) || null,
                 eoDate: new Date(record.eoDate),
                 resolutionDate: record.resolutionDate ? new Date(record.resolutionDate) : null
             }
@@ -455,6 +459,10 @@ export async function upsertUnifiedRecordAction(data: any) {
         })
         payload.eoNumber = existingById?.eoNumber || await generateNextApplicationNumber()
     }
+
+    payload.eoNumber = normalizeEoNumber(payload.eoNumber) || String(payload.eoNumber || "").trim()
+    payload.applicant = normalizePersonName(payload.applicant) || null
+    payload.officerName = normalizePersonName(payload.officerName) || null
 
     const validated = UnifiedRecordSchema.parse(payload)
     const { officerIds, ...recordData } = validated

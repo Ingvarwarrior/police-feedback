@@ -6,6 +6,7 @@ import ChangePasswordForm from "./ChangePasswordForm"
 import EditProfileForm from "./EditProfileForm"
 import TwoFactorSettings from "./TwoFactorSettings"
 import { isTwoFactorEnabledGlobally } from "@/lib/two-factor"
+import { detectPresetIdByPermissions, getRoleTitleByPermissions } from "@/lib/role-presets"
 
 export default async function ProfilePage() {
     const session = await auth()
@@ -22,6 +23,16 @@ export default async function ProfilePage() {
         return <div>Користувача не знайдено</div>
     }
     const userAny = user as any
+    const rolePresetId = detectPresetIdByPermissions(userAny)
+    const roleTitle = getRoleTitleByPermissions(userAny)
+    const roleClass =
+        rolePresetId === "ADMIN"
+            ? "bg-purple-100 text-purple-800"
+            : rolePresetId === "SUPERVISOR"
+                ? "bg-amber-100 text-amber-800"
+                : rolePresetId === "VIEW_ONLY"
+                    ? "bg-slate-100 text-slate-800"
+                    : "bg-blue-100 text-blue-800"
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-12">
@@ -61,10 +72,9 @@ export default async function ProfilePage() {
                             <div>
                                 <label className="text-xs font-black uppercase tracking-widest text-slate-400 block mb-1">Роль</label>
                                 <div className="flex items-center gap-2">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user?.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-800'
-                                        }`}>
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${roleClass}`}>
                                         <Shield className="w-3 h-3 mr-1" />
-                                        {userAny?.role}
+                                        {roleTitle}
                                     </span>
                                 </div>
                             </div>
