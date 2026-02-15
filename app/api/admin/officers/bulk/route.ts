@@ -22,15 +22,28 @@ export async function POST(req: Request) {
         const results = {
             created: 0,
             updated: 0,
+            skipped: 0,
             errors: [] as any[]
+        }
+
+        const normalizeText = (value: unknown): string | null => {
+            if (typeof value !== "string") return null
+            const trimmed = value.trim()
+            return trimmed.length ? trimmed : null
+        }
+
+        const parseDateInput = (value: unknown): Date | null => {
+            if (value === null || value === undefined || value === "") return null
+            const parsed = new Date(String(value))
+            return Number.isNaN(parsed.getTime()) ? null : parsed
         }
 
         for (const officer of officers) {
             try {
-                if (!officer.badgeNumber || !officer.firstName || !officer.lastName) {
+                if (!officer.badgeNumber) {
                     results.errors.push({
                         badge: officer.badgeNumber || 'unknown',
-                        error: "Missing required fields (Badge, First Name, Last Name)"
+                        error: "Missing required field (Badge)"
                     })
                     continue
                 }
@@ -40,47 +53,53 @@ export async function POST(req: Request) {
                 })
 
                 if (existing) {
+                    const firstName = normalizeText(officer.firstName)
+                    const lastName = normalizeText(officer.lastName)
+                    const middleName = normalizeText(officer.middleName)
+                    const rank = normalizeText(officer.rank)
+                    const department = normalizeText(officer.department)
+                    const phone = normalizeText(officer.phone)
+                    const address = normalizeText(officer.address)
+                    const education = normalizeText(officer.education)
+                    const serviceHistory = normalizeText(officer.serviceHistory)
+                    const imageUrl = normalizeText(officer.imageUrl)
+                    const birthDate = parseDateInput(officer.birthDate)
+                    const hireDate = parseDateInput(officer.hireDate)
+
+                    const updateData: any = {}
+                    if (firstName) updateData.firstName = firstName
+                    if (lastName) updateData.lastName = lastName
+                    if (middleName) updateData.middleName = middleName
+                    if (rank) updateData.rank = rank
+                    if (department) updateData.department = department
+                    if (phone) updateData.phone = phone
+                    if (address) updateData.address = address
+                    if (education) updateData.education = education
+                    if (serviceHistory) updateData.serviceHistory = serviceHistory
+                    if (imageUrl) updateData.imageUrl = imageUrl
+                    if (birthDate) updateData.birthDate = birthDate
+                    if (hireDate) updateData.hireDate = hireDate
+
+                    if (Object.keys(updateData).length === 0) {
+                        results.skipped++
+                        continue
+                    }
+
                     // Update existing officer
                     await prisma.officer.update({
                         where: { id: existing.id },
-                        data: {
-                            firstName: officer.firstName,
-                            lastName: officer.lastName,
-                            middleName: officer.middleName || existing.middleName,
-                            rank: officer.rank || existing.rank,
-                            department: officer.department || existing.department,
-                            phone: officer.phone || existing.phone,
-                            birthDate: officer.birthDate ? new Date(officer.birthDate) : existing.birthDate,
-                            hireDate: officer.hireDate ? new Date(officer.hireDate) : existing.hireDate,
-                            address: officer.address || existing.address,
-                            education: officer.education || existing.education,
-                            serviceHistory: officer.serviceHistory || existing.serviceHistory,
-                            imageUrl: officer.imageUrl || existing.imageUrl,
-                        }
+                        data: updateData
                     })
                     results.updated++
                     continue
                 }
 
-                await prisma.officer.create({
-                    data: {
-                        badgeNumber: officer.badgeNumber,
-                        firstName: officer.firstName,
-                        lastName: officer.lastName,
-                        middleName: officer.middleName || null,
-                        rank: officer.rank || null,
-                        department: officer.department || null,
-                        phone: officer.phone || null,
-                        birthDate: officer.birthDate ? new Date(officer.birthDate) : null,
-                        hireDate: officer.hireDate ? new Date(officer.hireDate) : new Date(),
-                        address: officer.address || null,
-                        education: officer.education || null,
-                        serviceHistory: officer.serviceHistory || null,
-                        imageUrl: officer.imageUrl || null,
-                        status: "ACTIVE",
-                    }
+                // Update-only mode: do not create new officer cards from CSV import
+                results.skipped++
+                results.errors.push({
+                    badge: officer.badgeNumber,
+                    error: "Officer not found by badge (update-only mode)"
                 })
-                results.created++
 
             } catch (err) {
                 console.error("Error creating officer:", officer, err)
@@ -91,14 +110,19 @@ export async function POST(req: Request) {
             }
         }
 
-        if (results.created > 0 && session.user?.id) {
+        if (results.updated > 0 && session.user?.id) {
             await prisma.auditLog.create({
                 data: {
                     actorUserId: session.user.id,
                     action: "BULK_IMPORT_OFFICERS",
                     entityType: "OFFICER",
                     entityId: "BULK",
-                    metadata: JSON.stringify({ count: results.created, errors: results.errors.length })
+                    metadata: JSON.stringify({
+                        updateOnly: true,
+                        updated: results.updated,
+                        skipped: results.skipped,
+                        errors: results.errors.length
+                    })
                 }
             })
         }

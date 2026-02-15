@@ -43,10 +43,9 @@ export function ImportOfficersDialog({ onSuccess }: ImportDialogProps) {
             complete: (results) => {
                 const rawData = results.data as any[]
 
-                // Basic validation (must have badge and name)
+                // Update-only mode: badge is required
                 const validRows = rawData.filter(row =>
-                    row["Номер жетону"] || row.badgeNumber || row.Badge ||
-                    row["Прізвище"] || row.lastName || row.LastName
+                    row["Номер жетону"] || row.badgeNumber || row.Badge
                 )
 
                 const mappedData = validRows.map(row => ({
@@ -85,8 +84,8 @@ export function ImportOfficersDialog({ onSuccess }: ImportDialogProps) {
             const json = await res.json()
 
             if (res.ok) {
-                let msg = `Створено: ${json.created}`
-                if (json.updated > 0) msg += `, Оновлено: ${json.updated}`
+                let msg = `Оновлено: ${json.updated}`
+                if ((json.skipped || 0) > 0) msg += `, Пропущено: ${json.skipped}`
                 toast.success(msg)
 
                 if (json.errors.length > 0) {
@@ -208,7 +207,7 @@ export function ImportOfficersDialog({ onSuccess }: ImportDialogProps) {
                     <div className="bg-blue-50 p-4 rounded-lg flex gap-3 text-sm text-blue-700">
                         <AlertTriangle className="w-5 h-5 shrink-0" />
                         <p>
-                            Система автоматично пропустить офіцерів, які вже є в базі (перевірка за номером жетону).
+                            Імпорт працює в режимі оновлення: картки оновлюються по жетону, нові картки не створюються.
                         </p>
                     </div>
                 </div>
