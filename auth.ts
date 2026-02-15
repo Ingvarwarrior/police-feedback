@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from 'bcryptjs'
 import { decryptSecret, isTwoFactorEnabledGlobally, verifyTotpCode } from "@/lib/two-factor"
+import { normalizeUsername } from "@/lib/normalization"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     trustHost: true,
@@ -31,13 +32,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
-                if (!credentials?.username || !credentials?.password) return null
+                const normalizedUsername = normalizeUsername(credentials?.username as string) || ""
+                const password = (credentials?.password as string || "").trim()
+
+                if (!normalizedUsername || !password) return null
+
                 const user = await prisma.user.findUnique({
-                    where: { username: credentials.username as string },
+                    where: { username: normalizedUsername },
                 })
                 if (!user || !user.active) return null
 
-                const isPasswordValid = await bcrypt.compare(credentials.password as string, user.passwordHash)
+                const isPasswordValid = await bcrypt.compare(password, user.passwordHash)
                 if (isPasswordValid) {
                     const totpCode = ((credentials as any).otp as string | undefined)?.trim() || ""
                     let twoFactorValidated = true

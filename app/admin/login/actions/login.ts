@@ -5,10 +5,11 @@ import { AuthError } from "next-auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { isTwoFactorEnabledGlobally } from "@/lib/two-factor"
+import { normalizeUsername } from "@/lib/normalization"
 
 export async function loginAction(formData: FormData) {
     try {
-        const username = (formData.get('username') as string || "").trim()
+        const username = normalizeUsername(formData.get('username') as string) || ""
         const password = (formData.get('password') as string || "").trim()
         const otp = (formData.get('otp') as string || "").trim()
 
