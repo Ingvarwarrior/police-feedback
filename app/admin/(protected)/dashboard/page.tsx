@@ -5,10 +5,14 @@ import Link from "next/link"
 import DashboardCharts from "./DashboardCharts"
 import { LiveClock } from "@/components/admin/LiveClock"
 import { RealtimeDashboard } from "@/components/admin/RealtimeDashboard"
+import { getCriticalRatingThreshold, getGlobalSettings } from "@/lib/system-settings"
 
 export default async function DashboardPage() {
     const twentyFourHoursAgo = new Date()
     twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
+    const settings = await getGlobalSettings()
+    const criticalThreshold = getCriticalRatingThreshold(settings.criticalRatingThreshold)
+    const criticalThresholdLabel = Number.isInteger(criticalThreshold) ? String(criticalThreshold) : criticalThreshold.toFixed(1)
 
     // Optimized: single query instead of 5 separate ones
     const [dbStats, avgRatings, recentResponses, allOfficers, alertCount] = await Promise.all([
@@ -60,7 +64,7 @@ export default async function DashboardPage() {
         // Critical alerts (Rating <= 2 in last 24h)
         prisma.response.count({
             where: {
-                rateOverall: { lte: 2 },
+                rateOverall: { lte: criticalThreshold },
                 createdAt: { gte: twentyFourHoursAgo }
             }
         })
@@ -218,13 +222,13 @@ export default async function DashboardPage() {
             href: "/admin/reports"
         },
         {
-            title: "Критичні бали",
+            title: `Критичні бали (≤ ${criticalThresholdLabel})`,
             value: alertCount,
             icon: Shield,
             color: "text-rose-600",
             bg: "bg-rose-50",
             alert: alertCount > 0,
-            href: "/admin/reports?rating=1,2"
+            href: "/admin/reports?sort=rating-low"
         },
         {
             title: "Сер. рейтинг",
@@ -415,4 +419,3 @@ export default async function DashboardPage() {
         </div>
     )
 }
-

@@ -25,7 +25,19 @@ const ESTIMATED_TOTAL_MINUTES = 2
 
 import { generateId } from '@/lib/utils'
 
-export default function SurveyWizard() {
+interface SurveyWizardProps {
+    unitName?: string
+    emergencyPhone?: string
+    welcomeMessage?: string
+    unitAddress?: string
+}
+
+export default function SurveyWizard({
+    unitName,
+    emergencyPhone,
+    welcomeMessage,
+    unitAddress,
+}: SurveyWizardProps) {
     const { currentStep, setClientGeneratedId, formData } = useSurveyStore()
     const [mounted, setMounted] = React.useState(false)
 
@@ -46,7 +58,14 @@ export default function SurveyWizard() {
 
     const renderStep = () => {
         switch (currentStep) {
-            case 0: return <Step0Start />
+            case 0: return (
+                <Step0Start
+                    unitName={unitName}
+                    emergencyPhone={emergencyPhone}
+                    welcomeMessage={welcomeMessage}
+                    unitAddress={unitAddress}
+                />
+            )
             case 1: return <Step1ContactPref />
             case 2: return <Step2ContactDetails />
             case 3: return <Step3Location />

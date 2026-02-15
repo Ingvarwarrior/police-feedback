@@ -19,7 +19,7 @@ import {
     Calendar,
     MessageSquare
 } from 'lucide-react'
-import { updateSettings } from './actions/settingsActions'
+import { runPiiCleanupNow, updateSettings } from './actions/settingsActions'
 import { toast } from 'sonner'
 import { Switch } from '@/components/ui/switch'
 
@@ -29,6 +29,8 @@ interface SettingsFormProps {
 
 export default function SettingsForm({ initialSettings }: SettingsFormProps) {
     const [isPending, setIsPending] = useState(false)
+    const [isCleanupPending, setIsCleanupPending] = useState(false)
+    const [lastCleanupSummary, setLastCleanupSummary] = useState<string | null>(null)
     const [formData, setFormData] = useState(initialSettings)
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -51,6 +53,19 @@ export default function SettingsForm({ initialSettings }: SettingsFormProps) {
 
     const handleSwitchChange = (id: string, checked: boolean) => {
         setFormData((prev: any) => ({ ...prev, [id]: checked }))
+    }
+
+    const handleRunPiiCleanup = async () => {
+        setIsCleanupPending(true)
+        try {
+            const result = await runPiiCleanupNow()
+            setLastCleanupSummary(`Оновлено контактів: ${result.updatedContacts}. Дата межі: ${new Date(result.cutoffDate).toLocaleDateString('uk-UA')}.`)
+            toast.success(`PII очищено: ${result.updatedContacts} записів`)
+        } catch (error: any) {
+            toast.error(error.message || 'Помилка при очищенні PII')
+        } finally {
+            setIsCleanupPending(false)
+        }
     }
 
     return (
@@ -130,6 +145,9 @@ export default function SettingsForm({ initialSettings }: SettingsFormProps) {
                                     className="h-12 rounded-2xl bg-slate-50/50"
                                 />
                             </div>
+                            <p className="text-[11px] text-slate-500">
+                                Використовується в публічному опитуванні та службових бланках/експортах.
+                            </p>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -175,6 +193,9 @@ export default function SettingsForm({ initialSettings }: SettingsFormProps) {
                                     <p className="text-[10px] text-slate-400 italic">Відгуки з цими словами будуть помічені як "Пріоритетні"</p>
                                 </div>
                             </div>
+                            <p className="text-[11px] text-slate-500">
+                                Працює в реальному часі: впливає на критичні сповіщення і позначення відгуку як підозрілого.
+                            </p>
 
                             <div className="pt-6 border-t border-slate-100">
                                 <div className="flex items-center justify-between p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50">
@@ -215,6 +236,9 @@ export default function SettingsForm({ initialSettings }: SettingsFormProps) {
                                     className="min-h-[120px] rounded-2xl bg-slate-50/50 p-4"
                                 />
                             </div>
+                            <p className="text-[11px] text-slate-500">
+                                Одразу відображається на першому кроці анкети для громадян.
+                            </p>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -233,7 +257,7 @@ export default function SettingsForm({ initialSettings }: SettingsFormProps) {
                                 <Calendar className="w-10 h-10 text-rose-500 shrink-0" />
                                 <div className="space-y-1 flex-1">
                                     <Label htmlFor="piiRetentionDays" className="text-sm font-bold text-slate-900">Термін зберігання контактних даних</Label>
-                                    <p className="text-xs text-slate-500 font-medium">Через скільки днів автоматично маскувати номер телефону та ПІБ заявника</p>
+                                    <p className="text-xs text-slate-500 font-medium">Через скільки днів маскувати номер телефону та ПІБ заявника</p>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <Input
@@ -246,6 +270,24 @@ export default function SettingsForm({ initialSettings }: SettingsFormProps) {
                                     <span className="text-xs font-black uppercase tracking-widest text-slate-400"> днів</span>
                                 </div>
                             </div>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 bg-white rounded-2xl border border-rose-100">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleRunPiiCleanup}
+                                    disabled={isCleanupPending}
+                                    className="rounded-xl"
+                                >
+                                    {isCleanupPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Database className="w-4 h-4 mr-2" />}
+                                    Очистити PII зараз
+                                </Button>
+                                <p className="text-xs text-slate-600">
+                                    {lastCleanupSummary || "Кнопка застосовує політику зберігання до вже наявних контактів."}
+                                </p>
+                            </div>
+                            <p className="text-[11px] text-slate-500">
+                                Для автоочистки налаштуйте cron на `/api/admin/cron/pii-retention` з `Authorization: Bearer CRON_SECRET`.
+                            </p>
                         </CardContent>
                     </Card>
                 </TabsContent>

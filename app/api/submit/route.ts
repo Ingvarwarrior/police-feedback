@@ -5,6 +5,7 @@ import crypto from 'crypto'
 import { z } from 'zod'
 import { sendNewReportEmail } from '@/lib/mail'
 import { refreshOfficerStats } from '@/lib/officer-stats'
+import { getCriticalRatingThreshold, getGlobalSettings, parseWarningKeywords } from '@/lib/system-settings'
 
 const submitSchema = z.object({
     clientGeneratedId: z.string().min(1).optional(),
@@ -53,6 +54,12 @@ export async function POST(req: NextRequest) {
 
         const data = validation.data
         const headerPayload = await headers()
+        const settings = await getGlobalSettings()
+        const criticalThreshold = getCriticalRatingThreshold(settings.criticalRatingThreshold)
+        const warningKeywords = parseWarningKeywords(settings.warningKeywords)
+        const commentText = (data.comment || '').toLowerCase()
+        const matchedWarningKeywords = warningKeywords.filter((keyword) => commentText.includes(keyword))
+        const hasWarningKeyword = matchedWarningKeywords.length > 0
 
         const ip = headerPayload.get('x-forwarded-for') || 'unknown'
         const ipHash = crypto.createHash('sha256').update(ip + (process.env.AUTH_SECRET || 'salt')).digest('hex')
@@ -67,7 +74,7 @@ export async function POST(req: NextRequest) {
             }
         })
 
-        const isSuspicious = recentSubmissionsCount >= 5
+        const isSuspicious = recentSubmissionsCount >= 5 || hasWarningKeyword
 
         const result = await prisma.$transaction(async (tx) => {
             // Find or link Citizen
@@ -200,7 +207,7 @@ export async function POST(req: NextRequest) {
             await (prisma as any).adminNotification.create({
                 data: {
                     type: 'NEW_REPORT',
-                    priority: 'NORMAL',
+                    priority: hasWarningKeyword ? 'HIGH' : 'NORMAL',
                     title: '📄 Новий звіт',
                     message: `Отримано новий відгук (${data.ratings.overall}/5) по об'єкту ${data.patrolRef || 'не вказано'}.`,
                     link: `/admin/reports/${result.id}`
@@ -211,20 +218,36 @@ export async function POST(req: NextRequest) {
             console.error('Failed to create general admin notification:', notifyError)
         }
 
-        if (data.ratings.overall <= 2) {
+        if (data.ratings.overall <= criticalThreshold) {
             try {
                 await (prisma as any).adminNotification.create({
                     data: {
                         type: 'CRITICAL_RATING',
                         priority: 'URGENT',
                         title: '⚠️ Критично низька оцінка',
-                        message: `Отримано відгук з оцінкою ${data.ratings.overall} в районі ${data.districtOrCity || 'не вказано'}.`,
+                        message: `Отримано відгук з оцінкою ${data.ratings.overall} (поріг: ${criticalThreshold}) в районі ${data.districtOrCity || 'не вказано'}.`,
                         link: `/admin/reports/${result.id}`
                         // userId omitted for global
                     }
                 })
             } catch (notifyError) {
                 console.error('Failed to create critical admin notification:', notifyError)
+            }
+        }
+
+        if (hasWarningKeyword) {
+            try {
+                await (prisma as any).adminNotification.create({
+                    data: {
+                        type: 'WARNING_KEYWORDS',
+                        priority: 'URGENT',
+                        title: '🚨 Ключові слова тривоги',
+                        message: `У відгуку знайдено ключові слова: ${matchedWarningKeywords.join(', ')}.`,
+                        link: `/admin/reports/${result.id}`
+                    }
+                })
+            } catch (notifyError) {
+                console.error('Failed to create warning-keywords admin notification:', notifyError)
             }
         }
 

@@ -7,8 +7,23 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { ShieldCheck, Info, ArrowRight } from 'lucide-react'
 
-export default function Step0Start() {
+interface Step0StartProps {
+    unitName?: string
+    emergencyPhone?: string
+    welcomeMessage?: string
+    unitAddress?: string
+}
+
+export default function Step0Start({
+    unitName,
+    emergencyPhone,
+    welcomeMessage,
+    unitAddress,
+}: Step0StartProps) {
     const { setStep, updateData, formData } = useSurveyStore()
+    const unitNameToShow = unitName || process.env.NEXT_PUBLIC_SURVEY_UNIT_NAME || 'Патрульна поліція'
+    const emergencyPhoneToShow = emergencyPhone || '102'
+    const welcomeMessageToShow = welcomeMessage || 'Це опитування допомагає нам покращити роботу поліції.'
 
     const handleNext = () => {
         if (formData.hasConsent) {
@@ -28,8 +43,11 @@ export default function Step0Start() {
                         Громадський <span className="text-primary tracking-normal">Контроль</span>
                     </h1>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em]">
-                        {process.env.NEXT_PUBLIC_SURVEY_UNIT_NAME ?? 'Патрульна поліція'}
+                        {unitNameToShow}
                     </p>
+                    {unitAddress ? (
+                        <p className="text-[11px] text-slate-500 font-medium">{unitAddress}</p>
+                    ) : null}
                 </div>
             </div>
 
@@ -40,7 +58,7 @@ export default function Step0Start() {
                     </div>
                     <div className="leading-relaxed text-sm text-slate-600">
                         <p className="mb-4 font-semibold text-slate-800 border-l-4 border-secondary pl-4">
-                            Це опитування допомагає нам покращити роботу поліції.
+                            {welcomeMessageToShow}
                         </p>
                         <div className="bg-white p-5 rounded-2xl border border-rose-100 shadow-sm mb-6 bg-[url('https://www.transparenttextures.com/patterns/back-lining.png')]">
                             <p className="text-rose-600 font-extrabold text-xs uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -48,7 +66,7 @@ export default function Step0Start() {
                                 Увага
                             </p>
                             <p className="text-[13px] leading-snug">
-                                Це не є заявою про злочин. В екстрених ситуаціях негайно телефонуйте <span className="text-rose-600 font-black underline decoration-rose-200 underline-offset-4">102</span>.
+                                Це не є заявою про злочин. В екстрених ситуаціях негайно телефонуйте <span className="text-rose-600 font-black underline decoration-rose-200 underline-offset-4">{emergencyPhoneToShow}</span>.
                             </p>
                         </div>
 
