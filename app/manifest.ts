@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
-        name: 'Police Feedback Admin',
-        short_name: 'Police Admin',
+        name: 'ГРУПА ПІДТРИМКИ ТА КОНТРОЛЮ',
+        short_name: 'ГПК',
         description: 'Система моніторингу та відгуків патрульної поліції',
         start_url: '/admin',
         display: 'standalone',

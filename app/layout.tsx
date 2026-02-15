@@ -2,13 +2,13 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Опитування громадян | Поліція',
+  title: 'ГРУПА ПІДТРИМКИ ТА КОНТРОЛЮ',
   description: 'Опитування про якість роботи БПП',
   manifest: '/manifest.json', // manifest.ts handles this as /manifest.json in Next.js
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Police Admin',
+    title: 'ГРУПА ПІДТРИМКИ ТА КОНТРОЛЮ',
   },
   formatDetection: {
     telephone: false,
