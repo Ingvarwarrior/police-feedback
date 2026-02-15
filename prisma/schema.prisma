@@ -71,6 +71,7 @@ model User {
   assignedUnifiedRecords    UnifiedRecord[]     @relation("AssignedUnifiedRecords")
   createdCallbacks          Callback[]          @relation("CallbackCreatedBy")
   assignedCallbacks         Callback[]          @relation("CallbackAssignedTo")
+  pushSubscriptions         PushSubscription[]
 }
 
 model Settings {
@@ -295,6 +296,20 @@ model NotificationRead {
   notification   AdminNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 
   @@unique([notificationId, userId])
+}
+
+model PushSubscription {
+  id         String   @id @default(uuid())
+  userId     String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Citizen {

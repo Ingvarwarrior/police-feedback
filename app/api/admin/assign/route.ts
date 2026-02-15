@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { sendAssignmentEmail } from "@/lib/mail"
+import { createAdminNotification } from "@/lib/admin-notification-service"
 
 export async function POST(req: Request) {
     const session = await auth()
@@ -44,15 +45,13 @@ export async function POST(req: Request) {
 
             // In-app Notification for assignee
             if (assignedToId) {
-                await prisma.adminNotification.create({
-                    data: {
-                        userId: assignedToId,
-                        type: "REPORT_ASSIGNED",
-                        priority: "HIGH",
-                        title: "Вам призначено звіт",
-                        message: `Відгук #${responseId.slice(-8).toUpperCase()} чекає на ваше опрацювання.`,
-                        link: `/admin/reports/${responseId}`
-                    }
+                await createAdminNotification({
+                    userId: assignedToId,
+                    type: "REPORT_ASSIGNED",
+                    priority: "HIGH",
+                    title: "Вам призначено звіт",
+                    message: `Відгук #${responseId.slice(-8).toUpperCase()} чекає на ваше опрацювання.`,
+                    link: `/admin/reports/${responseId}`,
                 })
 
                 // Email Notification

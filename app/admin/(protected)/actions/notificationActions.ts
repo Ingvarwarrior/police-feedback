@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/auth"
+import { createAdminNotification } from "@/lib/admin-notification-service"
 
 export async function getNotifications() {
     const session = await auth()
@@ -159,14 +160,12 @@ export async function checkStaleReports() {
         })
 
         if (!exists) {
-            await prisma.adminNotification.create({
-                data: {
-                    type: 'STALE_REPORT',
-                    priority: 'HIGH',
-                    title: '⏳ Планшет пропущено (24г+)',
-                    message: `Звіт ${report.patrolRef || report.id.slice(0, 8)} очікує призначення більше доби.`,
-                    link: `/admin/reports/${report.id}`
-                }
+            await createAdminNotification({
+                type: 'STALE_REPORT',
+                priority: 'HIGH',
+                title: '⏳ Планшет пропущено (24г+)',
+                message: `Звіт ${report.patrolRef || report.id.slice(0, 8)} очікує призначення більше доби.`,
+                link: `/admin/reports/${report.id}`,
             })
         }
     }

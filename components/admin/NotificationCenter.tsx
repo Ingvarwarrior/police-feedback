@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react"
-import { Bell, X, Check, ExternalLink, AlertTriangle, Clock, Info, FileText } from "lucide-react"
+import { useState, useEffect, useRef, type MutableRefObject } from "react"
+import { Bell, Check, ExternalLink, AlertTriangle, Clock, Info, FileText, Volume2, VolumeX, Smartphone, Loader2 } from "lucide-react"
 import { getNotifications, markAsRead, markAllAsRead, checkStaleReports } from "@/app/admin/(protected)/actions/notificationActions"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
@@ -9,20 +9,125 @@ import { uk } from "date-fns/locale"
 
 import { toast } from "sonner"
 
+const SOUND_PREF_KEY = "pf:notification-center:sound-enabled"
+
+function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4)
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+    const rawData = atob(base64)
+    const outputArray = new Uint8Array(rawData.length)
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i)
+    }
+    return outputArray
+}
+
+function triggerNotificationTone(audioCtxRef: MutableRefObject<AudioContext | null>) {
+    try {
+        const AudioContextConstructor = window.AudioContext || (window as any).webkitAudioContext
+        if (!AudioContextConstructor) return
+
+        if (!audioCtxRef.current) {
+            audioCtxRef.current = new AudioContextConstructor()
+        }
+
+        const ctx = audioCtxRef.current
+        if (ctx.state === "suspended") {
+            void ctx.resume()
+        }
+
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        osc.type = "triangle"
+        osc.frequency.setValueAtTime(660, ctx.currentTime)
+        osc.frequency.exponentialRampToValueAtTime(990, ctx.currentTime + 0.08)
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime)
+        gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.03)
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.28)
+        osc.start()
+        osc.stop(ctx.currentTime + 0.28)
+    } catch (error) {
+        console.error("Notification sound failed", error)
+    }
+}
+
 export default function NotificationCenter() {
     const [notifications, setNotifications] = useState<any[]>([])
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [soundEnabled, setSoundEnabled] = useState(false)
+    const [pushSupported, setPushSupported] = useState(false)
+    const [pushEnabled, setPushEnabled] = useState(false)
+    const [pushLoading, setPushLoading] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
+    const initializedRef = useRef(false)
+    const knownIdsRef = useRef<Set<string>>(new Set())
+    const audioCtxRef = useRef<AudioContext | null>(null)
+    const soundEnabledRef = useRef(false)
+    const pushEnabledRef = useRef(false)
 
     const fetchNotifications = async () => {
         try {
             const data = await getNotifications()
             setNotifications(data)
+
+            const newItems = data.filter((item: any) => !knownIdsRef.current.has(item.id))
+            knownIdsRef.current = new Set(data.map((item: any) => item.id))
+
+            if (initializedRef.current && newItems.length > 0) {
+                const latest = newItems[0]
+                if (soundEnabledRef.current) {
+                    triggerNotificationTone(audioCtxRef)
+                    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+                        navigator.vibrate([180, 80, 180])
+                    }
+                }
+
+                if (
+                    document.visibilityState === "hidden" &&
+                    !pushEnabledRef.current &&
+                    typeof Notification !== "undefined" &&
+                    Notification.permission === "granted"
+                ) {
+                    new Notification(latest?.title || "Нове сповіщення", {
+                        body: latest?.message || "",
+                        icon: "/icon-192.png",
+                        tag: `in-app-${latest?.id || Date.now()}`,
+                    })
+                }
+
+                toast.info(newItems.length > 1 ? `Нових сповіщень: ${newItems.length}` : "Нове сповіщення", {
+                    description: latest?.title || latest?.message || "Оновіть список подій",
+                })
+            }
+            initializedRef.current = true
         } catch (error) {
             console.error("Failed to fetch notifications", error)
         }
     }
+
+    useEffect(() => {
+        const fromStorage = localStorage.getItem(SOUND_PREF_KEY)
+        if (fromStorage === "1") {
+            setSoundEnabled(true)
+        }
+    }, [])
+
+    useEffect(() => {
+        localStorage.setItem(SOUND_PREF_KEY, soundEnabled ? "1" : "0")
+    }, [soundEnabled])
+
+    useEffect(() => {
+        soundEnabledRef.current = soundEnabled
+    }, [soundEnabled])
+
+    useEffect(() => {
+        pushEnabledRef.current = pushEnabled
+    }, [pushEnabled])
 
     useEffect(() => {
         fetchNotifications()
@@ -38,6 +143,63 @@ export default function NotificationCenter() {
     }, [])
 
     useEffect(() => {
+        if (!soundEnabled) return
+
+        const unlockAudio = () => {
+            const AudioContextConstructor = window.AudioContext || (window as any).webkitAudioContext
+            if (!AudioContextConstructor) return
+
+            if (!audioCtxRef.current) {
+                audioCtxRef.current = new AudioContextConstructor()
+            }
+
+            if (audioCtxRef.current.state === "suspended") {
+                void audioCtxRef.current.resume()
+            }
+        }
+
+        window.addEventListener("pointerdown", unlockAudio, { passive: true })
+        window.addEventListener("keydown", unlockAudio)
+
+        return () => {
+            window.removeEventListener("pointerdown", unlockAudio)
+            window.removeEventListener("keydown", unlockAudio)
+        }
+    }, [soundEnabled])
+
+    useEffect(() => {
+        if (typeof window === "undefined") return
+
+        const supported =
+            "serviceWorker" in navigator &&
+            "PushManager" in window &&
+            typeof Notification !== "undefined"
+
+        setPushSupported(supported)
+        if (!supported) return
+
+        let cancelled = false
+
+        const initPush = async () => {
+            try {
+                const registration = await navigator.serviceWorker.register("/sw.js")
+                const existing = await registration.pushManager.getSubscription()
+                if (!cancelled) {
+                    setPushEnabled(Boolean(existing))
+                }
+            } catch (error) {
+                console.error("Service worker registration failed", error)
+            }
+        }
+
+        void initPush()
+
+        return () => {
+            cancelled = true
+        }
+    }, [])
+
+    useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsOpen(false)
@@ -48,6 +210,90 @@ export default function NotificationCenter() {
     }, [])
 
     const unreadCount = notifications.length
+
+    const handleToggleSound = () => {
+        setSoundEnabled((prev) => !prev)
+        if (!soundEnabled) {
+            triggerNotificationTone(audioCtxRef)
+        }
+    }
+
+    const handleEnablePush = async () => {
+        if (!pushSupported || pushLoading) return
+        setPushLoading(true)
+        try {
+            const permission = Notification.permission === "granted"
+                ? "granted"
+                : await Notification.requestPermission()
+
+            if (permission !== "granted") {
+                toast.error("Дозвіл на push-сповіщення не надано")
+                return
+            }
+
+            const keyRes = await fetch("/api/admin/push/vapid-public-key", { cache: "no-store" })
+            if (!keyRes.ok) {
+                const payload = await keyRes.json().catch(() => ({ error: "" }))
+                throw new Error(payload?.error || "Push не налаштовано на сервері")
+            }
+            const keyPayload = await keyRes.json()
+            const publicKey = keyPayload?.publicKey as string
+            if (!publicKey) {
+                throw new Error("Відсутній публічний VAPID ключ")
+            }
+
+            const registration = await navigator.serviceWorker.register("/sw.js")
+            let subscription = await registration.pushManager.getSubscription()
+
+            if (!subscription) {
+                subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(publicKey),
+                })
+            }
+
+            const subscribeRes = await fetch("/api/admin/push/subscribe", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(subscription.toJSON()),
+            })
+
+            if (!subscribeRes.ok) {
+                const payload = await subscribeRes.json().catch(() => ({ error: "" }))
+                throw new Error(payload?.error || "Не вдалося активувати push")
+            }
+
+            setPushEnabled(true)
+            toast.success("Push-сповіщення увімкнено")
+        } catch (error: any) {
+            toast.error(error?.message || "Не вдалося увімкнути push-сповіщення")
+        } finally {
+            setPushLoading(false)
+        }
+    }
+
+    const handleDisablePush = async () => {
+        if (!pushSupported || pushLoading) return
+        setPushLoading(true)
+        try {
+            const registration = await navigator.serviceWorker.ready
+            const subscription = await registration.pushManager.getSubscription()
+            if (subscription) {
+                await fetch("/api/admin/push/unsubscribe", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ endpoint: subscription.endpoint }),
+                })
+                await subscription.unsubscribe()
+            }
+            setPushEnabled(false)
+            toast.success("Push-сповіщення вимкнено")
+        } catch (error) {
+            toast.error("Не вдалося вимкнути push-сповіщення")
+        } finally {
+            setPushLoading(false)
+        }
+    }
 
     const handleMarkAll = async () => {
         if (isLoading) return
@@ -116,6 +362,36 @@ export default function NotificationCenter() {
                         <div>
                             <h3 className="text-white font-black uppercase text-xs tracking-widest italic">Повідомлення</h3>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{unreadCount} нових подій</p>
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={handleToggleSound}
+                                    className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all ${soundEnabled
+                                        ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
+                                        : "border-white/15 bg-white/5 text-slate-300 hover:bg-white/10"
+                                        }`}
+                                >
+                                    {soundEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+                                    {soundEnabled ? "Звук: ON" : "Звук: OFF"}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={pushEnabled ? handleDisablePush : handleEnablePush}
+                                    disabled={!pushSupported || pushLoading}
+                                    className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50 ${pushEnabled
+                                        ? "border-blue-500/40 bg-blue-500/20 text-blue-300"
+                                        : "border-white/15 bg-white/5 text-slate-300 hover:bg-white/10"
+                                        }`}
+                                >
+                                    {pushLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Smartphone className="h-3.5 w-3.5" />}
+                                    {pushEnabled ? "Push: ON" : "Push: OFF"}
+                                </button>
+                            </div>
+                            {!pushSupported ? (
+                                <p className="mt-1 text-[10px] font-semibold text-slate-500">
+                                    Цей браузер не підтримує Web Push
+                                </p>
+                            ) : null}
                         </div>
                         {unreadCount > 0 && (
                             <button

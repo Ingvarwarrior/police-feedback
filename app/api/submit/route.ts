@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { sendNewReportEmail } from '@/lib/mail'
 import { refreshOfficerStats } from '@/lib/officer-stats'
 import { getCriticalRatingThreshold, getGlobalSettings, parseWarningKeywords } from '@/lib/system-settings'
+import { createAdminNotification } from '@/lib/admin-notification-service'
 
 const submitSchema = z.object({
     clientGeneratedId: z.string().min(1).optional(),
@@ -204,15 +205,12 @@ export async function POST(req: NextRequest) {
         // This is safer for reliability - if notification fails, we still save the report.
         // Create Global Notification for every new report
         try {
-            await (prisma as any).adminNotification.create({
-                data: {
-                    type: 'NEW_REPORT',
-                    priority: hasWarningKeyword ? 'HIGH' : 'NORMAL',
-                    title: '📄 Новий звіт',
-                    message: `Отримано новий відгук (${data.ratings.overall}/5) по об'єкту ${data.patrolRef || 'не вказано'}.`,
-                    link: `/admin/reports/${result.id}`
-                    // userId omitted for global
-                }
+            await createAdminNotification({
+                type: 'NEW_REPORT',
+                priority: hasWarningKeyword ? 'HIGH' : 'NORMAL',
+                title: '📄 Новий звіт',
+                message: `Отримано новий відгук (${data.ratings.overall}/5) по об'єкту ${data.patrolRef || 'не вказано'}.`,
+                link: `/admin/reports/${result.id}`,
             })
         } catch (notifyError) {
             console.error('Failed to create general admin notification:', notifyError)
@@ -220,15 +218,12 @@ export async function POST(req: NextRequest) {
 
         if (data.ratings.overall <= criticalThreshold) {
             try {
-                await (prisma as any).adminNotification.create({
-                    data: {
-                        type: 'CRITICAL_RATING',
-                        priority: 'URGENT',
-                        title: '⚠️ Критично низька оцінка',
-                        message: `Отримано відгук з оцінкою ${data.ratings.overall} (поріг: ${criticalThreshold}) в районі ${data.districtOrCity || 'не вказано'}.`,
-                        link: `/admin/reports/${result.id}`
-                        // userId omitted for global
-                    }
+                await createAdminNotification({
+                    type: 'CRITICAL_RATING',
+                    priority: 'URGENT',
+                    title: '⚠️ Критично низька оцінка',
+                    message: `Отримано відгук з оцінкою ${data.ratings.overall} (поріг: ${criticalThreshold}) в районі ${data.districtOrCity || 'не вказано'}.`,
+                    link: `/admin/reports/${result.id}`,
                 })
             } catch (notifyError) {
                 console.error('Failed to create critical admin notification:', notifyError)
@@ -237,14 +232,12 @@ export async function POST(req: NextRequest) {
 
         if (hasWarningKeyword) {
             try {
-                await (prisma as any).adminNotification.create({
-                    data: {
-                        type: 'WARNING_KEYWORDS',
-                        priority: 'URGENT',
-                        title: '🚨 Ключові слова тривоги',
-                        message: `У відгуку знайдено ключові слова: ${matchedWarningKeywords.join(', ')}.`,
-                        link: `/admin/reports/${result.id}`
-                    }
+                await createAdminNotification({
+                    type: 'WARNING_KEYWORDS',
+                    priority: 'URGENT',
+                    title: '🚨 Ключові слова тривоги',
+                    message: `У відгуку знайдено ключові слова: ${matchedWarningKeywords.join(', ')}.`,
+                    link: `/admin/reports/${result.id}`,
                 })
             } catch (notifyError) {
                 console.error('Failed to create warning-keywords admin notification:', notifyError)

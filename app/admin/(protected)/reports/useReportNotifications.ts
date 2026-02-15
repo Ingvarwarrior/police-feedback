@@ -1,18 +1,25 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, type MutableRefObject } from "react"
 import { toast } from "sonner"
 
 type RouterLike = {
     refresh: () => void
 }
 
-function playNotificationSound() {
+function playNotificationSound(audioCtxRef: MutableRefObject<AudioContext | null>) {
     try {
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext
         if (!AudioContext) return
 
-        const ctx = new AudioContext()
+        if (!audioCtxRef.current) {
+            audioCtxRef.current = new AudioContext()
+        }
+
+        const ctx = audioCtxRef.current
+        if (ctx.state === "suspended") {
+            void ctx.resume()
+        }
         const osc = ctx.createOscillator()
         const gain = ctx.createGain()
 
@@ -35,6 +42,30 @@ function playNotificationSound() {
 
 export function useReportNotifications(enabled: boolean, router: RouterLike) {
     const lastCountRef = useRef<number | null>(null)
+    const audioCtxRef = useRef<AudioContext | null>(null)
+
+    useEffect(() => {
+        if (!enabled) return
+
+        const unlockAudio = () => {
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext
+            if (!AudioContext) return
+            if (!audioCtxRef.current) {
+                audioCtxRef.current = new AudioContext()
+            }
+            if (audioCtxRef.current.state === "suspended") {
+                void audioCtxRef.current.resume()
+            }
+        }
+
+        window.addEventListener("pointerdown", unlockAudio, { passive: true })
+        window.addEventListener("keydown", unlockAudio)
+
+        return () => {
+            window.removeEventListener("pointerdown", unlockAudio)
+            window.removeEventListener("keydown", unlockAudio)
+        }
+    }, [enabled])
 
     useEffect(() => {
         if (!enabled) return
@@ -51,7 +82,10 @@ export function useReportNotifications(enabled: boolean, router: RouterLike) {
                 }
 
                 if (data.count > lastCountRef.current) {
-                    playNotificationSound()
+                    playNotificationSound(audioCtxRef)
+                    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+                        navigator.vibrate([160, 70, 160])
+                    }
                     toast.info("🔔 Новий звіт!", {
                         description: "Список оновлено автоматично",
                         action: {
@@ -74,4 +108,3 @@ export function useReportNotifications(enabled: boolean, router: RouterLike) {
         return () => clearInterval(interval)
     }, [enabled, router])
 }
-

@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx'
 import { z } from "zod"
 import { sendUnifiedAssignmentEmail, sendUnifiedRecordReminderEmail } from "@/lib/mail"
 import { normalizeEoNumber, normalizePersonName } from "@/lib/normalization"
+import { createAdminNotification } from "@/lib/admin-notification-service"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "")
@@ -132,15 +133,13 @@ export async function reviewExtensionAction(id: string, approved: boolean) {
     })
 
     if (record.assignedUserId) {
-        await prisma.adminNotification.create({
-            data: {
-                title: approved ? "Продовження строку погоджено" : "Продовження строку відхилено",
-                message: `Ваш запит на продовження по ЄО №${record.eoNumber} було ${approved ? 'погоджено' : 'відхилено'}. Новий строк: ${newDeadline?.toLocaleDateString('uk-UA') || 'без змін'}.`,
-                type: "SYSTEM",
-                priority: approved ? "NORMAL" : "HIGH",
-                userId: record.assignedUserId,
-                link: `/admin/unified-record?search=${record.eoNumber}`
-            }
+        await createAdminNotification({
+            title: approved ? "Продовження строку погоджено" : "Продовження строку відхилено",
+            message: `Ваш запит на продовження по ЄО №${record.eoNumber} було ${approved ? 'погоджено' : 'відхилено'}. Новий строк: ${newDeadline?.toLocaleDateString('uk-UA') || 'без змін'}.`,
+            type: "SYSTEM",
+            priority: approved ? "NORMAL" : "HIGH",
+            userId: record.assignedUserId,
+            link: `/admin/unified-record?search=${record.eoNumber}`,
         })
     }
 
@@ -501,15 +500,13 @@ export async function upsertUnifiedRecordAction(data: any) {
 
     // Create notification only if assignment changed or is new
     if (validated.assignedUserId && (!oldRecord || oldRecord.assignedUserId !== validated.assignedUserId)) {
-        await prisma.adminNotification.create({
-            data: {
-                title: "Нове призначення ЄО",
-                message: `Вам призначено запис ЄО №${validated.eoNumber}`,
-                type: "ASSIGNMENT",
-                priority: "NORMAL",
-                userId: validated.assignedUserId,
-                link: `/admin/unified-record?search=${validated.eoNumber}`
-            }
+        await createAdminNotification({
+            title: "Нове призначення ЄО",
+            message: `Вам призначено запис ЄО №${validated.eoNumber}`,
+            type: "ASSIGNMENT",
+            priority: "NORMAL",
+            userId: validated.assignedUserId,
+            link: `/admin/unified-record?search=${validated.eoNumber}`,
         })
 
         // Send Email Notification (if enabled)
@@ -598,15 +595,13 @@ export async function bulkAssignUnifiedRecordsAction(ids: string[], userId: stri
     })
 
     // Create a single bulk notification
-    await prisma.adminNotification.create({
-        data: {
-            title: "Масове призначення ЄО",
-            message: `Вам призначено ${ids.length} нових записів ЄО`,
-            type: "ASSIGNMENT",
-            priority: "NORMAL",
-            userId: userId,
-            link: `/admin/unified-record`
-        }
+    await createAdminNotification({
+        title: "Масове призначення ЄО",
+        message: `Вам призначено ${ids.length} нових записів ЄО`,
+        type: "ASSIGNMENT",
+        priority: "NORMAL",
+        userId: userId,
+        link: `/admin/unified-record`,
     })
 
     // Send individual emails for bulk assignment (if enabled)
@@ -681,15 +676,13 @@ export async function returnForRevisionAction(id: string, comment: string) {
     })
 
     if (record.assignedUserId) {
-        await prisma.adminNotification.create({
-            data: {
-                title: "Запис повернуто на доопрацювання",
-                message: `Адмін повернув ЄО №${record.eoNumber} на доопрацювання. Коментар: ${comment}`,
-                type: "ALERT",
-                priority: "HIGH",
-                userId: record.assignedUserId,
-                link: `/admin/unified-record?search=${record.eoNumber}`
-            }
+        await createAdminNotification({
+            title: "Запис повернуто на доопрацювання",
+            message: `Адмін повернув ЄО №${record.eoNumber} на доопрацювання. Коментар: ${comment}`,
+            type: "ALERT",
+            priority: "HIGH",
+            userId: record.assignedUserId,
+            link: `/admin/unified-record?search=${record.eoNumber}`,
         })
     }
 

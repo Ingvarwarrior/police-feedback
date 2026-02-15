@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { normalizeEoNumber, normalizePersonName, normalizePhoneNumber } from "@/lib/normalization"
 import { prisma } from "@/lib/prisma"
 import { refreshOfficerStats } from "@/lib/officer-stats"
+import { createAdminNotification } from "@/lib/admin-notification-service"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
@@ -121,25 +122,21 @@ async function applyLowRatingRiskSignal(params: {
     : `По ЄО №${linkedRecord.eoNumber} отримано низьку callback-оцінку ${qOverall}/5. Запис уже перебуває у статусі "На перевірці".`
 
   if (userTargets.size === 0) {
-    await prisma.adminNotification.create({
-      data: {
-        title: "Низька callback-оцінка",
-        message: notificationMessage,
-        type: "ALERT",
-        priority: "HIGH",
-        link: `/admin/unified-record?search=${encodeURIComponent(linkedRecord.eoNumber)}`,
-      },
+    await createAdminNotification({
+      title: "Низька callback-оцінка",
+      message: notificationMessage,
+      type: "ALERT",
+      priority: "HIGH",
+      link: `/admin/unified-record?search=${encodeURIComponent(linkedRecord.eoNumber)}`,
     })
   } else {
-    await prisma.adminNotification.createMany({
-      data: Array.from(userTargets).map((userId) => ({
-        userId,
-        title: "Низька callback-оцінка",
-        message: notificationMessage,
-        type: "ALERT",
-        priority: "HIGH",
-        link: `/admin/unified-record?search=${encodeURIComponent(linkedRecord.eoNumber)}`,
-      })),
+    await createAdminNotification({
+      userIds: Array.from(userTargets),
+      title: "Низька callback-оцінка",
+      message: notificationMessage,
+      type: "ALERT",
+      priority: "HIGH",
+      link: `/admin/unified-record?search=${encodeURIComponent(linkedRecord.eoNumber)}`,
     })
   }
 
