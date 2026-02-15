@@ -21,19 +21,22 @@ import { upsertUnifiedRecordAction } from "../actions/recordActions"
 import { analyzeRecordImageAction } from "../actions/aiActions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
-    addOneDay,
     forceLabels,
-    formatBirthDateUa,
-    formatDateUa,
     formatOfficerForRaport,
-    formatTimeUa,
-    getInitialForceUsage,
     getInitialLegalBasis,
-    isTimeEarlier,
+    getInitialForceUsage,
     type ForceKey,
     type ForceUsage,
     type LegalBasisState,
 } from "./unifiedRecord.helpers"
+import {
+    buildProtocolSummary,
+    buildRaportForceDescription,
+    buildRaportLegalAddress,
+    DEFAULT_DETENTION_MATERIALS,
+    DEFAULT_DETENTION_PURPOSE,
+    parseDetentionProtocolValue,
+} from "./createRecordDialog.viewmodel"
 
 const formSchema = z.object({
     id: z.string().optional(),
@@ -82,8 +85,8 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
     const [detentionFromTime, setDetentionFromTime] = useState("")
     const [detentionToDate, setDetentionToDate] = useState("")
     const [detentionToTime, setDetentionToTime] = useState("")
-    const [detentionPurpose, setDetentionPurpose] = useState("для припинення адміністративного правопорушення оформлення адміністративних матеріалів")
-    const [detentionMaterials, setDetentionMaterials] = useState("Складено постанову/протокол")
+    const [detentionPurpose, setDetentionPurpose] = useState(DEFAULT_DETENTION_PURPOSE)
+    const [detentionMaterials, setDetentionMaterials] = useState(DEFAULT_DETENTION_MATERIALS)
     const [applicationBirthDate, setApplicationBirthDate] = useState("")
     const [detentionProtocolSeries, setDetentionProtocolSeries] = useState("")
     const [detentionProtocolNumber, setDetentionProtocolNumber] = useState("")
@@ -268,9 +271,9 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                     toast.error('Оберіть щонайменше одну правову підставу (ст.44/45)')
                     return
                 }
-                const activeKeys = (Object.keys(forceUsage) as ForceKey[]).filter((k) => forceUsage[k].enabled)
-                if (activeKeys.length === 0) {
-                    toast.error('Оберіть щонайменше один засіб застосування')
+                const forceDescription = buildRaportForceDescription(forceUsage)
+                if (forceDescription.error) {
+                    toast.error(forceDescription.error)
                     return
                 }
                 if (!data.address?.trim()) {
@@ -308,32 +311,7 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                     }
                 }
 
-                const lines: string[] = []
-                for (const key of activeKeys) {
-                    const item = forceUsage[key]
-                    const label = forceLabels[key]
-
-                    if (!item.date) {
-                        toast.error(`Для "${label}" потрібно вказати дату`)
-                        return
-                    }
-
-                    if (key === "handcuffs") {
-                        if (!item.from || !item.to) {
-                            toast.error(`Для "${label}" потрібно вказати період часу з-по`)
-                            return
-                        }
-                        const endDate = isTimeEarlier(item.to, item.from) ? addOneDay(item.date) : item.date
-                        lines.push(`${label.toLowerCase()} — з ${item.from} ${formatDateUa(item.date)} по ${item.to} ${formatDateUa(endDate)}`)
-                    } else {
-                        if (!item.time) {
-                            toast.error(`Для "${label}" потрібно вказати час`)
-                            return
-                        }
-                        lines.push(`${label.toLowerCase()} — ${formatDateUa(item.date)} о ${item.time}`)
-                    }
-                }
-                raportDescription = lines.join("; ")
+                raportDescription = forceDescription.description
             }
 
             if (data.recordType === "APPLICATION") {
@@ -416,8 +394,8 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
             setDetentionFromTime("")
             setDetentionToDate("")
             setDetentionToTime("")
-            setDetentionPurpose("для припинення адміністративного правопорушення оформлення адміністративних матеріалів")
-            setDetentionMaterials("Складено постанову/протокол")
+            setDetentionPurpose(DEFAULT_DETENTION_PURPOSE)
+            setDetentionMaterials(DEFAULT_DETENTION_MATERIALS)
             setApplicationBirthDate("")
             setDetentionProtocolSeries("")
             setDetentionProtocolNumber("")
@@ -436,10 +414,10 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
 
         if (form.getValues("recordType") === "DETENTION_PROTOCOL") {
             const val = form.getValues("eoNumber") || ""
-            const match = val.match(/^Серія\s+(.+?)\s+№\s*(.+)$/i)
-            if (match) {
-                setDetentionProtocolSeries(match[1] || "")
-                setDetentionProtocolNumber(match[2] || "")
+            const parsed = parseDetentionProtocolValue(val)
+            if (parsed.series || parsed.number) {
+                setDetentionProtocolSeries(parsed.series)
+                setDetentionProtocolNumber(parsed.number)
             }
         }
     }, [isOpen, form])
@@ -497,33 +475,7 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
 
     useEffect(() => {
         if (recordType !== "RAPORT") return
-
-        const parts: string[] = []
-
-        if (legalBasis.art44_p1_force) {
-            parts.push('Відповідно до частини 1 статті 44 ЗУ "Про Національну поліцію" - застосовано фізичну силу')
-        }
-
-        if (legalBasis.art45_p1_a_handcuffs) parts.push('відповідно до ч.3 п.1 пп.а) ст. 45 ЗУ "Про Національну поліцію" - застосовані кайданки')
-        if (legalBasis.art45_p1_b_handcuffs) parts.push('відповідно до ч.3 п.1 пп.б) ст. 45 ЗУ "Про Національну поліцію" - застосовані кайданки')
-        if (legalBasis.art45_p1_v_handcuffs) parts.push('відповідно до ч.3 п.1 пп.в) ст. 45 ЗУ "Про Національну поліцію" - застосовані кайданки')
-        if (legalBasis.art45_p1_g_handcuffs) parts.push('відповідно до ч.3 п.1 пп.г) ст. 45 ЗУ "Про Національну поліцію" - застосовані кайданки')
-        if (legalBasis.art45_p1_gg_handcuffs) parts.push('відповідно до ч.3 п.1 пп.ґ) ст. 45 ЗУ "Про Національну поліцію" - застосовані кайданки')
-
-        if (legalBasis.art45_p2_a_baton) parts.push('відповідно до ч.3 п.2 пп.а) ст. 45 ЗУ "Про Національну поліцію" - застосовано гумовий кийок')
-        if (legalBasis.art45_p2_b_baton) parts.push('відповідно до ч.3 п.2 пп.б) ст. 45 ЗУ "Про Національну поліцію" - застосовано гумовий кийок')
-        if (legalBasis.art45_p2_v_baton) parts.push('відповідно до ч.3 п.2 пп.в) ст. 45 ЗУ "Про Національну поліцію" - застосовано гумовий кийок')
-
-        if (legalBasis.art45_p3_a_teargas) parts.push('відповідно до ч.3 п.3 пп.а) ст. 45 ЗУ "Про Національну поліцію" - застосовані засоби сльозогінної та дратівної дії')
-        if (legalBasis.art45_p3_b_teargas) parts.push('відповідно до ч.3 п.3 пп.б) ст. 45 ЗУ "Про Національну поліцію" - застосовані засоби сльозогінної та дратівної дії')
-
-        const subject = [subjectFullName.trim(), subjectBirthDate ? `${formatBirthDateUa(subjectBirthDate)} р.н.` : ""]
-            .filter(Boolean)
-            .join(" ")
-
-        const generated = parts.length > 0
-            ? `${parts.join(" та ")}${subject ? ` до ${subject}.` : "."}`
-            : ""
+        const generated = buildRaportLegalAddress(legalBasis, subjectFullName, subjectBirthDate)
 
         const current = form.getValues("address") || ""
         const prevGenerated = autoAddressRef.current
@@ -536,15 +488,18 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
 
     useEffect(() => {
         if (recordType !== "RAPORT") return
-
-        let generated = ""
-        if (protocolPrepared === "NO") {
-            generated = `Не складався. Причина: ${protocolNoReason.trim() || "не вказано"}.`
-        }
-
-        if (protocolPrepared === "YES") {
-            generated = `Складався, відповідно до статей 261, 262, 263 КУпАП, затриманий з ${formatTimeUa(detentionFromTime)} ${formatDateUa(detentionFromDate)} р. до ${formatTimeUa(detentionToTime)} ${formatDateUa(detentionToDate)} р., ${detentionPurpose.trim()}. ${detentionMaterials.trim() || "Складено постанову/протокол"} серії ${protocolSeries || "___"} номер ${protocolNumber || "___"}`
-        }
+        const generated = buildProtocolSummary({
+            protocolPrepared,
+            protocolNoReason,
+            protocolSeries,
+            protocolNumber,
+            detentionFromDate,
+            detentionFromTime,
+            detentionToDate,
+            detentionToTime,
+            detentionPurpose,
+            detentionMaterials,
+        })
 
         const current = form.getValues("applicant") || ""
         const prevGenerated = autoApplicantRef.current

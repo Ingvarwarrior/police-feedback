@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Download, Eye, Star, Search, ArrowUpDown, Calendar as LucideCalendar, MapPin, FileText, Trash2, CheckCircle2, Archive, UserPlus, Check, MoreHorizontal, X, Loader2, AlertTriangle, Volume2, VolumeX } from "lucide-react"
 import Link from "next/link"
@@ -33,34 +33,24 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import * as Papa from "papaparse"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
 import { uk } from "date-fns/locale"
 import { DateRange } from "react-day-picker"
 import { cn } from "@/lib/utils"
+import {
+    buildReportsCsvString,
+    getPriority,
+    maskSensitive,
+    processReports,
+} from "./reportsList.viewmodel"
+import { useReportNotifications } from "./useReportNotifications"
 
 interface ReportsListProps {
     initialResponses: any[]
     users?: any[]
     currentUser: any
-}
-
-// Helper: Mask sensitive data
-const maskSensitive = (value: string | null | undefined, hasPerm: boolean) => {
-    if (!value) return '-';
-    if (hasPerm) return value;
-    if (value.length <= 4) return '****';
-    return value.slice(0, 3) + '***' + value.slice(-2);
-}
-
-// Helper: Calculate priority based on rating and attachments
-const getPriority = (response: any): 'urgent' | 'important' | 'standard' => {
-    if (response.rateOverall === 3 || response.wantContact) {
-        return 'important'
-    }
-    return 'standard'
 }
 
 const REPORTS_FILTERS_KEY = "pf:filters:reports"
@@ -101,77 +91,7 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
 
     // Sound Notification State
     const [soundEnabled, setSoundEnabled] = useState(false)
-    const lastCountRef = useRef<number | null>(null)
-
-    // Sound Effect (Web Audio API)
-    const playNotificationSound = () => {
-        if (!soundEnabled) return
-        try {
-            const AudioContext = window.AudioContext || (window as any).webkitAudioContext
-            if (!AudioContext) return
-
-            const ctx = new AudioContext()
-            const osc = ctx.createOscillator()
-            const gain = ctx.createGain()
-
-            osc.connect(gain)
-            gain.connect(ctx.destination)
-
-            osc.type = 'sine'
-            osc.frequency.setValueAtTime(500, ctx.currentTime)
-            osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1)
-
-            gain.gain.setValueAtTime(0.1, ctx.currentTime)
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5)
-
-            osc.start()
-            osc.stop(ctx.currentTime + 0.5)
-        } catch (e) {
-            console.error("Audio play failed", e)
-        }
-    }
-
-    // Polling for new reports
-    useEffect(() => {
-        if (!soundEnabled) return
-
-        const checkNewReports = async () => {
-            try {
-                const res = await fetch('/api/admin/reports/stats')
-                if (res.ok) {
-                    const data = await res.json()
-
-                    // Initial load
-                    if (lastCountRef.current === null) {
-                        lastCountRef.current = data.count
-                        return
-                    }
-
-                    // Check for increase
-                    if (data.count > lastCountRef.current) {
-                        playNotificationSound()
-                        toast.info("🔔 Новий звіт!", {
-                            description: "Список оновлено автоматично",
-                            action: {
-                                label: "Оновити",
-                                onClick: () => router.refresh()
-                            }
-                        })
-                        router.refresh()
-                    }
-
-                    lastCountRef.current = data.count
-                }
-            } catch (error) {
-                console.error("Polling error", error)
-            }
-        }
-
-        const interval = setInterval(checkNewReports, 30000) // Check every 30s
-        checkNewReports() // Immediate check
-
-        return () => clearInterval(interval)
-    }, [soundEnabled, router])
+    useReportNotifications(soundEnabled, router)
 
     useEffect(() => {
         try {
@@ -214,109 +134,19 @@ export default function ReportsList({ initialResponses, users = [], currentUser 
     }, [mainTab, statusFilter, quickFilter, searchTerm, sortBy, executorFilter, dateRange])
 
     const processedResponses = useMemo(() => {
-        let result = [...initialResponses]
-
-        // 0. Main Tab Filter (Skip if looking for specific date or search, to search global)
-        // If deep linking with date/search, we might want to search across all tabs or respect the default?
-        // Let's respect the current tab for now, but maybe auto-switch to ALL if needed?
-        // Logic: specific filters usually imply "find this regardless of status" but existing logic splits logic.
-        // Let's keep existing split for safety, but if user comes from "Critical" chart, it might be resolved.
-        // The dashboard "Critical" link goes to "?rating=1,2".
-
-        // 0. Main Tab Filter
-        if (mainTab === 'active') {
-            result = result.filter(r => ['NEW', 'ASSIGNED'].includes(r.status))
-        } else if (mainTab === 'processed') {
-            result = result.filter(r => ['RESOLVED', 'ARCHIVED', 'REVIEWED'].includes(r.status))
-        }
-
-        // 1. Status Filter
-        if (statusFilter !== 'ALL') {
-            result = result.filter(r => r.status === statusFilter)
-        }
-
-        // 2. Quick Filter
-        if (quickFilter === 'URGENT') {
-            result = result.filter(r => getPriority(r) === 'urgent')
-        } else if (quickFilter === 'WITH_PHOTO') {
-            result = result.filter(r => (r._count?.attachments || 0) > 0)
-        } else if (quickFilter === 'WITH_CONTACT') {
-            result = result.filter(r => r.wantContact)
-        } else if (quickFilter === 'TODAY') {
-            const today = new Date().toDateString()
-            result = result.filter(r => new Date(r.createdAt).toDateString() === today)
-        }
-
-        // 2.1 Assigned executor filter
-        if (executorFilter === 'UNASSIGNED') {
-            result = result.filter((r) => !r.assignedToId)
-        } else if (executorFilter !== 'ALL') {
-            result = result.filter((r) => r.assignedToId === executorFilter)
-        }
-
-        // 3. Date Range Filter (Inclusive)
-        if (dateRange?.from) {
-            result = result.filter(r => {
-                const date = new Date(r.createdAt)
-                const from = new Date(dateRange.from!)
-                from.setHours(0, 0, 0, 0)
-
-                if (dateRange.to) {
-                    const to = new Date(dateRange.to)
-                    to.setHours(23, 59, 59, 999)
-                    return date >= from && date <= to
-                }
-
-                const dayEnd = new Date(from)
-                dayEnd.setHours(23, 59, 59, 999)
-                return date >= from && date <= dayEnd
-            })
-        }
-
-        // 4. Search Filter
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase()
-            result = result.filter(r =>
-                (r.districtOrCity?.toLowerCase().includes(term)) ||
-                (r.patrolRef?.toLowerCase().includes(term)) ||
-                (r.internalNotes?.toLowerCase().includes(term)) ||
-                (r.comment?.toLowerCase().includes(term))
-            )
-        }
-
-        // 5. Sorting
-        result.sort((a, b) => {
-            if (sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            if (sortBy === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-            if (sortBy === 'rating-high') return (b.rateOverall || 0) - (a.rateOverall || 0)
-            if (sortBy === 'rating-low') return (a.rateOverall || 0) - (b.rateOverall || 0)
-            return 0
+        return processReports(initialResponses, {
+            mainTab,
+            statusFilter,
+            quickFilter,
+            searchTerm,
+            sortBy,
+            dateRange,
+            executorFilter,
         })
-
-        return result
     }, [initialResponses, mainTab, statusFilter, quickFilter, searchTerm, sortBy, dateRange, executorFilter])
 
     const exportToCSV = (items = processedResponses) => {
-        const csvData = items.map(r => ({
-            "ID": r.id,
-            "Дата створення": new Date(r.createdAt).toLocaleString('uk-UA'),
-            "Час події": r.interactionDate ? new Date(r.interactionDate).toLocaleDateString('uk-UA') + (r.interactionTime ? ` (${r.interactionTime})` : '') : '-',
-            "Локація": r.districtOrCity || '-',
-            "Об'єкт": r.patrolRef || '-',
-            "Офіцер": r.officerName ? `${r.officerName} (${r.badgeNumber || '-'})` : '-',
-            "Тип події": r.incidentType || '-',
-            "Статус": r.status === 'NEW' ? 'Новий' : r.status === 'ASSIGNED' ? 'В роботі' : r.status === 'RESOLVED' ? 'Вирішено' : 'Архів',
-            "Загальна оцінка": r.rateOverall,
-            "Ввічливість": r.ratePoliteness || '-',
-            "Професіоналізм": r.rateProfessionalism || '-',
-            "Ефективність": r.rateEffectiveness || '-',
-            "Є Контакт": r.wantContact ? 'Так' : 'Ні',
-            "Ім'я контакту": maskSensitive(r.contact?.name, canViewSensitive),
-            "Телефон": maskSensitive(r.contact?.phone, canViewSensitive),
-            "Коментар": r.comment || "",
-        }))
-
-        const csvString = Papa.unparse(csvData)
+        const csvString = buildReportsCsvString(items, canViewSensitive)
         const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvString], { type: 'text/csv;charset=utf-8;' })
         const link = document.createElement("a")
         link.href = URL.createObjectURL(blob)

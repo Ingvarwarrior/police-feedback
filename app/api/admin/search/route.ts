@@ -25,8 +25,6 @@ type CallbackSearchRow = {
   }>
 }
 
-type CallbackSearchWithNumber = CallbackSearchRow & { callbackNumber: number }
-
 function safeText(value: string | null | undefined, fallback = "Не вказано") {
   const text = (value || "").trim()
   return text.length > 0 ? text : fallback
@@ -69,8 +67,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ results: [] })
   }
 
-  const normalized = q.toLowerCase()
-  const maybeNumber = Number.isFinite(Number(q)) ? Number(q) : null
   const canViewReports = currentUser.role === "ADMIN" || currentUser.permViewReports
   const canViewUnified = currentUser.role === "ADMIN" || currentUser.permViewUnifiedRecords
   const canViewOfficers =
@@ -150,8 +146,26 @@ export async function GET(req: Request) {
       : Promise.resolve([]),
     canViewReports
       ? prisma.callback.findMany({
-          orderBy: { createdAt: "asc" },
-          take: 400,
+          where: {
+            OR: [
+              { eoNumber: { contains: q } },
+              { applicantName: { contains: q } },
+              { applicantPhone: { contains: q } },
+              {
+                officers: {
+                  some: {
+                    OR: [
+                      { firstName: { contains: q } },
+                      { lastName: { contains: q } },
+                      { badgeNumber: { contains: q } },
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+          orderBy: { callDate: "desc" },
+          take: 8,
           select: {
             id: true,
             callDate: true,
@@ -202,31 +216,10 @@ export async function GET(req: Request) {
 
   const safeCallbacksRaw = callbacksRaw as CallbackSearchRow[]
 
-  const callbackMatches: SearchResult[] = safeCallbacksRaw
-    .map((row: CallbackSearchRow, index: number): CallbackSearchWithNumber => ({
-      ...row,
-      callbackNumber: index + 1,
-    }))
-    .filter((row: CallbackSearchWithNumber) => {
-      const officersText = row.officers
-        .map((o: CallbackSearchRow["officers"][number]) => `${o.lastName || ""} ${o.firstName || ""} ${o.badgeNumber || ""}`.toLowerCase())
-        .join(" ")
-
-      return (
-        String(row.callbackNumber).includes(normalized) ||
-        row.eoNumber.toLowerCase().includes(normalized) ||
-        row.applicantName.toLowerCase().includes(normalized) ||
-        row.applicantPhone.toLowerCase().includes(normalized) ||
-        officersText.includes(normalized) ||
-        (maybeNumber !== null && row.callbackNumber === maybeNumber)
-      )
-    })
-    .slice(-8)
-    .reverse()
-    .map((row: CallbackSearchWithNumber): SearchResult => ({
+  const callbackMatches: SearchResult[] = safeCallbacksRaw.map((row: CallbackSearchRow): SearchResult => ({
       id: row.id,
       type: "callback",
-      title: `Callback №${String(row.callbackNumber).padStart(4, "0")} · ЄО №${row.eoNumber}`,
+      title: `Callback до ЄО №${row.eoNumber}`,
       subtitle: `${safeText(row.applicantName)} · ${shortDate(row.callDate)}`,
       href: `/admin/callbacks?callbackId=${row.id}`,
       status: row.status,

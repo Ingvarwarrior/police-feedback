@@ -68,8 +68,15 @@ import {
     getAssignedInspectorName,
     getRecordTypeLabel,
     isApplicationLike,
-    normalizeRecordType,
 } from "./unifiedRecord.helpers"
+import {
+    buildRecordExportData,
+    filterUnifiedRecords,
+    getDueSoonRecords,
+    getOverdueRecords,
+    getRecordCategories,
+    normalizeInitialRecords,
+} from "./recordList.viewmodel"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -127,9 +134,7 @@ function formatDeadlineDelta(deadlineValue: string | Date, nowTs: number) {
 
 export default function RecordList({ initialRecords, users = [], currentUser }: RecordListProps) {
     const [records, setRecords] = useState(
-        initialRecords
-            .filter(r => r.recordType !== 'RAPORT')
-            .map((r: any) => ({ ...r, recordType: normalizeRecordType(r.recordType, r.eoNumber) }))
+        normalizeInitialRecords(initialRecords)
     )
     const [filterSearch, setFilterSearch] = useState("")
     const [filterCategory, setFilterCategory] = useState("ALL")
@@ -158,11 +163,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const searchParams = useSearchParams()
 
     useEffect(() => {
-        setRecords(
-            initialRecords
-                .filter(r => r.recordType !== 'RAPORT')
-                .map((r: any) => ({ ...r, recordType: normalizeRecordType(r.recordType, r.eoNumber) }))
-        )
+        setRecords(normalizeInitialRecords(initialRecords))
     }, [initialRecords])
 
     useEffect(() => {
@@ -256,125 +257,32 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     }, [searchParams])
 
     const filteredRecords = useMemo(() => {
-        let result = [...records]
-
-        // Apply Tab filter
-        if (activeTab !== 'ALL') {
-            result = result.filter(r => r.recordType === activeTab)
-        }
-
-        // Apply search filter
-        if (filterSearch.trim()) {
-            const lowerSearch = filterSearch.trim().toLowerCase()
-            result = result.filter(r =>
-                (r.eoNumber && String(r.eoNumber).toLowerCase().includes(lowerSearch)) ||
-                (r.description?.toLowerCase().includes(lowerSearch)) ||
-                (r.address?.toLowerCase().includes(lowerSearch)) ||
-                (r.applicant?.toLowerCase().includes(lowerSearch)) ||
-                (r.officers?.some((o: any) =>
-                    o.lastName?.toLowerCase().includes(lowerSearch) ||
-                    o.firstName?.toLowerCase().includes(lowerSearch)
-                ))
-            )
-        }
-
-        // Apply category filter
-        if (filterCategory !== 'ALL') {
-            result = result.filter(r => r.category === filterCategory)
-        }
-
-        // Apply status filter
-        if (filterStatus === 'PENDING') {
-            result = result.filter(r => r.status !== 'PROCESSED')
-        } else if (filterStatus === 'PROCESSED') {
-            result = result.filter(r => r.status === 'PROCESSED')
-        }
-
-        // Apply assignment filter
-        if (filterAssignment === 'ASSIGNED') {
-            result = result.filter(r => r.assignedUserId !== null)
-        } else if (filterAssignment === 'UNASSIGNED') {
-            result = result.filter(r => r.assignedUserId === null)
-        }
-
-        // Apply EO number dedicated filter
-        if (filterEoNumber.trim()) {
-            const lowerEo = filterEoNumber.trim().toLowerCase()
-            result = result.filter(r => r.eoNumber && String(r.eoNumber).toLowerCase().includes(lowerEo))
-        }
-
-        // Apply inspector filter
-        if (filterInspector !== 'ALL') {
-            result = result.filter(r => r.assignedUserId === filterInspector)
-        }
-
-        if (quickPreset === "MINE") {
-            result = result.filter(r => r.assignedUserId === currentUser.id)
-        }
-
-        if (quickPreset === "UNASSIGNED") {
-            result = result.filter(r => r.assignedUserId === null)
-        }
-
-        if (quickPreset === "OVERDUE") {
-            const now = new Date()
-            result = result.filter((r) => r.status !== "PROCESSED" && r.deadline && new Date(r.deadline) < now)
-        }
-
-        // Apply period filter (inclusive)
-        if (periodFrom) {
-            const from = new Date(periodFrom)
-            from.setHours(0, 0, 0, 0)
-            result = result.filter((r) => new Date(r.eoDate) >= from)
-        }
-
-        if (periodTo) {
-            const to = new Date(periodTo)
-            to.setHours(23, 59, 59, 999)
-            result = result.filter((r) => new Date(r.eoDate) <= to)
-        }
-
-        // Apply sorting
-        result.sort((a, b) => {
-            if (sortBy === 'newest') return new Date(b.eoDate).getTime() - new Date(a.eoDate).getTime()
-            if (sortBy === 'oldest') return new Date(a.eoDate).getTime() - new Date(b.eoDate).getTime()
-
-            if (sortBy === 'eo_asc' || sortBy === 'eo_desc') {
-                const valA = String(a.eoNumber || '')
-                const valB = String(b.eoNumber || '')
-                // Alphanumeric comparison
-                const cmp = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' })
-                return sortBy === 'eo_asc' ? cmp : -cmp
-            }
-
-            return 0
+        return filterUnifiedRecords(records, {
+            activeTab,
+            filterSearch,
+            filterCategory,
+            filterStatus,
+            filterAssignment,
+            filterEoNumber,
+            filterInspector,
+            sortBy,
+            quickPreset,
+            periodFrom,
+            periodTo,
+            currentUserId: currentUser.id,
         })
-
-        return result
     }, [records, filterSearch, filterCategory, activeTab, filterStatus, filterAssignment, filterEoNumber, filterInspector, sortBy, quickPreset, periodFrom, periodTo, currentUser.id])
 
     const categories = useMemo(() => {
-        const cats = new Set(initialRecords.map(r => r.category).filter(Boolean))
-        return Array.from(cats)
+        return getRecordCategories(initialRecords)
     }, [initialRecords])
 
     const overdueRecords = useMemo(() => {
-        const now = new Date(clockTick)
-        return records
-            .filter((r: any) => r.status !== "PROCESSED" && r.deadline && new Date(r.deadline) < now)
-            .sort((a: any, b: any) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+        return getOverdueRecords(records, clockTick)
     }, [records, clockTick])
 
     const dueSoonRecords = useMemo(() => {
-        const now = clockTick
-        const in24h = now + 24 * 60 * 60 * 1000
-        return records
-            .filter((r: any) => {
-                if (r.status === "PROCESSED" || !r.deadline) return false
-                const deadlineTs = new Date(r.deadline).getTime()
-                return deadlineTs >= now && deadlineTs <= in24h
-            })
-            .sort((a: any, b: any) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+        return getDueSoonRecords(records, clockTick)
     }, [records, clockTick])
 
     const toggleSelectAll = () => {
@@ -526,15 +434,9 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             return
         }
 
-        const exportData = itemsToExport.map(r => ({
-            "Дата звернення": format(new Date(r.eoDate), 'dd.MM.yyyy', { locale: uk }),
-            "№ ЄО/Звернення": r.eoNumber || '-',
-            "Заявник": r.applicant || '-',
-            "Виконавець": r.assignedUser ? `${r.assignedUser.lastName} ${r.assignedUser.firstName || ''}`.trim() : (r.assignedUserId === 'unassigned' ? 'Не призначено' : '—'),
-            "Тип": getRecordTypeLabel(r.recordType, r.eoNumber),
-            "Категорія": r.category || '-',
-            "Статус": r.status === 'PROCESSED' ? 'Опрацьовано' : 'В роботі',
-            "Рішення": r.resolution || '-'
+        const exportData = buildRecordExportData(itemsToExport).map((row: any, idx: number) => ({
+            ...row,
+            "Тип": getRecordTypeLabel(itemsToExport[idx]?.recordType, itemsToExport[idx]?.eoNumber),
         }))
 
         const ws = XLSX.utils.json_to_sheet(exportData)
