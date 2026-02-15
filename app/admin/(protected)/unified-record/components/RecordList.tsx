@@ -29,8 +29,6 @@ import {
     Eye,
     Shield,
     BellRing,
-    KanbanSquare,
-    Rows3,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -54,7 +52,6 @@ import CreateRecordDialog from "./CreateRecordDialog"
 import ViewRecordDialog from "./ViewRecordDialog"
 import RecordProcessPopover from "./RecordProcessPopover"
 import ImportDialog from "./ImportDialog"
-import UnifiedRecordKanban, { type KanbanStage } from "./UnifiedRecordKanban"
 import {
     deleteUnifiedRecordAction,
     bulkDeleteUnifiedRecordsAction,
@@ -65,7 +62,6 @@ import {
     reviewExtensionAction,
     returnForRevisionAction,
     triggerUnifiedRecordRemindersAction,
-    updateUnifiedRecordWorkflowStatusAction,
 } from "../actions/recordActions"
 import {
     getApplicationBirthDate,
@@ -157,8 +153,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const [isAssigning, setIsAssigning] = useState(false)
     const [isSendingReminders, setIsSendingReminders] = useState(false)
     const [clockTick, setClockTick] = useState(Date.now())
-    const [viewMode, setViewMode] = useState<"LIST" | "KANBAN">("LIST")
-    const [movingRecordId, setMovingRecordId] = useState<string | null>(null)
 
 
     const searchParams = useSearchParams()
@@ -194,9 +188,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             if (typeof parsed.activeTab === "string" && ["ALL", "EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL"].includes(parsed.activeTab)) {
                 setActiveTab(parsed.activeTab)
             }
-            if (parsed.viewMode === "LIST" || parsed.viewMode === "KANBAN") {
-                setViewMode(parsed.viewMode)
-            }
         } catch {
             // ignore malformed local storage
         }
@@ -217,7 +208,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 periodTo,
                 quickPreset,
                 activeTab,
-                viewMode,
             })
         )
     }, [
@@ -232,7 +222,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         periodTo,
         quickPreset,
         activeTab,
-        viewMode,
     ])
 
     // Auto-view record if recordId is in URL
@@ -265,21 +254,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             return
         }
     }, [searchParams])
-
-    useEffect(() => {
-        if (viewMode !== "KANBAN") return
-
-        setSelectedIds([])
-
-        if (filterStatus !== "ALL") {
-            setFilterStatus("ALL")
-        }
-
-        if (activeTab === "APPLICATION" || activeTab === "DETENTION_PROTOCOL") {
-            setActiveTab("ALL")
-        }
-    }, [viewMode, filterStatus, activeTab])
-
 
     const filteredRecords = useMemo(() => {
         let result = [...records]
@@ -587,62 +561,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         }
     }
 
-    const canMoveWorkflow = Boolean(
-        currentUser.role === "ADMIN" ||
-        currentUser.permProcessUnifiedRecords ||
-        currentUser.permAssignUnifiedRecords ||
-        currentUser.permManageUnifiedRecords
-    )
-
-    const applyWorkflowStageLocally = (record: any, stage: KanbanStage) => {
-        const nowIso = new Date().toISOString()
-        if (stage === "WAITING") {
-            return {
-                ...record,
-                status: "PENDING",
-                processedAt: null,
-                resolutionDate: null,
-            }
-        }
-        if (stage === "IN_WORK") {
-            return {
-                ...record,
-                status: "IN_PROGRESS",
-                processedAt: null,
-                resolutionDate: null,
-            }
-        }
-        if (stage === "REVIEW") {
-            return {
-                ...record,
-                status: "REVIEW",
-                processedAt: null,
-                resolutionDate: null,
-                resolution: record.resolution && String(record.resolution).trim() ? record.resolution : "Передано на перевірку",
-            }
-        }
-        return {
-            ...record,
-            status: "PROCESSED",
-            processedAt: nowIso,
-            resolutionDate: nowIso,
-            resolution: record.resolution && String(record.resolution).trim() ? record.resolution : "Завершено",
-        }
-    }
-
-    const handleMoveRecordStage = async (record: any, stage: KanbanStage) => {
-        setMovingRecordId(record.id)
-        try {
-            await updateUnifiedRecordWorkflowStatusAction(record.id, stage)
-            setRecords(prev => prev.map(r => r.id === record.id ? applyWorkflowStageLocally(r, stage) : r))
-            toast.success(`Картку переміщено: ${record.eoNumber}`)
-        } catch (error: any) {
-            toast.error(error?.message || "Не вдалося змінити етап")
-        } finally {
-            setMovingRecordId(null)
-        }
-    }
-
     const resetFilters = () => {
         setFilterSearch("")
         setFilterEoNumber("")
@@ -849,61 +767,30 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             </div>
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    {viewMode === "LIST" ? (
-                        <>
-                            <Button
-                                variant="outline"
-                                className={cn(
-                                    "h-12 rounded-xl px-4 border-slate-300 font-bold gap-2 transition-all text-slate-700",
-                                    selectedIds.length === filteredRecords.length && filteredRecords.length > 0 ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white hover:bg-slate-100"
-                                )}
-                                onClick={toggleSelectAll}
-                            >
-                                {selectedIds.length === filteredRecords.length && filteredRecords.length > 0 ? (
-                                    <CheckSquare className="w-4 h-4" />
-                                ) : (
-                                    <Square className="w-4 h-4" />
-                                )}
-                                Вибрати всі
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                className="h-12 rounded-xl px-4 border-slate-300 hover:bg-slate-100 text-slate-700 font-bold gap-2"
-                                onClick={handleExport}
-                            >
-                                <Download className="w-4 h-4" />
-                                Експорт {selectedIds.length > 0 && `(${selectedIds.length})`}
-                            </Button>
-                        </>
-                    ) : (
-                        <p className="text-sm font-medium text-slate-500">Kanban для ЄО/Звернень: Очікує → В роботі → На перевірці → Завершено</p>
-                    )}
-                </div>
-
-                <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-1">
-                    <button
-                        type="button"
-                        onClick={() => setViewMode("LIST")}
+                    <Button
+                        variant="outline"
                         className={cn(
-                            "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
-                            viewMode === "LIST" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"
+                            "h-12 rounded-xl px-4 border-slate-300 font-bold gap-2 transition-all text-slate-700",
+                            selectedIds.length === filteredRecords.length && filteredRecords.length > 0 ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white hover:bg-slate-100"
                         )}
+                        onClick={toggleSelectAll}
                     >
-                        <Rows3 className="h-3.5 w-3.5" />
-                        Список
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setViewMode("KANBAN")}
-                        className={cn(
-                            "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors",
-                            viewMode === "KANBAN" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"
+                        {selectedIds.length === filteredRecords.length && filteredRecords.length > 0 ? (
+                            <CheckSquare className="w-4 h-4" />
+                        ) : (
+                            <Square className="w-4 h-4" />
                         )}
+                        Вибрати всі
+                    </Button>
+
+                    <Button
+                        variant="outline"
+                        className="h-12 rounded-xl px-4 border-slate-300 hover:bg-slate-100 text-slate-700 font-bold gap-2"
+                        onClick={handleExport}
                     >
-                        <KanbanSquare className="h-3.5 w-3.5" />
-                        Kanban
-                    </button>
+                        <Download className="w-4 h-4" />
+                        Експорт {selectedIds.length > 0 && `(${selectedIds.length})`}
+                    </Button>
                 </div>
             </div>
 
@@ -999,20 +886,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 </Card>
             )}
 
-            {/* Records List / Kanban */}
-            {viewMode === "KANBAN" ? (
-                <UnifiedRecordKanban
-                    records={filteredRecords}
-                    nowTs={clockTick}
-                    movingRecordId={movingRecordId}
-                    canMoveWorkflow={canMoveWorkflow}
-                    onOpenRecord={(record) => {
-                        setViewRecord(record)
-                        setIsViewOpen(true)
-                    }}
-                    onMoveRecord={handleMoveRecordStage}
-                />
-            ) : (
+            {/* Records List */}
             <div className="space-y-4">
                 {filteredRecords.length === 0 ? (
                     <div className="ds-empty-state">
@@ -1443,11 +1317,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     </div>
                 )}
             </div>
-            )}
 
             {/* Bulk Actions Floating Toolbar */}
             {
-                viewMode === "LIST" && selectedIds.length > 0 && (
+                selectedIds.length > 0 && (
                     <div className="fixed bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-5 w-[95%] md:w-auto">
                         <div className="bg-slate-900 text-white px-4 md:px-8 py-3 md:py-4 rounded-2xl md:rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col md:flex-row items-center gap-4 md:gap-8 border border-white/10 backdrop-blur-xl max-h-[80vh] overflow-y-auto md:overflow-visible">
                             <div className="flex items-center justify-between w-full md:w-auto gap-4">
