@@ -3,10 +3,27 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { refreshAllOfficersStats } from "@/lib/officer-stats"
 
+function canAccessOfficerModule(user: any) {
+    return Boolean(
+        user?.role === "ADMIN" ||
+            user?.permViewOfficerStats ||
+            user?.permCreateOfficers ||
+            user?.permEditOfficers ||
+            user?.permDeleteOfficers ||
+            user?.permCreateEvaluations ||
+            user?.permManageOfficerStatus
+    )
+}
+
 // GET /api/admin/officers - List all officers
 export async function GET(req: Request) {
     const session = await auth()
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
+
+    const user = session.user as any
+    if (!canAccessOfficerModule(user)) {
+        return new NextResponse("Forbidden - Insufficient permissions", { status: 403 })
+    }
 
     try {
         const { searchParams } = new URL(req.url)
@@ -16,7 +33,6 @@ export async function GET(req: Request) {
 
         // Optional: Manual recalibration trigger for admins
         if (searchParams.get('recalibrate') === 'true') {
-            const user = session.user as any
             if (user.role === 'ADMIN') {
                 await refreshAllOfficersStats()
             }
@@ -76,7 +92,7 @@ export async function POST(req: Request) {
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
 
     const user = session.user as any
-    if (!user.permCreateOfficers) {
+    if (user.role !== "ADMIN" && !user.permCreateOfficers) {
         return new NextResponse("Forbidden: Insufficient permissions", { status: 403 })
     }
 

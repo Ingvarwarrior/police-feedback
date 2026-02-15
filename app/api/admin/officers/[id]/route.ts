@@ -2,6 +2,18 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 
+function canAccessOfficerModule(user: any) {
+    return Boolean(
+        user?.role === "ADMIN" ||
+            user?.permViewOfficerStats ||
+            user?.permCreateOfficers ||
+            user?.permEditOfficers ||
+            user?.permDeleteOfficers ||
+            user?.permCreateEvaluations ||
+            user?.permManageOfficerStatus
+    )
+}
+
 // GET /api/admin/officers/[id] - Get officer details with stats
 export async function GET(
     req: Request,
@@ -12,8 +24,9 @@ export async function GET(
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
 
     const user = session.user as any
-    // Allow all authenticated users (GET)
-
+    if (!canAccessOfficerModule(user)) {
+        return new NextResponse("Forbidden - Insufficient permissions", { status: 403 })
+    }
 
     try {
         const officer = await (prisma.officer as any).findUnique({
@@ -242,14 +255,23 @@ export async function PATCH(
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
 
     const user = session.user as any
-    if (user.role !== 'ADMIN' && !user.permEditOfficers) {
-        return new NextResponse("Forbidden - Permission permEditOfficers required", { status: 403 })
-    }
-
 
     try {
         const body = await req.json()
         const { firstName, lastName, middleName, rank, department, hireDate, birthDate, status, phone, email, driversLicense, imageUrl, address, education, serviceHistory } = body
+        const isAdmin = user.role === "ADMIN"
+        const canEditOfficer = isAdmin || !!user.permEditOfficers
+        const canManageOfficerStatus = isAdmin || !!user.permManageOfficerStatus
+        const bodyKeys = Object.keys(body || {})
+        const isStatusOnlyPayload = bodyKeys.length > 0 && bodyKeys.every((key) => key === "status")
+
+        if (!canEditOfficer && !(canManageOfficerStatus && isStatusOnlyPayload)) {
+            return new NextResponse("Forbidden - Permission permEditOfficers required", { status: 403 })
+        }
+
+        if (status !== undefined && !canManageOfficerStatus) {
+            return new NextResponse("Forbidden - Permission permManageOfficerStatus required", { status: 403 })
+        }
 
         const officer = await prisma.officer.update({
             where: { id: params.id },
@@ -268,7 +290,7 @@ export async function PATCH(
                 address: address !== undefined ? address : undefined,
                 education: education !== undefined ? education : undefined,
                 serviceHistory: serviceHistory !== undefined ? serviceHistory : undefined,
-                status: status !== undefined ? status : undefined
+                status: status !== undefined && canManageOfficerStatus ? status : undefined
             }
         })
 

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Save, Shield, Eye, EyeOff, Loader2, CheckCircle2, UserCog, Briefcase, ClipboardList, SearchCheck } from 'lucide-react'
+import { Save, Shield, Eye, EyeOff, Loader2, CheckCircle2, UserCog, ClipboardList, SearchCheck } from 'lucide-react'
 import Link from 'next/link'
 import { updateUser } from '../actions/userActions'
 import { toast } from 'sonner'
@@ -65,7 +65,6 @@ export default function UserEditForm({ user }: UserEditFormProps) {
 
     const getPresetIcon = (presetId: string) => {
         if (presetId === 'ADMIN') return UserCog
-        if (presetId === 'SUPERVISOR') return Briefcase
         if (presetId === 'HR') return Shield
         if (presetId === 'AUDITOR') return SearchCheck
         if (presetId === 'EO_OPERATOR') return ClipboardList

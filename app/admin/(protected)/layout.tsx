@@ -35,6 +35,16 @@ export default async function AdminLayout({
             lastName: true,
             badgeNumber: true,
             role: true,
+            permViewReports: true,
+            permViewUnifiedRecords: true,
+            permViewAnalytics: true,
+            permViewMap: true,
+            permViewOfficerStats: true,
+            permCreateOfficers: true,
+            permEditOfficers: true,
+            permDeleteOfficers: true,
+            permCreateEvaluations: true,
+            permManageOfficerStatus: true,
             permManageUsers: true,
             permViewUsers: true,
             permViewAudit: true,
@@ -51,6 +61,21 @@ export default async function AdminLayout({
         ? `${user.lastName || ''} ${user.firstName || ''}`.trim()
         : user.username || 'Admin'
 
+    const isAdmin = user.role === 'ADMIN'
+    const canViewAnalytics = isAdmin || !!user.permViewAnalytics
+    const canViewReports = isAdmin || !!user.permViewReports
+    const canViewUnifiedRecords = isAdmin || !!user.permViewUnifiedRecords
+    const canViewMap = isAdmin || !!user.permViewMap
+    const canViewCitizens = canViewReports
+    const canViewOfficers =
+        isAdmin ||
+        !!user.permViewOfficerStats ||
+        !!user.permCreateOfficers ||
+        !!user.permEditOfficers ||
+        !!user.permDeleteOfficers ||
+        !!user.permCreateEvaluations ||
+        !!user.permManageOfficerStatus
+
     return (
         <Providers>
             <div className="min-h-screen flex bg-neutral-50 dark:bg-slate-950 print:block print:bg-white transition-colors duration-300">
@@ -62,42 +87,52 @@ export default async function AdminLayout({
                     </div>
 
                     <nav className="flex-1 p-4 space-y-1">
-                        {user.role !== 'OFFICER_VIEWER' && (
-                            <>
-                                <Link href="/admin/dashboard" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
-                                    <LayoutDashboard className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
-                                    Дашборд
-                                </Link>
-                                <Link href="/admin/analytics" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
-                                    <Activity className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
-                                    Аналітика
-                                </Link>
-                                <Link href="/admin/reports" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
-                                    <FileText className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
-                                    Відгуки громадян
-                                </Link>
-                                <Link href="/admin/unified-record" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
-                                    <ClipboardList className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
-                                    Єдиний облік
-                                </Link>
-                                <Link href="/admin/callbacks" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
-                                    <PhoneCall className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
-                                    Callback
-                                </Link>
-                                <Link href="/admin/map" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
-                                    <MapIcon className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
-                                    Мапа
-                                </Link>
-                                <Link href="/admin/citizens" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
-                                    <Users className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
-                                    Громадяни
-                                </Link>
-                            </>
-                        )}
-                        <Link href="/admin/officers" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
-                            <ShieldCheck className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
-                            Особовий склад
+                        <Link href="/admin/dashboard" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
+                            <LayoutDashboard className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                            Дашборд
                         </Link>
+                        {canViewAnalytics ? (
+                            <Link href="/admin/analytics" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
+                                <Activity className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                                Аналітика
+                            </Link>
+                        ) : null}
+                        {canViewReports ? (
+                            <Link href="/admin/reports" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
+                                <FileText className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                                Відгуки громадян
+                            </Link>
+                        ) : null}
+                        {canViewUnifiedRecords ? (
+                            <Link href="/admin/unified-record" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
+                                <ClipboardList className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                                Єдиний облік
+                            </Link>
+                        ) : null}
+                        {canViewReports ? (
+                            <Link href="/admin/callbacks" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
+                                <PhoneCall className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                                Callback
+                            </Link>
+                        ) : null}
+                        {canViewMap ? (
+                            <Link href="/admin/map" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
+                                <MapIcon className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                                Мапа
+                            </Link>
+                        ) : null}
+                        {canViewCitizens ? (
+                            <Link href="/admin/citizens" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
+                                <Users className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                                Громадяни
+                            </Link>
+                        ) : null}
+                        {canViewOfficers ? (
+                            <Link href="/admin/officers" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
+                                <ShieldCheck className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                                Особовий склад
+                            </Link>
+                        ) : null}
                         {user?.permManageUsers || user?.permViewUsers || user?.permViewAudit || user?.role === 'ADMIN' ? (
                             <>
                                 <Link href="/admin/users" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">

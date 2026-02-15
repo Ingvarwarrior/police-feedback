@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     // Check permissions
     const user = session.user as any
-    if (user.role !== 'ADMIN' && !user.permChangeStatus) {
+    if (user.role !== 'ADMIN' && !user.permAssignReports) {
         return new NextResponse("Forbidden", { status: 403 })
     }
 

@@ -10,9 +10,9 @@ export async function PATCH(
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
 
     const user = session.user as any
-    if (user.role !== 'ADMIN') {
-        return new NextResponse("Forbidden - Admin only", { status: 403 })
-    }
+    const isAdmin = user.role === 'ADMIN'
+    const canEditCitizen = isAdmin || !!user.permEditCitizens
+    const canMarkCitizen = isAdmin || !!user.permMarkSuspicious
 
     const { id } = await params
 
@@ -20,17 +20,34 @@ export async function PATCH(
         const body = await req.json()
         const { fullName, internalNotes, isVip, isSuspicious, newPhone } = body
 
+        const wantsProfileEdit =
+            fullName !== undefined ||
+            internalNotes !== undefined ||
+            (typeof newPhone === "string" && newPhone.trim().length > 0)
+        const wantsSecurityMarks = isVip !== undefined || isSuspicious !== undefined
+
+        if (wantsProfileEdit && !canEditCitizen) {
+            return new NextResponse("Forbidden - Permission permEditCitizens required", { status: 403 })
+        }
+        if (wantsSecurityMarks && !canMarkCitizen) {
+            return new NextResponse("Forbidden - Permission permMarkSuspicious required", { status: 403 })
+        }
+        if (!wantsProfileEdit && !wantsSecurityMarks) {
+            return new NextResponse("No changes provided", { status: 400 })
+        }
+
+        const updateData: Record<string, unknown> = {}
+        if (fullName !== undefined && canEditCitizen) updateData.fullName = fullName
+        if (internalNotes !== undefined && canEditCitizen) updateData.internalNotes = internalNotes
+        if (isVip !== undefined && canMarkCitizen) updateData.isVip = isVip
+        if (isSuspicious !== undefined && canMarkCitizen) updateData.isSuspicious = isSuspicious
+
         const citizen = await (prisma as any).citizen.update({
             where: { id },
-            data: {
-                fullName,
-                internalNotes,
-                isVip,
-                isSuspicious
-            }
+            data: updateData
         })
 
-        if (newPhone) {
+        if (canEditCitizen && newPhone) {
             let normalized = newPhone.trim()
             if (normalized.startsWith('0') && normalized.length >= 10) normalized = '+38' + normalized
 
@@ -69,7 +86,10 @@ export async function PATCH(
                 action: "UPDATE_CITIZEN",
                 entityType: "CITIZEN",
                 entityId: citizen.id,
-                metadata: JSON.stringify(body)
+                metadata: JSON.stringify({
+                    updatedFields: Object.keys(updateData),
+                    phoneAdded: Boolean(canEditCitizen && newPhone),
+                })
             }
         })
 

@@ -40,11 +40,9 @@ export default async function EditUserPage({
     const roleClass =
         rolePresetId === "ADMIN"
             ? "bg-purple-100 text-purple-700"
-            : rolePresetId === "SUPERVISOR"
-                ? "bg-amber-100 text-amber-700"
-                : rolePresetId === "VIEW_ONLY"
-                    ? "bg-slate-100 text-slate-700"
-                    : "bg-blue-100 text-blue-700"
+            : rolePresetId === "VIEW_ONLY"
+                ? "bg-slate-100 text-slate-700"
+                : "bg-blue-100 text-blue-700"
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-12">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from "react"
-import { Trash2, Calendar, ToggleLeft, ToggleRight, UserCog, ShieldCheck, Eye, Briefcase } from "lucide-react"
+import { Trash2, Calendar, ToggleLeft, ToggleRight, UserCog, ShieldCheck, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { toggleUserStatus, deleteUser, resetUserPassword } from "./actions/userActions"
@@ -28,14 +28,6 @@ export default function UserTable({ users }: UserTableProps) {
                 Icon: ShieldCheck,
                 desktopClass: "bg-primary/10 text-primary",
                 mobileClass: "bg-primary/10 text-primary",
-            }
-        }
-        if (presetId === "SUPERVISOR") {
-            return {
-                title,
-                Icon: Briefcase,
-                desktopClass: "bg-amber-100 text-amber-700",
-                mobileClass: "bg-amber-100 text-amber-700",
             }
         }
         if (presetId === "VIEW_ONLY") {

@@ -3,6 +3,18 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { refreshOfficerStats } from "@/lib/officer-stats"
 
+function canAccessOfficerModule(user: any) {
+    return Boolean(
+        user?.role === "ADMIN" ||
+            user?.permViewOfficerStats ||
+            user?.permCreateOfficers ||
+            user?.permEditOfficers ||
+            user?.permDeleteOfficers ||
+            user?.permCreateEvaluations ||
+            user?.permManageOfficerStatus
+    )
+}
+
 // GET /api/admin/officers/[id]/evaluations - List evaluations for an officer
 export async function GET(
     req: Request,
@@ -11,6 +23,10 @@ export async function GET(
     const params = await props.params;
     const session = await auth()
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
+    const user = session.user as any
+    if (!canAccessOfficerModule(user)) {
+        return new NextResponse("Forbidden - Insufficient permissions", { status: 403 })
+    }
 
     try {
         const evaluations = await prisma.officerEvaluation.findMany({
@@ -44,6 +60,9 @@ export async function POST(
     if (!session) return new NextResponse("Unauthorized", { status: 401 })
 
     const user = session.user as any
+    if (user.role !== "ADMIN" && !user.permCreateEvaluations) {
+        return new NextResponse("Forbidden - Permission permCreateEvaluations required", { status: 403 })
+    }
 
     try {
         const body = await req.json()

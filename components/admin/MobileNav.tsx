@@ -14,6 +14,16 @@ interface MobileNavProps {
         firstName: string | null
         lastName: string | null
         role: string
+        permViewReports: boolean
+        permViewUnifiedRecords: boolean
+        permViewAnalytics: boolean
+        permViewMap: boolean
+        permViewOfficerStats: boolean
+        permCreateOfficers: boolean
+        permEditOfficers: boolean
+        permDeleteOfficers: boolean
+        permCreateEvaluations: boolean
+        permManageOfficerStatus: boolean
         permManageUsers: boolean
         permViewUsers: boolean
         permViewAudit: boolean
@@ -30,55 +40,70 @@ export default function MobileNav({ user }: MobileNavProps) {
         ? `${user.lastName || ''} ${user.firstName || ''}`.trim()
         : user.email?.split('@')[0] || 'Admin'
 
+    const isAdmin = user.role === 'ADMIN'
+    const canViewAnalytics = isAdmin || user.permViewAnalytics
+    const canViewReports = isAdmin || user.permViewReports
+    const canViewUnifiedRecords = isAdmin || user.permViewUnifiedRecords
+    const canViewMap = isAdmin || user.permViewMap
+    const canViewCitizens = canViewReports
+    const canViewOfficers =
+        isAdmin ||
+        user.permViewOfficerStats ||
+        user.permCreateOfficers ||
+        user.permEditOfficers ||
+        user.permDeleteOfficers ||
+        user.permCreateEvaluations ||
+        user.permManageOfficerStatus
+
     const navItems = [
         {
             href: "/admin/dashboard",
             label: "Дашборд",
             icon: LayoutDashboard,
-            permission: user.role !== 'OFFICER_VIEWER'
+            permission: true
         },
         {
             href: "/admin/analytics",
             label: "Аналітика",
             icon: Activity,
-            permission: user.role !== 'OFFICER_VIEWER'
+            permission: canViewAnalytics
         },
         {
             href: "/admin/reports",
             label: "Відгуки громадян",
             icon: FileText,
-            permission: user.role !== 'OFFICER_VIEWER'
+            permission: canViewReports
         },
         {
             href: "/admin/unified-record",
             label: "Єдиний облік",
             icon: ClipboardList,
-            permission: user.role !== 'OFFICER_VIEWER'
+            permission: canViewUnifiedRecords
         },
         {
             href: "/admin/callbacks",
             label: "Callback",
             icon: PhoneCall,
-            permission: user.role !== 'OFFICER_VIEWER'
+            permission: canViewReports
         },
         {
             href: "/admin/map",
             label: "Мапа",
             icon: MapIcon,
-            permission: user.role !== 'OFFICER_VIEWER'
+            permission: canViewMap
         },
         {
             href: "/admin/citizens",
             label: "Громадяни",
             icon: Users,
-            permission: user.role !== 'OFFICER_VIEWER'
+            permission: canViewCitizens
         },
-        { href: "/admin/officers", label: "Особовий склад", icon: ShieldCheck },
+        { href: "/admin/officers", label: "Особовий склад", icon: ShieldCheck, permission: canViewOfficers },
         {
             href: "/admin/users",
             label: "Користувачі",
             icon: Users,
-            permission: (user.role === 'ADMIN' || user.permManageUsers || user.permViewUsers) && user.role !== 'OFFICER_VIEWER'
+            permission: user.role === 'ADMIN' || user.permManageUsers || user.permViewUsers
         },
         {
             href: "/admin/audit",
