@@ -52,6 +52,7 @@ interface AnalyticsClientProps {
     zvern: number
     application: number
     detention: number
+    serviceInvestigation: number
   }[]
   staffData: {
     id: string
@@ -67,6 +68,55 @@ interface AnalyticsClientProps {
     evaluations: number
     total: number
   }[]
+  service: {
+    overview: {
+      total: number
+      review: number
+      initiated: number
+      orderAssigned: number
+      completedLawful: number
+      completedUnlawful: number
+      noViolation: number
+    }
+    stageData: { key: string; name: string; value: number }[]
+    executorData: {
+      id: string
+      name: string
+      total: number
+      review: number
+      initiated: number
+      orderAssigned: number
+      completedLawful: number
+      completedUnlawful: number
+      noViolation: number
+    }[]
+  }
+  penalties: {
+    summary: {
+      totalPenalties: number
+      recordsWithPenalties: number
+      officersAffected: number
+      article13: number
+      article19Part11: number
+      article19Part13: number
+    }
+    rows: {
+      recordId: string
+      eoNumber: string
+      eoDate: string
+      violation: string
+      officerId: string
+      officerName: string
+      officerBadge: string
+      decisionType: 'ARTICLE_13' | 'ARTICLE_19_PART_11' | 'ARTICLE_19_PART_13'
+      decisionLabel: string
+      penaltyLabel: string
+      conclusionApprovedAt: string | null
+      penaltyOrderNumber: string | null
+      penaltyOrderDate: string | null
+      executorName: string
+    }[]
+  }
   survey: {
     totalResponses: number
     ratedResponses: number
@@ -77,7 +127,7 @@ interface AnalyticsClientProps {
   }
 }
 
-type TabId = 'overview' | 'records' | 'executors' | 'staff' | 'survey'
+type TabId = 'overview' | 'records' | 'executors' | 'service' | 'penalties' | 'staff' | 'survey'
 type StaffColumnKey =
   | 'complaints'
   | 'detentions'
@@ -97,6 +147,7 @@ type ExecutorColumnKey =
   | 'zvern'
   | 'application'
   | 'detention'
+  | 'serviceInvestigation'
   | 'progress'
 
 const PIE_COLORS = ['#0f172a', '#2563eb', '#10b981', '#f59e0b', '#e11d48']
@@ -110,6 +161,8 @@ export default function AnalyticsClient({
   statusData,
   executorData,
   staffData,
+  service,
+  penalties,
   survey,
 }: AnalyticsClientProps) {
   const router = useRouter()
@@ -134,6 +187,7 @@ export default function AnalyticsClient({
     zvern: true,
     application: true,
     detention: true,
+    serviceInvestigation: true,
     progress: true,
   })
 
@@ -141,6 +195,8 @@ export default function AnalyticsClient({
     { id: 'overview', label: 'Огляд' },
     { id: 'records', label: 'Типи записів' },
     { id: 'executors', label: 'Виконавці' },
+    { id: 'service', label: 'Службові розслідування' },
+    { id: 'penalties', label: 'Стягнення' },
     { id: 'staff', label: 'Особовий склад' },
     { id: 'survey', label: 'Опитування' },
   ]
@@ -177,6 +233,7 @@ export default function AnalyticsClient({
     { key: 'zvern', label: 'Звернення' },
     { key: 'application', label: 'Застосування' },
     { key: 'detention', label: 'Затримання' },
+    { key: 'serviceInvestigation', label: 'Службові розслідування' },
     { key: 'progress', label: 'Прогрес' },
   ]
 
@@ -198,6 +255,7 @@ export default function AnalyticsClient({
       if (executorColumns.zvern) exportRow['Звернення'] = row.zvern
       if (executorColumns.application) exportRow['Застосування'] = row.application
       if (executorColumns.detention) exportRow['Затримання'] = row.detention
+      if (executorColumns.serviceInvestigation) exportRow['Службові розслідування'] = row.serviceInvestigation
       if (executorColumns.progress) exportRow['Прогрес %'] = progress
       return exportRow
     })
@@ -232,6 +290,28 @@ export default function AnalyticsClient({
     XLSX.utils.book_append_sheet(wb, ws, 'Staff Report')
     const datePart = new Date().toISOString().slice(0, 10)
     XLSX.writeFile(wb, `staff_report_${datePart}.xlsx`)
+  }
+
+  const exportPenaltiesReport = () => {
+    const data = penalties.rows.map((row) => ({
+      '№ ЄО': row.eoNumber,
+      'Дата документа': new Date(row.eoDate).toLocaleDateString('uk-UA'),
+      Порушення: row.violation,
+      Поліцейський: row.officerName,
+      Жетон: row.officerBadge || '—',
+      'Тип рішення': row.decisionLabel,
+      Стягнення: row.penaltyLabel,
+      'Висновок СР затверджено': row.conclusionApprovedAt ? new Date(row.conclusionApprovedAt).toLocaleDateString('uk-UA') : '—',
+      'Наказ про стягнення №': row.penaltyOrderNumber || '—',
+      'Наказ про стягнення (дата)': row.penaltyOrderDate ? new Date(row.penaltyOrderDate).toLocaleDateString('uk-UA') : '—',
+      Виконавець: row.executorName,
+    }))
+
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Penalties Report')
+    const datePart = new Date().toISOString().slice(0, 10)
+    XLSX.writeFile(wb, `penalties_report_${datePart}.xlsx`)
   }
 
   return (
@@ -451,6 +531,7 @@ export default function AnalyticsClient({
                       {executorColumns.zvern ? <div className="rounded-xl bg-slate-100 px-2.5 py-2 text-slate-700">Звернення: {row.zvern}</div> : null}
                       {executorColumns.application ? <div className="rounded-xl bg-slate-100 px-2.5 py-2 text-slate-700">Застосування: {row.application}</div> : null}
                       {executorColumns.detention ? <div className="rounded-xl bg-slate-100 px-2.5 py-2 text-slate-700">Затримання: {row.detention}</div> : null}
+                      {executorColumns.serviceInvestigation ? <div className="rounded-xl bg-slate-100 px-2.5 py-2 text-slate-700">СР: {row.serviceInvestigation}</div> : null}
                     </div>
                   </div>
                 )
@@ -458,7 +539,7 @@ export default function AnalyticsClient({
             </div>
 
             <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[920px] text-sm">
+              <table className="w-full min-w-[1040px] text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 text-left text-[11px] uppercase tracking-wider text-slate-400">
                     <th className="px-3 py-3 font-black">Виконавець</th>
@@ -470,6 +551,7 @@ export default function AnalyticsClient({
                     {executorColumns.zvern ? <th className="px-3 py-3 text-center font-black">Звернення</th> : null}
                     {executorColumns.application ? <th className="px-3 py-3 text-center font-black">Застосування</th> : null}
                     {executorColumns.detention ? <th className="px-3 py-3 text-center font-black">Затримання</th> : null}
+                    {executorColumns.serviceInvestigation ? <th className="px-3 py-3 text-center font-black">СР</th> : null}
                     {executorColumns.progress ? <th className="px-3 py-3 text-right font-black">Прогрес</th> : null}
                   </tr>
                 </thead>
@@ -487,6 +569,7 @@ export default function AnalyticsClient({
                         {executorColumns.zvern ? <td className="px-3 py-4 text-center">{row.zvern}</td> : null}
                         {executorColumns.application ? <td className="px-3 py-4 text-center">{row.application}</td> : null}
                         {executorColumns.detention ? <td className="px-3 py-4 text-center">{row.detention}</td> : null}
+                        {executorColumns.serviceInvestigation ? <td className="px-3 py-4 text-center">{row.serviceInvestigation}</td> : null}
                         {executorColumns.progress ? (
                           <td className="px-3 py-4 text-right">
                             <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black">{progress}%</span>
@@ -500,6 +583,225 @@ export default function AnalyticsClient({
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {tab === 'service' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <Card className="rounded-3xl border-slate-200">
+              <CardContent className="p-5">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Всього СР</p>
+                <p className="mt-1 text-3xl font-black text-slate-900">{service.overview.total}</p>
+              </CardContent>
+            </Card>
+            <Card className="rounded-3xl border-slate-200">
+              <CardContent className="p-5">
+                <p className="text-xs font-black uppercase tracking-widest text-amber-500">На етапах розгляду</p>
+                <p className="mt-1 text-3xl font-black text-slate-900">
+                  {service.overview.review + service.overview.initiated + service.overview.orderAssigned}
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="rounded-3xl border-slate-200">
+              <CardContent className="p-5">
+                <p className="text-xs font-black uppercase tracking-widest text-emerald-500">Завершено: правомірні</p>
+                <p className="mt-1 text-3xl font-black text-slate-900">{service.overview.completedLawful}</p>
+              </CardContent>
+            </Card>
+            <Card className="rounded-3xl border-slate-200">
+              <CardContent className="p-5">
+                <p className="text-xs font-black uppercase tracking-widest text-blue-500">Без порушень</p>
+                <p className="mt-1 text-3xl font-black text-slate-900">{service.overview.noViolation}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <Card className="rounded-3xl border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-sm font-black uppercase tracking-widest">СР по етапах</CardTitle>
+              </CardHeader>
+              <CardContent className="h-[360px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={service.stageData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                    <Tooltip />
+                    <Bar dataKey="value" name="Кількість" fill="#0f172a" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-sm font-black uppercase tracking-widest">СР по виконавцях</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 md:hidden">
+                  {service.executorData.map((row) => (
+                    <div key={row.id} className="rounded-2xl border border-slate-200 p-4">
+                      <p className="text-sm font-semibold text-slate-900">{row.name}</p>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                        <div className="rounded-xl bg-slate-100 px-2.5 py-2 text-slate-700">Всього: {row.total}</div>
+                        <div className="rounded-xl bg-amber-50 px-2.5 py-2 text-amber-700">Розгляд: {row.review}</div>
+                        <div className="rounded-xl bg-blue-50 px-2.5 py-2 text-blue-700">Ініційовано: {row.initiated}</div>
+                        <div className="rounded-xl bg-blue-100 px-2.5 py-2 text-blue-800">Наказ: {row.orderAssigned}</div>
+                        <div className="rounded-xl bg-emerald-50 px-2.5 py-2 text-emerald-700">Правомірні: {row.completedLawful}</div>
+                        <div className="rounded-xl bg-rose-50 px-2.5 py-2 text-rose-700">Неправомірні: {row.completedUnlawful}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="w-full min-w-[860px] text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-left text-[11px] uppercase tracking-wider text-slate-400">
+                        <th className="px-3 py-3 font-black">Виконавець</th>
+                        <th className="px-3 py-3 text-center font-black">Всього СР</th>
+                        <th className="px-3 py-3 text-center font-black">Розгляд</th>
+                        <th className="px-3 py-3 text-center font-black">Ініційовано</th>
+                        <th className="px-3 py-3 text-center font-black">Наказ</th>
+                        <th className="px-3 py-3 text-center font-black">Правомірні</th>
+                        <th className="px-3 py-3 text-center font-black">Неправомірні</th>
+                        <th className="px-3 py-3 text-center font-black">Без порушень</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {service.executorData.map((row) => (
+                        <tr key={row.id} className="border-b border-slate-50">
+                          <td className="px-3 py-4 font-bold text-slate-900">{row.name}</td>
+                          <td className="px-3 py-4 text-center font-semibold">{row.total}</td>
+                          <td className="px-3 py-4 text-center text-amber-700">{row.review}</td>
+                          <td className="px-3 py-4 text-center text-blue-700">{row.initiated}</td>
+                          <td className="px-3 py-4 text-center text-blue-800">{row.orderAssigned}</td>
+                          <td className="px-3 py-4 text-center text-emerald-700">{row.completedLawful}</td>
+                          <td className="px-3 py-4 text-center text-rose-700">{row.completedUnlawful}</td>
+                          <td className="px-3 py-4 text-center text-slate-700">{row.noViolation}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {tab === 'penalties' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <Card className="rounded-3xl border-slate-200">
+              <CardContent className="p-5">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Всього стягнень</p>
+                <p className="mt-1 text-3xl font-black text-slate-900">{penalties.summary.totalPenalties}</p>
+              </CardContent>
+            </Card>
+            <Card className="rounded-3xl border-slate-200">
+              <CardContent className="p-5">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400">СР зі стягненнями</p>
+                <p className="mt-1 text-3xl font-black text-slate-900">{penalties.summary.recordsWithPenalties}</p>
+              </CardContent>
+            </Card>
+            <Card className="rounded-3xl border-slate-200">
+              <CardContent className="p-5">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Поліцейських охоплено</p>
+                <p className="mt-1 text-3xl font-black text-slate-900">{penalties.summary.officersAffected}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="rounded-3xl border-slate-200">
+            <CardHeader>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <CardTitle className="text-sm font-black uppercase tracking-widest">Звіт по стягненнях</CardTitle>
+                <Button variant="outline" className="h-9 rounded-xl" onClick={exportPenaltiesReport}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" /> Експорт звіту
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Ст. 13</p>
+                  <p className="mt-1 text-2xl font-black text-slate-900">{penalties.summary.article13}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">ч. 11 ст. 19</p>
+                  <p className="mt-1 text-2xl font-black text-slate-900">{penalties.summary.article19Part11}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">ч. 13 ст. 19</p>
+                  <p className="mt-1 text-2xl font-black text-slate-900">{penalties.summary.article19Part13}</p>
+                </div>
+              </div>
+
+              {penalties.rows.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm font-semibold text-slate-500">
+                  За вибраний період стягнення відсутні.
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3 md:hidden">
+                    {penalties.rows.map((row) => (
+                      <div key={`${row.recordId}-${row.officerId}-${row.decisionType}`} className="rounded-2xl border border-slate-200 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">{row.eoNumber}</p>
+                            <p className="text-xs text-slate-500">{new Date(row.eoDate).toLocaleDateString('uk-UA')}</p>
+                          </div>
+                          <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{row.decisionLabel}</span>
+                        </div>
+                        <p className="mt-2 text-sm font-semibold text-slate-900">{row.officerName}</p>
+                        <p className="mt-1 text-xs text-slate-600">Стягнення: {row.penaltyLabel}</p>
+                        <p className="mt-1 text-xs text-slate-600">Виконавець: {row.executorName}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="hidden overflow-x-auto md:block">
+                    <table className="w-full min-w-[1180px] text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-left text-[11px] uppercase tracking-wider text-slate-400">
+                          <th className="px-3 py-3 font-black">№ ЄО</th>
+                          <th className="px-3 py-3 font-black">Дата</th>
+                          <th className="px-3 py-3 font-black">Поліцейський</th>
+                          <th className="px-3 py-3 font-black">Тип рішення</th>
+                          <th className="px-3 py-3 font-black">Стягнення</th>
+                          <th className="px-3 py-3 font-black">Наказ про стягнення</th>
+                          <th className="px-3 py-3 font-black">Виконавець</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {penalties.rows.map((row) => (
+                          <tr key={`${row.recordId}-${row.officerId}-${row.decisionType}`} className="border-b border-slate-50">
+                            <td className="px-3 py-4 font-semibold text-slate-900">{row.eoNumber}</td>
+                            <td className="px-3 py-4 text-slate-700">{new Date(row.eoDate).toLocaleDateString('uk-UA')}</td>
+                            <td className="px-3 py-4">
+                              <p className="font-semibold text-slate-900">{row.officerName}</p>
+                              <p className="text-xs text-slate-500">{row.officerBadge || '—'}</p>
+                            </td>
+                            <td className="px-3 py-4 text-slate-700">{row.decisionLabel}</td>
+                            <td className="px-3 py-4 text-slate-700">{row.penaltyLabel}</td>
+                            <td className="px-3 py-4 text-slate-700">
+                              {row.penaltyOrderNumber
+                                ? `№${row.penaltyOrderNumber}${row.penaltyOrderDate ? ` від ${new Date(row.penaltyOrderDate).toLocaleDateString('uk-UA')}` : ''}`
+                                : '—'}
+                            </td>
+                            <td className="px-3 py-4 text-slate-700">{row.executorName}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {tab === 'staff' && (
