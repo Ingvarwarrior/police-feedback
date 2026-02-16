@@ -1009,6 +1009,20 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                 </p>
                                                             </div>
 
+                                                            {(record.investigationOrderNumber || record.investigationOrderDate) && (
+                                                                <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-2.5">
+                                                                    <p className="text-[10px] font-black uppercase tracking-wider text-indigo-700">
+                                                                        Наказ про призначення СР
+                                                                    </p>
+                                                                    <p className="mt-1 text-xs font-bold text-indigo-900">
+                                                                        №{record.investigationOrderNumber || "—"} від{" "}
+                                                                        {record.investigationOrderDate
+                                                                            ? format(new Date(record.investigationOrderDate), "dd.MM.yyyy", { locale: uk })
+                                                                            : "—"}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+
                                                             <div className="space-y-2 border-t border-slate-100 pt-3">
                                                                 <div className="space-y-1">
                                                                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Виконавець</p>
