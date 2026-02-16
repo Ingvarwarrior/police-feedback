@@ -285,6 +285,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         return getDueSoonRecords(records, clockTick)
     }, [records, clockTick])
 
+    const createDialogInitialData = useMemo(
+        () => ({ recordType: activeTab === "ALL" ? "EO" : activeTab }),
+        [activeTab]
+    )
+
     const toggleSelectAll = () => {
         if (selectedIds.length === filteredRecords.length) {
             setSelectedIds([])
@@ -534,7 +539,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 p-2 bg-white/90 backdrop-blur-md rounded-[2rem] border border-slate-200 shadow-xl w-full justify-start min-h-16 transition-all hover:shadow-2xl">
                         <CreateRecordDialog
                             users={users}
-                            initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }}
+                            initialData={createDialogInitialData}
                             lockRecordType={activeTab !== 'ALL'}
                         />
                         {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}
@@ -807,7 +812,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                 <>
                                     <CreateRecordDialog
                                         users={users}
-                                        initialData={{ recordType: activeTab === 'ALL' ? 'EO' : activeTab }}
+                                        initialData={createDialogInitialData}
                                         lockRecordType={activeTab !== 'ALL'}
                                     />
                                     {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}

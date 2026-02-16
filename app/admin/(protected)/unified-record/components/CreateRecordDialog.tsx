@@ -117,27 +117,28 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
         },
     })
 
-    // Reset form when initialData changes (important for re-using the dialog component)
+    // Reset form only when dialog opens.
+    // Do not reset on every parent re-render (it clears user input mid-typing).
     useEffect(() => {
-        if (isOpen) {
-            form.reset({
-                id: initialData?.id,
-                eoNumber: initialData?.eoNumber || "",
-                eoDate: initialData?.eoDate ? new Date(initialData.eoDate) : new Date(),
-                description: initialData?.description || "",
-                applicant: initialData?.applicant || "",
-                address: initialData?.address || "",
-                officerName: initialData?.officerName || "",
-                assignedUserId: initialData?.assignedUserId || null,
-                officerIds: (initialData as any)?.officers?.map((o: any) => o.id) || [],
-                category: initialData?.category || "Загальне",
-                recordType: initialData?.recordType || "EO",
-                district: initialData?.district || "Хмільницький",
-                resolution: initialData?.resolution || "",
-                resolutionDate: initialData?.resolutionDate ? new Date(initialData.resolutionDate) : null,
-            })
-        }
-    }, [initialData, isOpen, form])
+        if (!isOpen) return
+
+        form.reset({
+            id: initialData?.id,
+            eoNumber: initialData?.eoNumber || "",
+            eoDate: initialData?.eoDate ? new Date(initialData.eoDate) : new Date(),
+            description: initialData?.description || "",
+            applicant: initialData?.applicant || "",
+            address: initialData?.address || "",
+            officerName: initialData?.officerName || "",
+            assignedUserId: initialData?.assignedUserId || null,
+            officerIds: (initialData as any)?.officers?.map((o: any) => o.id) || [],
+            category: initialData?.category || "Загальне",
+            recordType: initialData?.recordType || "EO",
+            district: initialData?.district || "Хмільницький",
+            resolution: initialData?.resolution || "",
+            resolutionDate: initialData?.resolutionDate ? new Date(initialData.resolutionDate) : null,
+        })
+    }, [isOpen, form, initialData?.id])
 
     const eoDate = form.watch("eoDate")
     const recordType = form.watch("recordType")
@@ -377,33 +378,33 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
     }
 
     useEffect(() => {
-        if (isOpen) {
-            setTaggedOfficers((initialData as any)?.officers || [])
-            setOfficerSearchQuery("")
-            setOfficerSearchResults([])
-            setForceUsage(getInitialForceUsage())
-            setSubjectFullName("")
-            setSubjectBirthDate("")
-            setLegalBasis(getInitialLegalBasis())
-            setProtocolPrepared("")
-            setProtocolNoReason("")
-            setProtocolSeries("")
-            setProtocolNumber("")
-            setProtocolDate("")
-            setDetentionFromDate("")
-            setDetentionFromTime("")
-            setDetentionToDate("")
-            setDetentionToTime("")
-            setDetentionPurpose(DEFAULT_DETENTION_PURPOSE)
-            setDetentionMaterials(DEFAULT_DETENTION_MATERIALS)
-            setApplicationBirthDate("")
-            setDetentionProtocolSeries("")
-            setDetentionProtocolNumber("")
-            autoOfficerNameRef.current = ""
-            autoAddressRef.current = ""
-            autoApplicantRef.current = ""
-        }
-    }, [initialData, isOpen])
+        if (!isOpen) return
+
+        setTaggedOfficers((initialData as any)?.officers || [])
+        setOfficerSearchQuery("")
+        setOfficerSearchResults([])
+        setForceUsage(getInitialForceUsage())
+        setSubjectFullName("")
+        setSubjectBirthDate("")
+        setLegalBasis(getInitialLegalBasis())
+        setProtocolPrepared("")
+        setProtocolNoReason("")
+        setProtocolSeries("")
+        setProtocolNumber("")
+        setProtocolDate("")
+        setDetentionFromDate("")
+        setDetentionFromTime("")
+        setDetentionToDate("")
+        setDetentionToTime("")
+        setDetentionPurpose(DEFAULT_DETENTION_PURPOSE)
+        setDetentionMaterials(DEFAULT_DETENTION_MATERIALS)
+        setApplicationBirthDate("")
+        setDetentionProtocolSeries("")
+        setDetentionProtocolNumber("")
+        autoOfficerNameRef.current = ""
+        autoAddressRef.current = ""
+        autoApplicantRef.current = ""
+    }, [isOpen, initialData?.id])
 
     useEffect(() => {
         if (!isOpen) return
@@ -524,13 +525,7 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
     ])
 
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => {
-            setIsOpen(open)
-            if (!open) {
-                // Delay reset slightly to avoid visual glitch during closing animation
-                setTimeout(() => form.reset(), 200)
-            }
-        }}>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
                 {trigger || (
                     <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-6 h-12 shadow-lg shadow-blue-500/20 group transition-all w-full sm:w-auto justify-center">
