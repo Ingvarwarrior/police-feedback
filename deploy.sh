@@ -13,7 +13,10 @@ npm install
 
 # 3. Database Migration (CRITICAL for 502 errors)
 echo "🗄️ Running database migrations..."
-npx prisma migrate deploy
+if ! npx prisma migrate deploy; then
+    echo "⚠️ prisma migrate deploy failed, fallback to db push..."
+    npx prisma db push
+fi
 
 # 4. Generate Client
 echo "🔄 Generating Prisma Client..."

@@ -37,12 +37,5 @@ jobs:
             echo "--- STARTING DEPLOY ---"
             git fetch origin main
             git checkout main
-            git pull --ff-only origin main
-            npm install
-            npx prisma migrate deploy
-            npx prisma generate
-            export NODE_OPTIONS="--max-old-space-size=1536"
-            export CI=true
-            npm run build
-            sudo systemctl restart police-feedback
+            bash deploy.sh
             echo "--- DEPLOY FINISHED ---"
