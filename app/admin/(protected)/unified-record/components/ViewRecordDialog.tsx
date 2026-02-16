@@ -446,9 +446,52 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                                 <h3 className="text-sm font-semibold tracking-wide text-emerald-900">Результат розгляду (Рішення)</h3>
                             </div>
-                            <p className="text-sm font-bold text-emerald-800 leading-relaxed">
-                                {record.resolution}
-                            </p>
+                            {isServiceInvestigation ? (
+                                <ol className="list-decimal space-y-1.5 pl-5 text-sm font-bold text-emerald-800">
+                                    {record.investigationFinalResult === "UNLAWFUL" && (
+                                        <li>Проведено СР - дії неправомірні.</li>
+                                    )}
+                                    {record.investigationFinalResult === "LAWFUL" && (
+                                        <li>Проведено СР - дії правомірні.</li>
+                                    )}
+                                    {record.investigationStage === "CHECK_COMPLETED_NO_VIOLATION" && (
+                                        <li>Проведено перевірку - порушень службової дисципліни не виявлено.</li>
+                                    )}
+                                    {record.investigationConclusionApprovedAt && (
+                                        <li>
+                                            Висновок СР затверджено: {safeFormat(record.investigationConclusionApprovedAt, "dd.MM.yyyy")}
+                                        </li>
+                                    )}
+                                    {servicePenaltyRows.length > 0 && (
+                                        <li>
+                                            За результатами СР щодо поліцейських:
+                                            <div className="mt-1.5 space-y-1 pl-1 text-[13px] font-semibold text-emerald-900">
+                                                {servicePenaltyRows.map((item) => (
+                                                    <p key={item.id}>• {item.officerLabel}: {item.penaltyLabel}</p>
+                                                ))}
+                                            </div>
+                                        </li>
+                                    )}
+                                    {record.investigationPenaltyByArticle13 === true && (
+                                        <li>
+                                            Наказ про стягнення №{record.investigationPenaltyOrderNumber || "—"} від{" "}
+                                            {record.investigationPenaltyOrderDate
+                                                ? safeFormat(record.investigationPenaltyOrderDate, "dd.MM.yyyy")
+                                                : "—"}
+                                        </li>
+                                    )}
+                                    {record.investigationPenaltyByArticle13 === false && (
+                                        <li>Заходи застосовано відповідно до ч.11/ч.13 ст.19 (без наказу про стягнення за ст.13).</li>
+                                    )}
+                                    {!record.investigationFinalResult && !record.investigationConclusionApprovedAt && !servicePenaltyRows.length && (
+                                        <li>{record.resolution || "Рішення відсутнє"}</li>
+                                    )}
+                                </ol>
+                            ) : (
+                                <p className="text-sm font-bold text-emerald-800 leading-relaxed">
+                                    {record.resolution}
+                                </p>
+                            )}
                             <div className="flex justify-between items-center pt-2">
                                 <p className="text-xs font-semibold tracking-wide text-emerald-700">Списано в справу</p>
                                 {record.resolutionDate && (
