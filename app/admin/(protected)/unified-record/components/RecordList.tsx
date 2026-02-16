@@ -66,9 +66,12 @@ import {
     triggerUnifiedRecordRemindersAction,
 } from "../actions/recordActions"
 import {
+    formatDateTimeUa,
     getApplicationBirthDate,
     getAssignedInspectorName,
     getRecordTypeLabel,
+    getServiceInvestigationStageLabel,
+    getServiceInvestigationTimeline,
     isApplicationLike,
     isServiceInvestigationRecord,
 } from "./unifiedRecord.helpers"
@@ -115,6 +118,49 @@ interface RecordListProps {
 }
 
 const FILTERS_STORAGE_KEY = "pf:filters:unified-record"
+const SERVICE_STAGE_COLUMNS = [
+    {
+        key: "REPORT_REVIEW",
+        title: "1. Розгляд рапорту/доповідної",
+        accentClass: "border-amber-200 bg-amber-50",
+    },
+    {
+        key: "SR_INITIATED",
+        title: "2. Ініційовано СР",
+        accentClass: "border-blue-200 bg-blue-50",
+    },
+    {
+        key: "SR_ORDER_ASSIGNED",
+        title: "3. Призначено СР (наказ)",
+        accentClass: "border-indigo-200 bg-indigo-50",
+    },
+    {
+        key: "FINAL",
+        title: "4. Завершено",
+        accentClass: "border-emerald-200 bg-emerald-50",
+    },
+] as const
+
+type ServiceStageColumnKey = (typeof SERVICE_STAGE_COLUMNS)[number]["key"]
+
+function getServiceStageColumnKey(record: any): ServiceStageColumnKey {
+    const stage = String(record?.investigationStage || "REPORT_REVIEW")
+    if (stage === "SR_INITIATED") return "SR_INITIATED"
+    if (stage === "SR_ORDER_ASSIGNED") return "SR_ORDER_ASSIGNED"
+    if (stage === "SR_COMPLETED_LAWFUL" || stage === "SR_COMPLETED_UNLAWFUL" || stage === "CHECK_COMPLETED_NO_VIOLATION") return "FINAL"
+    return "REPORT_REVIEW"
+}
+
+function getCurrentServiceStageTime(record: any) {
+    const timeline = getServiceInvestigationTimeline(record)
+    const currentStep = timeline.find((step) => step.status === "current")
+    if (currentStep?.at) return formatDateTimeUa(currentStep.at)
+
+    const latestDoneStep = [...timeline].reverse().find((step) => step.status === "done" && !!step.at)
+    if (latestDoneStep?.at) return formatDateTimeUa(latestDoneStep.at)
+
+    return "—"
+}
 
 function formatDeadlineDelta(deadlineValue: string | Date, nowTs: number) {
     const deadlineTs = new Date(deadlineValue).getTime()
@@ -133,17 +179,6 @@ function formatDeadlineDelta(deadlineValue: string | Date, nowTs: number) {
     if (days > 0) return `${days} дн. ${hours} год.`
     if (hours > 0) return `${hours} год. ${minutes} хв.`
     return `${Math.max(1, minutes)} хв.`
-}
-
-function getServiceInvestigationStageLabel(record: any) {
-    const stage = String(record?.investigationStage || "REPORT_REVIEW")
-    if (stage === "REPORT_REVIEW") return "Розгляд рапорту/доповідної"
-    if (stage === "SR_INITIATED") return "Ініційовано СР"
-    if (stage === "SR_ORDER_ASSIGNED") return "Призначено СР (наказ)"
-    if (stage === "SR_COMPLETED_LAWFUL") return "СР завершено: дії правомірні"
-    if (stage === "SR_COMPLETED_UNLAWFUL") return "СР завершено: дії неправомірні"
-    if (stage === "CHECK_COMPLETED_NO_VIOLATION") return "Перевірку завершено: порушень не виявлено"
-    return stage
 }
 
 export default function RecordList({ initialRecords, users = [], currentUser }: RecordListProps) {
@@ -184,6 +219,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         const timer = setInterval(() => setClockTick(Date.now()), 60 * 1000)
         return () => clearInterval(timer)
     }, [])
+
+    useEffect(() => {
+        setSelectedIds([])
+    }, [activeTab])
 
     useEffect(() => {
         try {
@@ -286,6 +325,23 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             currentUserId: currentUser.id,
         })
     }, [records, filterSearch, filterCategory, activeTab, filterStatus, filterAssignment, filterEoNumber, filterInspector, sortBy, quickPreset, periodFrom, periodTo, currentUser.id])
+
+    const serviceRecordsByStage = useMemo(() => {
+        const grouped: Record<ServiceStageColumnKey, any[]> = {
+            REPORT_REVIEW: [],
+            SR_INITIATED: [],
+            SR_ORDER_ASSIGNED: [],
+            FINAL: [],
+        }
+
+        filteredRecords
+            .filter((record) => isServiceInvestigationRecord(record))
+            .forEach((record) => {
+                grouped[getServiceStageColumnKey(record)].push(record)
+            })
+
+        return grouped
+    }, [filteredRecords])
 
     const categories = useMemo(() => {
         return getRecordCategories(initialRecords)
@@ -871,6 +927,249 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             ) : null}
                         </div>
                     </div>
+                ) : activeTab === "SERVICE_INVESTIGATION" ? (
+                    <div className="overflow-x-auto pb-2">
+                        <div className="grid min-w-[1100px] grid-cols-4 gap-4">
+                            {SERVICE_STAGE_COLUMNS.map((column) => {
+                                const stageItems = serviceRecordsByStage[column.key]
+
+                                return (
+                                    <div
+                                        key={column.key}
+                                        className="rounded-[1.6rem] border border-slate-200 bg-white/90 p-3 shadow-sm"
+                                    >
+                                        <div className={cn("rounded-xl border px-3 py-2", column.accentClass)}>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p className="text-[11px] font-black uppercase tracking-wider text-slate-800">
+                                                    {column.title}
+                                                </p>
+                                                <span className="rounded-lg bg-white/80 px-2 py-0.5 text-[10px] font-black text-slate-700">
+                                                    {stageItems.length}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-3 space-y-3">
+                                            {stageItems.length === 0 ? (
+                                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-xs font-semibold text-slate-400">
+                                                    Немає записів на цьому етапі
+                                                </div>
+                                            ) : (
+                                                stageItems.map((record) => (
+                                                    <Card
+                                                        key={record.id}
+                                                        className="rounded-2xl border border-slate-200 bg-white shadow-sm"
+                                                    >
+                                                        <CardContent className="space-y-3 p-4">
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setViewRecord(record)
+                                                                        setIsViewOpen(true)
+                                                                    }}
+                                                                    className="text-left"
+                                                                >
+                                                                    <p className="text-sm font-black text-blue-700">{record.eoNumber || "—"}</p>
+                                                                    <p className="text-[10px] font-semibold text-slate-500">
+                                                                        {format(new Date(record.eoDate), "dd.MM.yyyy", { locale: uk })}
+                                                                    </p>
+                                                                </button>
+                                                                <span className={cn(
+                                                                    "rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-wide",
+                                                                    record.status === "PROCESSED"
+                                                                        ? "bg-emerald-50 text-emerald-700"
+                                                                        : "bg-blue-50 text-blue-700"
+                                                                )}>
+                                                                    {record.status === "PROCESSED" ? "Завершено" : "В роботі"}
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="space-y-1">
+                                                                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                                                    Відносно кого
+                                                                </p>
+                                                                <p className="text-sm font-bold text-slate-900">{record.applicant || "—"}</p>
+                                                            </div>
+
+                                                            <div className="space-y-1">
+                                                                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                                                    Порушення
+                                                                </p>
+                                                                <p className="text-xs font-medium text-slate-700">
+                                                                    {record.investigationViolation || record.description || "—"}
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                                                                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Поточний етап</p>
+                                                                <p className="mt-1 text-xs font-bold text-slate-800">{getServiceInvestigationStageLabel(record)}</p>
+                                                                <p className="mt-1 text-[11px] font-semibold text-slate-500">
+                                                                    {getCurrentServiceStageTime(record)}
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="space-y-2 border-t border-slate-100 pt-3">
+                                                                <div className="space-y-1">
+                                                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Виконавець</p>
+                                                                    {currentUser.role === "ADMIN" ? (
+                                                                        <Select
+                                                                            value={record.assignedUserId || undefined}
+                                                                            onValueChange={async (val) => {
+                                                                                setIsAssigning(true)
+                                                                                try {
+                                                                                    await bulkAssignUnifiedRecordsAction([record.id], val)
+                                                                                    toast.success("Виконавця призначено")
+                                                                                    setRecords(prev =>
+                                                                                        prev.map(r =>
+                                                                                            r.id === record.id
+                                                                                                ? { ...r, assignedUserId: val, assignedUser: users.find(u => u.id === val) }
+                                                                                                : r
+                                                                                        )
+                                                                                    )
+                                                                                } catch (error) {
+                                                                                    toast.error("Помилка призначення")
+                                                                                } finally {
+                                                                                    setIsAssigning(false)
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <SelectTrigger className="h-9 rounded-lg">
+                                                                                <SelectValue placeholder="Оберіть виконавця" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                {users.map(user => (
+                                                                                    <SelectItem key={user.id} value={user.id}>
+                                                                                        {user.lastName} {user.firstName || user.username}
+                                                                                    </SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    ) : (
+                                                                        <p className="text-xs font-bold text-slate-800">{getAssignedInspectorName(record)}</p>
+                                                                    )}
+                                                                </div>
+
+                                                                {record.assignedUserId === currentUser.id && record.status !== "PROCESSED" && (
+                                                                    <ServiceInvestigationProcessPopover
+                                                                        record={record}
+                                                                        onProcess={handleServiceInvestigationProcess}
+                                                                        trigger={
+                                                                            <Button className="h-9 w-full rounded-lg bg-slate-900 text-xs font-bold text-white">
+                                                                                Оновити етап
+                                                                            </Button>
+                                                                        }
+                                                                    />
+                                                                )}
+
+                                                                {currentUser.role === "ADMIN" && record.status === "PROCESSED" && (
+                                                                    <Popover>
+                                                                        <PopoverTrigger asChild>
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                className="h-9 w-full rounded-lg border-red-200 text-xs font-bold text-red-600 hover:bg-red-50"
+                                                                            >
+                                                                                <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
+                                                                                Повернути на доопрацювання
+                                                                            </Button>
+                                                                        </PopoverTrigger>
+                                                                        <PopoverContent className="w-80 space-y-3 rounded-2xl border-none p-4 shadow-2xl">
+                                                                            <h4 className="text-xs font-black uppercase tracking-widest text-red-600">Причина повернення:</h4>
+                                                                            <Textarea
+                                                                                placeholder="Вкажіть, що потрібно виправити..."
+                                                                                className="min-h-[80px] rounded-xl border-none bg-slate-50"
+                                                                            />
+                                                                            <Button
+                                                                                className="w-full rounded-xl bg-red-600 font-bold text-white"
+                                                                                onClick={async (e) => {
+                                                                                    const textarea = e.currentTarget.previousElementSibling as HTMLTextAreaElement
+                                                                                    if (!textarea.value) return toast.error("Вкажіть причину")
+                                                                                    try {
+                                                                                        const res = await returnForRevisionAction(record.id, textarea.value)
+                                                                                        if (res.success) {
+                                                                                            toast.success("Запис повернуто на доопрацювання")
+                                                                                        }
+                                                                                    } catch (err: any) {
+                                                                                        toast.error(err.message)
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                Підтвердити повернення
+                                                                            </Button>
+                                                                        </PopoverContent>
+                                                                    </Popover>
+                                                                )}
+
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        className="h-8 rounded-lg text-[11px] font-bold"
+                                                                        onClick={() => {
+                                                                            setViewRecord(record)
+                                                                            setIsViewOpen(true)
+                                                                        }}
+                                                                    >
+                                                                        <Eye className="mr-1.5 h-3.5 w-3.5" />
+                                                                        Перегляд
+                                                                    </Button>
+
+                                                                    {currentUser.role === "ADMIN" ? (
+                                                                        <CreateRecordDialog
+                                                                            initialData={record}
+                                                                            users={users}
+                                                                            trigger={
+                                                                                <Button variant="outline" className="h-8 rounded-lg text-[11px] font-bold">
+                                                                                    <Edit2 className="mr-1.5 h-3.5 w-3.5" />
+                                                                                    Змінити
+                                                                                </Button>
+                                                                            }
+                                                                        />
+                                                                    ) : (
+                                                                        <div />
+                                                                    )}
+                                                                </div>
+
+                                                                {currentUser.role === "ADMIN" && (
+                                                                    <AlertDialog>
+                                                                        <AlertDialogTrigger asChild>
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                className="h-8 w-full rounded-lg border-red-200 text-[11px] font-bold text-red-600 hover:bg-red-50"
+                                                                            >
+                                                                                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                                                                                Видалити
+                                                                            </Button>
+                                                                        </AlertDialogTrigger>
+                                                                        <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+                                                                            <AlertDialogHeader>
+                                                                                <AlertDialogTitle className="text-xl font-black uppercase italic tracking-tight">Будьте обережні!</AlertDialogTitle>
+                                                                                <AlertDialogDescription className="text-slate-500 font-medium">
+                                                                                    Ви впевнені, що хочете видалити цей запис ({record.eoNumber})?
+                                                                                </AlertDialogDescription>
+                                                                            </AlertDialogHeader>
+                                                                            <AlertDialogFooter className="bg-slate-50 p-6 -m-6 mt-6 rounded-b-[2rem]">
+                                                                                <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500">Скасувати</AlertDialogCancel>
+                                                                                <AlertDialogAction
+                                                                                    onClick={() => handleDelete(record.id)}
+                                                                                    className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
+                                                                                >
+                                                                                    Так, видалити
+                                                                                </AlertDialogAction>
+                                                                            </AlertDialogFooter>
+                                                                        </AlertDialogContent>
+                                                                    </AlertDialog>
+                                                                )}
+                                                            </div>
+                                                        </CardContent>
+                                                    </Card>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
                         {filteredRecords.map((record) => (
@@ -1068,6 +1367,38 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                     {record.status === 'PROCESSED'
                                                                         ? (record.resolution || getServiceInvestigationStageLabel(record))
                                                                         : getServiceInvestigationStageLabel(record)}
+                                                                </div>
+                                                                <div className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50/70 p-2.5">
+                                                                    {getServiceInvestigationTimeline(record).map((step) => (
+                                                                        <div
+                                                                            key={step.key}
+                                                                            className={cn(
+                                                                                "flex items-start justify-between gap-2 rounded-lg px-2 py-1.5 border",
+                                                                                step.status === "done" && "border-emerald-100 bg-emerald-50/70",
+                                                                                step.status === "current" && "border-blue-100 bg-blue-50/70",
+                                                                                step.status === "pending" && "border-slate-200 bg-white",
+                                                                                step.status === "skipped" && "border-slate-200 border-dashed bg-slate-100/80"
+                                                                            )}
+                                                                        >
+                                                                            <div className="min-w-0">
+                                                                                <p className={cn(
+                                                                                    "text-[11px] font-semibold leading-tight",
+                                                                                    step.status === "done" && "text-emerald-800",
+                                                                                    step.status === "current" && "text-blue-800",
+                                                                                    step.status === "pending" && "text-slate-700",
+                                                                                    step.status === "skipped" && "text-slate-500"
+                                                                                )}>
+                                                                                    {step.label}
+                                                                                </p>
+                                                                                {step.hint && (
+                                                                                    <p className="text-[10px] text-slate-500 mt-0.5">{step.hint}</p>
+                                                                                )}
+                                                                            </div>
+                                                                            <span className="shrink-0 text-[10px] font-bold text-slate-500">
+                                                                                {step.at ? formatDateTimeUa(step.at) : (step.status === "skipped" ? "не застос." : "—")}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
                                                             </>
                                                         ) : (

@@ -370,9 +370,13 @@ model UnifiedRecord {
   investigationViolation     String?
   investigationStage         String?
   investigationReviewResult  String?
+  investigationReviewAt      DateTime?
+  investigationInitiatedAt   DateTime?
   investigationOrderNumber   String?
   investigationOrderDate     DateTime?
+  investigationOrderAssignedAt DateTime?
   investigationFinalResult   String?
+  investigationCompletedAt   DateTime?
   investigationPenaltyType   String?
   investigationPenaltyOther  String?
   investigationPenaltyOfficerId String?

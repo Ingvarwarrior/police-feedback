@@ -20,7 +20,12 @@ import {
     FileDown
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { getRecordTypeLabel } from "./unifiedRecord.helpers"
+import {
+    formatDateTimeUa,
+    getRecordTypeLabel,
+    getServiceInvestigationStageLabel,
+    getServiceInvestigationTimeline,
+} from "./unifiedRecord.helpers"
 
 interface ViewRecordDialogProps {
     record: any
@@ -70,17 +75,6 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
     const isDetentionProtocol = record.recordType === "DETENTION_PROTOCOL"
     const isServiceInvestigation = record.recordType === "SERVICE_INVESTIGATION"
     const isSpecialCard = isApplication || isDetentionProtocol
-
-    const getServiceStageLabel = () => {
-        const stage = String(record.investigationStage || "REPORT_REVIEW")
-        if (stage === "REPORT_REVIEW") return "Розгляд рапорту/доповідної"
-        if (stage === "SR_INITIATED") return "Ініційовано службове розслідування"
-        if (stage === "SR_ORDER_ASSIGNED") return "Призначено СР (наказ)"
-        if (stage === "SR_COMPLETED_LAWFUL") return "СР завершено: дії правомірні"
-        if (stage === "SR_COMPLETED_UNLAWFUL") return "СР завершено: дії неправомірні"
-        if (stage === "CHECK_COMPLETED_NO_VIOLATION") return "Перевірку завершено: порушень не виявлено"
-        return stage
-    }
 
     const getBirthDateFromAddress = () => {
         if (!record.address || typeof record.address !== "string") return "Не вказано"
@@ -149,7 +143,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
         writeParagraph(`Officers: ${officersText}`)
         writeParagraph(`Description: ${record.description || "Ne vkazano"}`)
         if (isServiceInvestigation) {
-            writeParagraph(`Service stage: ${getServiceStageLabel()}`)
+            writeParagraph(`Service stage: ${getServiceInvestigationStageLabel(record)}`)
             writeParagraph(`Violation: ${record.investigationViolation || "Ne vkazano"}`)
             writeParagraph(`Document type: ${record.investigationDocType === "DOPOVIDNA" ? "Dopovidna zapyska" : "Raport"}`)
             if (record.investigationOrderNumber || record.investigationOrderDate) {
@@ -260,7 +254,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                                 : (record.address || "Не вказано")}
                                     </p>
                                     {isServiceInvestigation ? (
-                                        <p className="text-xs font-medium text-slate-500">{getServiceStageLabel()}</p>
+                                        <p className="text-xs font-medium text-slate-500">{getServiceInvestigationStageLabel(record)}</p>
                                     ) : null}
                                     {!isSpecialCard && !isServiceInvestigation && record.district && (
                                         <p className="text-xs font-medium text-slate-500">{record.district} район</p>
@@ -345,34 +339,38 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                 <Shield className="w-4 h-4 text-blue-600" />
                                 <h3 className="text-sm font-semibold tracking-wide text-blue-900">Етап службового розслідування</h3>
                             </div>
-                            <p className="text-sm font-bold text-slate-900">{getServiceStageLabel()}</p>
+                            <p className="text-sm font-bold text-slate-900">{getServiceInvestigationStageLabel(record)}</p>
 
-                            {(record.investigationOrderNumber || record.investigationOrderDate) && (
-                                <p className="text-sm text-slate-700">
-                                    Наказ: <span className="font-bold">№{record.investigationOrderNumber || "—"}</span>
-                                    {" "}від{" "}
-                                    <span className="font-bold">{safeFormat(record.investigationOrderDate, "dd.MM.yyyy")}</span>
-                                </p>
-                            )}
-
-                            {record.investigationFinalResult && (
-                                <p className="text-sm text-slate-700">
-                                    Висновок:{" "}
-                                    <span className="font-bold">
-                                        {record.investigationFinalResult === "UNLAWFUL" ? "дії неправомірні" : "дії правомірні"}
-                                    </span>
-                                </p>
-                            )}
-
-                            {record.investigationPenaltyType && (
-                                <p className="text-sm text-slate-700">
-                                    Стягнення:{" "}
-                                    <span className="font-bold">
-                                        {record.investigationPenaltyType}
-                                        {record.investigationPenaltyOther ? ` (${record.investigationPenaltyOther})` : ""}
-                                    </span>
-                                </p>
-                            )}
+                            <div className="space-y-2">
+                                {getServiceInvestigationTimeline(record).map((step) => (
+                                    <div
+                                        key={step.key}
+                                        className={cn(
+                                            "rounded-xl border px-3 py-2 flex items-start justify-between gap-2",
+                                            step.status === "done" && "border-emerald-100 bg-emerald-50/70",
+                                            step.status === "current" && "border-blue-100 bg-blue-50/70",
+                                            step.status === "pending" && "border-slate-200 bg-white",
+                                            step.status === "skipped" && "border-slate-200 border-dashed bg-slate-100/80"
+                                        )}
+                                    >
+                                        <div className="min-w-0">
+                                            <p className={cn(
+                                                "text-xs font-semibold leading-tight",
+                                                step.status === "done" && "text-emerald-800",
+                                                step.status === "current" && "text-blue-800",
+                                                step.status === "pending" && "text-slate-700",
+                                                step.status === "skipped" && "text-slate-500"
+                                            )}>
+                                                {step.label}
+                                            </p>
+                                            {step.hint ? <p className="text-[11px] text-slate-500 mt-0.5">{step.hint}</p> : null}
+                                        </div>
+                                        <span className="shrink-0 text-[11px] font-bold text-slate-500">
+                                            {step.at ? formatDateTimeUa(step.at) : (step.status === "skipped" ? "не застосовується" : "—")}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 

@@ -146,3 +146,150 @@ export function getRecordTypeLabel(recordType?: string | null, eoNumber?: string
     if (normalized === "SERVICE_INVESTIGATION") return "Службові розслідування"
     return "Інше"
 }
+
+export function formatDateTimeUa(value?: string | Date | null) {
+    if (!value) return "—"
+    const date = value instanceof Date ? value : new Date(value)
+    if (Number.isNaN(date.getTime())) return "—"
+    return date
+        .toLocaleString("uk-UA", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+        })
+        .replace(",", "")
+}
+
+export function getServiceInvestigationStageLabel(record: any) {
+    const stage = String(record?.investigationStage || "REPORT_REVIEW")
+    if (stage === "REPORT_REVIEW") return "Розгляд рапорту/доповідної"
+    if (stage === "SR_INITIATED") return "Ініційовано СР"
+    if (stage === "SR_ORDER_ASSIGNED") return "Призначено СР (наказ)"
+    if (stage === "SR_COMPLETED_LAWFUL") return "СР завершено: дії правомірні"
+    if (stage === "SR_COMPLETED_UNLAWFUL") return "СР завершено: дії неправомірні"
+    if (stage === "CHECK_COMPLETED_NO_VIOLATION") return "Перевірку завершено: порушень не виявлено"
+    return stage
+}
+
+export type ServiceInvestigationTimelineStatus = "done" | "current" | "pending" | "skipped"
+
+export interface ServiceInvestigationTimelineItem {
+    key: string
+    label: string
+    at: string | Date | null
+    status: ServiceInvestigationTimelineStatus
+    hint?: string
+}
+
+const SERVICE_STAGE_ORDER: Record<string, number> = {
+    REPORT_REVIEW: 1,
+    SR_INITIATED: 2,
+    SR_ORDER_ASSIGNED: 3,
+    SR_COMPLETED_LAWFUL: 4,
+    SR_COMPLETED_UNLAWFUL: 4,
+    CHECK_COMPLETED_NO_VIOLATION: 4,
+}
+
+export function getServiceInvestigationTimeline(record: any): ServiceInvestigationTimelineItem[] {
+    const stage = String(record?.investigationStage || "REPORT_REVIEW")
+    const stageOrder = SERVICE_STAGE_ORDER[stage] || 1
+    const noSrPath = stage === "CHECK_COMPLETED_NO_VIOLATION" || record?.investigationReviewResult === "NO_VIOLATION"
+
+    const items: ServiceInvestigationTimelineItem[] = [
+        {
+            key: "registered",
+            label: "Документ зареєстровано",
+            at: record?.createdAt || record?.eoDate || null,
+            status: "done",
+        },
+        {
+            key: "review",
+            label: "Розгляд рапорту/доповідної",
+            at: record?.investigationReviewAt || null,
+            status: record?.investigationReviewAt
+                ? "done"
+                : stage === "REPORT_REVIEW"
+                    ? "current"
+                    : "done",
+        },
+    ]
+
+    if (noSrPath) {
+        items.push(
+            {
+                key: "initiate",
+                label: "Ініційовано СР",
+                at: null,
+                status: "skipped",
+                hint: "СР не ініційовано",
+            },
+            {
+                key: "order",
+                label: "Призначено СР (наказ)",
+                at: null,
+                status: "skipped",
+                hint: "Наказ не видавався",
+            }
+        )
+    } else {
+        items.push({
+            key: "initiate",
+            label: "Ініційовано СР",
+            at: record?.investigationInitiatedAt || null,
+            status: record?.investigationInitiatedAt
+                ? "done"
+                : stage === "SR_INITIATED"
+                    ? "current"
+                    : stageOrder > 2
+                        ? "done"
+                        : "pending",
+        })
+
+        const orderHintDate = record?.investigationOrderDate
+            ? formatDateTimeUa(record.investigationOrderDate).split(" ")[0]
+            : ""
+        const orderHint = record?.investigationOrderNumber || record?.investigationOrderDate
+            ? `Наказ №${record?.investigationOrderNumber || "—"}${orderHintDate ? ` від ${orderHintDate}` : ""}`
+            : undefined
+
+        items.push({
+            key: "order",
+            label: "Призначено СР (наказ)",
+            at: record?.investigationOrderAssignedAt || null,
+            status: record?.investigationOrderAssignedAt
+                ? "done"
+                : stage === "SR_ORDER_ASSIGNED"
+                    ? "current"
+                    : stageOrder > 3
+                        ? "done"
+                        : "pending",
+            hint: orderHint,
+        })
+    }
+
+    let finalLabel = "Завершення розгляду"
+    if (stage === "CHECK_COMPLETED_NO_VIOLATION") {
+        finalLabel = "Перевірку завершено: порушень не виявлено"
+    } else if (stage === "SR_COMPLETED_UNLAWFUL" || record?.investigationFinalResult === "UNLAWFUL") {
+        finalLabel = "СР завершено: дії неправомірні"
+    } else if (stage === "SR_COMPLETED_LAWFUL" || record?.investigationFinalResult === "LAWFUL") {
+        finalLabel = "СР завершено: дії правомірні"
+    }
+
+    const finalHint = record?.investigationPenaltyType
+        ? `Стягнення: ${record.investigationPenaltyType}${record?.investigationPenaltyOther ? ` (${record.investigationPenaltyOther})` : ""}`
+        : undefined
+
+    items.push({
+        key: "final",
+        label: finalLabel,
+        at: record?.investigationCompletedAt || null,
+        status: stageOrder >= 4 || record?.status === "PROCESSED" ? "done" : "pending",
+        hint: finalHint,
+    })
+
+    return items
+}

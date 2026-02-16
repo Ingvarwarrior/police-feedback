@@ -40,9 +40,13 @@ const UnifiedRecordSchema = z.object({
     investigationViolation: z.string().optional().nullable(),
     investigationStage: z.string().optional().nullable(),
     investigationReviewResult: z.string().optional().nullable(),
+    investigationReviewAt: z.date().optional().nullable(),
+    investigationInitiatedAt: z.date().optional().nullable(),
     investigationOrderNumber: z.string().optional().nullable(),
     investigationOrderDate: z.date().optional().nullable(),
+    investigationOrderAssignedAt: z.date().optional().nullable(),
     investigationFinalResult: z.string().optional().nullable(),
+    investigationCompletedAt: z.date().optional().nullable(),
     investigationPenaltyType: z.string().optional().nullable(),
     investigationPenaltyOther: z.string().optional().nullable(),
     investigationPenaltyOfficerId: z.string().optional().nullable(),
@@ -167,8 +171,10 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
             resolution: "Проведено перевірку - порушень службової дисципліни не виявлено",
             resolutionDate: now,
             investigationReviewResult: "NO_VIOLATION",
+            investigationReviewAt: now,
             investigationStage: "CHECK_COMPLETED_NO_VIOLATION",
             investigationFinalResult: "LAWFUL",
+            investigationCompletedAt: now,
         }
     }
 
@@ -179,6 +185,8 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
             resolution: "Ініційовано проведення службового розслідування",
             resolutionDate: now,
             investigationReviewResult: "INITIATED_SR",
+            investigationReviewAt: now,
+            investigationInitiatedAt: now,
             investigationStage: "SR_INITIATED",
         }
     }
@@ -207,6 +215,7 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
             investigationStage: "SR_ORDER_ASSIGNED",
             investigationOrderNumber: parsed.orderNumber.trim(),
             investigationOrderDate: orderDate,
+            investigationOrderAssignedAt: now,
             deadline,
         }
     }
@@ -219,6 +228,7 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
             resolutionDate: now,
             investigationStage: "SR_COMPLETED_LAWFUL",
             investigationFinalResult: "LAWFUL",
+            investigationCompletedAt: now,
         }
     }
 
@@ -256,6 +266,7 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
             resolutionDate: now,
             investigationStage: "SR_COMPLETED_UNLAWFUL",
             investigationFinalResult: "UNLAWFUL",
+            investigationCompletedAt: now,
             investigationPenaltyType: parsed.penaltyType.trim(),
             investigationPenaltyOther: parsed.penaltyType.trim().toLowerCase() === "інший варіант" ? parsed.penaltyOther!.trim() : null,
             investigationPenaltyOfficerId: officer.id,
@@ -897,9 +908,13 @@ export async function returnForRevisionAction(id: string, comment: string) {
                 ? {
                     investigationStage: "REPORT_REVIEW",
                     investigationReviewResult: null,
+                    investigationReviewAt: null,
+                    investigationInitiatedAt: null,
                     investigationFinalResult: null,
                     investigationOrderNumber: null,
                     investigationOrderDate: null,
+                    investigationOrderAssignedAt: null,
+                    investigationCompletedAt: null,
                     investigationPenaltyType: null,
                     investigationPenaltyOther: null,
                     investigationPenaltyOfficerId: null,
