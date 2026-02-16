@@ -882,7 +882,7 @@ export async function returnForRevisionAction(id: string, comment: string) {
 
     const record = await prisma.unifiedRecord.findUnique({
         where: { id },
-        select: { assignedUserId: true, eoNumber: true }
+        select: { assignedUserId: true, eoNumber: true, recordType: true }
     })
 
     if (!record) throw new Error("Запис не знайдено")
@@ -893,17 +893,43 @@ export async function returnForRevisionAction(id: string, comment: string) {
             status: "IN_PROGRESS",
             processedAt: null,
             resolutionDate: null,
+            ...(record.recordType === "SERVICE_INVESTIGATION"
+                ? {
+                    investigationStage: "REPORT_REVIEW",
+                    investigationReviewResult: null,
+                    investigationFinalResult: null,
+                    investigationOrderNumber: null,
+                    investigationOrderDate: null,
+                    investigationPenaltyType: null,
+                    investigationPenaltyOther: null,
+                    investigationPenaltyOfficerId: null,
+                }
+                : {}),
         }
     })
 
     if (record.assignedUserId) {
+        const recordTypeLabel =
+            record.recordType === "EO"
+                ? "ЄО"
+                : record.recordType === "ZVERN"
+                    ? "Звернення"
+                    : record.recordType === "APPLICATION"
+                        ? "Застосування сили/спецзасобів"
+                        : record.recordType === "DETENTION_PROTOCOL"
+                            ? "Протокол затримання"
+                            : record.recordType === "SERVICE_INVESTIGATION"
+                                ? "Службове розслідування"
+                                : "Документ"
+        const recordNumber = record.eoNumber || "без номера"
+
         await createAdminNotification({
             title: "Запис повернуто на доопрацювання",
-            message: `Адмін повернув ЄО №${record.eoNumber} на доопрацювання. Коментар: ${comment}`,
+            message: `Адмін повернув ${recordTypeLabel} №${recordNumber} на доопрацювання. Коментар: ${comment}`,
             type: "ALERT",
             priority: "HIGH",
             userId: record.assignedUserId,
-            link: `/admin/unified-record?search=${record.eoNumber}`,
+            link: `/admin/unified-record?search=${recordNumber}`,
         })
     }
 

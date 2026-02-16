@@ -1227,9 +1227,9 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         )}
 
                                                         {/* Admin Review for extensions or Return for Revision */}
-                                                        {!isApplicationLike(record) && !isServiceInvestigationRecord(record) && currentUser.role === 'ADMIN' && (
+                                                        {currentUser.role === 'ADMIN' && (
                                                             <div className="mt-3 space-y-2">
-                                                                {record.extensionStatus === 'PENDING' && (
+                                                                {!isApplicationLike(record) && !isServiceInvestigationRecord(record) && record.extensionStatus === 'PENDING' && (
                                                                     <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100 space-y-2">
                                                                         <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest flex items-center gap-1">
                                                                             <Clock className="w-3 h-3" /> Запит на продовження
