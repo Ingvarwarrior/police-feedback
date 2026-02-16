@@ -112,6 +112,13 @@ export function filterUnifiedRecords(records: any[], filters: RecordFilters): an
     }
 
     result.sort((a, b) => {
+        if (sortBy === "registration_newest") {
+            return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        }
+        if (sortBy === "registration_oldest") {
+            return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+        }
+
         if (sortBy === "newest") return new Date(b.eoDate || 0).getTime() - new Date(a.eoDate || 0).getTime()
         if (sortBy === "oldest") return new Date(a.eoDate || 0).getTime() - new Date(b.eoDate || 0).getTime()
 

@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import * as XLSX from 'xlsx'
 
 interface AnalyticsClientProps {
   startDate: string
@@ -52,6 +53,20 @@ interface AnalyticsClientProps {
     application: number
     detention: number
   }[]
+  staffData: {
+    id: string
+    name: string
+    badgeNumber: string
+    complaints: number
+    detentions: number
+    eo: number
+    zvern: number
+    application: number
+    detention: number
+    feedback: number
+    evaluations: number
+    total: number
+  }[]
   survey: {
     totalResponses: number
     ratedResponses: number
@@ -62,7 +77,17 @@ interface AnalyticsClientProps {
   }
 }
 
-type TabId = 'overview' | 'records' | 'executors' | 'survey'
+type TabId = 'overview' | 'records' | 'executors' | 'staff' | 'survey'
+type StaffColumnKey =
+  | 'complaints'
+  | 'detentions'
+  | 'feedback'
+  | 'evaluations'
+  | 'eo'
+  | 'zvern'
+  | 'application'
+  | 'detention'
+  | 'total'
 
 const PIE_COLORS = ['#0f172a', '#2563eb', '#10b981', '#f59e0b', '#e11d48']
 
@@ -74,15 +99,28 @@ export default function AnalyticsClient({
   typeData,
   statusData,
   executorData,
+  staffData,
   survey,
 }: AnalyticsClientProps) {
   const router = useRouter()
   const [tab, setTab] = useState<TabId>('overview')
+  const [staffColumns, setStaffColumns] = useState<Record<StaffColumnKey, boolean>>({
+    complaints: true,
+    detentions: true,
+    feedback: true,
+    evaluations: true,
+    eo: true,
+    zvern: true,
+    application: true,
+    detention: true,
+    total: true,
+  })
 
   const tabs: { id: TabId; label: string }[] = [
     { id: 'overview', label: 'Огляд' },
     { id: 'records', label: 'Типи записів' },
     { id: 'executors', label: 'Виконавці' },
+    { id: 'staff', label: 'Особовий склад' },
     { id: 'survey', label: 'Опитування' },
   ]
 
@@ -91,6 +129,47 @@ export default function AnalyticsClient({
     params.set(type, value)
     params.delete('period')
     router.push(`/admin/analytics?${params.toString()}`)
+  }
+
+  const staffColumnOptions: Array<{ key: StaffColumnKey; label: string }> = [
+    { key: 'complaints', label: 'Скарги (ЄО/Звернення)' },
+    { key: 'detentions', label: 'Затримання (Застосування/Затримання)' },
+    { key: 'feedback', label: 'Відгуки' },
+    { key: 'evaluations', label: 'Оцінювання' },
+    { key: 'eo', label: 'ЄО' },
+    { key: 'zvern', label: 'Звернення' },
+    { key: 'application', label: 'Застосування' },
+    { key: 'detention', label: 'Протоколи затримання' },
+    { key: 'total', label: 'Всього' },
+  ]
+
+  const toggleStaffColumn = (key: StaffColumnKey) => {
+    setStaffColumns((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const exportStaffReport = () => {
+    const data = staffData.map((row) => {
+      const exportRow: Record<string, string | number> = {
+        Поліцейський: row.name,
+        Жетон: row.badgeNumber || '—',
+      }
+      if (staffColumns.complaints) exportRow['Скарги (ЄО/Звернення)'] = row.complaints
+      if (staffColumns.detentions) exportRow['Затримання (Застосування/Затримання)'] = row.detentions
+      if (staffColumns.feedback) exportRow['Відгуки'] = row.feedback
+      if (staffColumns.evaluations) exportRow['Оцінювання'] = row.evaluations
+      if (staffColumns.eo) exportRow['ЄО'] = row.eo
+      if (staffColumns.zvern) exportRow['Звернення'] = row.zvern
+      if (staffColumns.application) exportRow['Застосування'] = row.application
+      if (staffColumns.detention) exportRow['Протоколи затримання'] = row.detention
+      if (staffColumns.total) exportRow['Всього'] = row.total
+      return exportRow
+    })
+
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Staff Report')
+    const datePart = new Date().toISOString().slice(0, 10)
+    XLSX.writeFile(wb, `staff_report_${datePart}.xlsx`)
   }
 
   return (
@@ -318,6 +397,112 @@ export default function AnalyticsClient({
                       </tr>
                     )
                   })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {tab === 'staff' && (
+        <Card className="rounded-3xl border-slate-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wide">
+              <Users className="h-4 w-4" /> Звіт по особовому складу
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4 rounded-2xl border border-slate-200 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-500">Компонування звіту</p>
+                <Button variant="outline" className="h-9 rounded-xl" onClick={exportStaffReport}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" /> Експорт звіту
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {staffColumnOptions.map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => toggleStaffColumn(option.key)}
+                    className={[
+                      'flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition',
+                      staffColumns[option.key]
+                        ? 'border-blue-200 bg-blue-50 text-blue-700'
+                        : 'border-slate-200 bg-white text-slate-500',
+                    ].join(' ')}
+                  >
+                    <span className="text-[11px] font-black">{staffColumns[option.key] ? '✓' : '○'}</span>
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3 md:hidden">
+              {staffData.map((row) => (
+                <div key={row.id} className="rounded-2xl border border-slate-200 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{row.name}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">Жетон: {row.badgeNumber || "—"}</p>
+                    </div>
+                    <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                      Всього: {row.total}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    {staffColumns.complaints ? <div className="rounded-xl bg-blue-50 px-2.5 py-2 text-blue-700">Скарги: {row.complaints}</div> : null}
+                    {staffColumns.detentions ? <div className="rounded-xl bg-rose-50 px-2.5 py-2 text-rose-700">Затримання: {row.detentions}</div> : null}
+                    {staffColumns.feedback ? <div className="rounded-xl bg-violet-50 px-2.5 py-2 text-violet-700">Відгуки: {row.feedback}</div> : null}
+                    {staffColumns.evaluations ? <div className="rounded-xl bg-emerald-50 px-2.5 py-2 text-emerald-700">Оцінювання: {row.evaluations}</div> : null}
+                    {staffColumns.eo ? <div className="rounded-xl bg-slate-100 px-2.5 py-2 text-slate-700">ЄО: {row.eo}</div> : null}
+                    {staffColumns.zvern ? <div className="rounded-xl bg-slate-100 px-2.5 py-2 text-slate-700">Звернення: {row.zvern}</div> : null}
+                    {staffColumns.application ? <div className="rounded-xl bg-slate-100 px-2.5 py-2 text-slate-700">Застосування: {row.application}</div> : null}
+                    {staffColumns.detention ? <div className="rounded-xl bg-slate-100 px-2.5 py-2 text-slate-700">Затримання: {row.detention}</div> : null}
+                    {staffColumns.total ? <div className="rounded-xl bg-slate-900 px-2.5 py-2 text-white">Всього: {row.total}</div> : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[980px] text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 text-left text-[11px] uppercase tracking-wider text-slate-400">
+                    <th className="px-3 py-3 font-black">Поліцейський</th>
+                    <th className="px-3 py-3 text-center font-black">Жетон</th>
+                    {staffColumns.complaints ? <th className="px-3 py-3 text-center font-black">Скарги (ЄО/Звернення)</th> : null}
+                    {staffColumns.detentions ? <th className="px-3 py-3 text-center font-black">Затримання (Застосування/Затримання)</th> : null}
+                    {staffColumns.feedback ? <th className="px-3 py-3 text-center font-black">Відгуки</th> : null}
+                    {staffColumns.evaluations ? <th className="px-3 py-3 text-center font-black">Оцінювання</th> : null}
+                    {staffColumns.eo ? <th className="px-3 py-3 text-center font-black">ЄО</th> : null}
+                    {staffColumns.zvern ? <th className="px-3 py-3 text-center font-black">Звернення</th> : null}
+                    {staffColumns.application ? <th className="px-3 py-3 text-center font-black">Застосування</th> : null}
+                    {staffColumns.detention ? <th className="px-3 py-3 text-center font-black">Протоколи затримання</th> : null}
+                    {staffColumns.total ? <th className="px-3 py-3 text-right font-black">Всього</th> : null}
+                  </tr>
+                </thead>
+                <tbody>
+                  {staffData.map((row) => (
+                    <tr key={row.id} className="border-b border-slate-50">
+                      <td className="px-3 py-4 font-bold text-slate-900">{row.name}</td>
+                      <td className="px-3 py-4 text-center text-slate-600">{row.badgeNumber || "—"}</td>
+                      {staffColumns.complaints ? <td className="px-3 py-4 text-center font-semibold text-blue-700">{row.complaints}</td> : null}
+                      {staffColumns.detentions ? <td className="px-3 py-4 text-center font-semibold text-rose-700">{row.detentions}</td> : null}
+                      {staffColumns.feedback ? <td className="px-3 py-4 text-center font-semibold text-violet-700">{row.feedback}</td> : null}
+                      {staffColumns.evaluations ? <td className="px-3 py-4 text-center font-semibold text-emerald-700">{row.evaluations}</td> : null}
+                      {staffColumns.eo ? <td className="px-3 py-4 text-center">{row.eo}</td> : null}
+                      {staffColumns.zvern ? <td className="px-3 py-4 text-center">{row.zvern}</td> : null}
+                      {staffColumns.application ? <td className="px-3 py-4 text-center">{row.application}</td> : null}
+                      {staffColumns.detention ? <td className="px-3 py-4 text-center">{row.detention}</td> : null}
+                      {staffColumns.total ? (
+                        <td className="px-3 py-4 text-right">
+                          <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black">{row.total}</span>
+                        </td>
+                      ) : null}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

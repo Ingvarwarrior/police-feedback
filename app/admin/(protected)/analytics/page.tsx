@@ -18,6 +18,28 @@ type UnifiedRecordRow = {
   status: string | null
   assignedUserId: string | null
   assignedUser: { firstName: string | null; lastName: string | null } | null
+  officers: Array<{
+    id: string
+    firstName: string
+    lastName: string
+    badgeNumber: string
+  }>
+}
+
+type OfficerRow = {
+  id: string
+  firstName: string
+  lastName: string
+  badgeNumber: string
+}
+
+type ResponseOfficerLinkRow = {
+  officerId: string | null
+  taggedOfficers: Array<{ id: string }>
+}
+
+type OfficerEvaluationRow = {
+  officerId: string
 }
 
 function getTypeLabel(type: string) {
@@ -84,7 +106,7 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
     endDate = endOfDay(new Date())
   }
 
-  const [responses, unifiedRecords] = await Promise.all([
+  const [responses, unifiedRecords, allOfficers, responseOfficerLinks, officerEvaluations] = await Promise.all([
     prisma.response.findMany({
       where: { createdAt: { gte: startDate, lte: endDate } },
       select: { createdAt: true, rateOverall: true, status: true },
@@ -106,11 +128,44 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
         assignedUser: {
           select: { firstName: true, lastName: true },
         },
+        officers: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            badgeNumber: true,
+          },
+        },
       },
+    }),
+    prisma.officer.findMany({
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        badgeNumber: true,
+      },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    }),
+    prisma.response.findMany({
+      where: { createdAt: { gte: startDate, lte: endDate } },
+      select: {
+        officerId: true,
+        taggedOfficers: {
+          select: { id: true },
+        },
+      },
+    }),
+    prisma.officerEvaluation.findMany({
+      where: { createdAt: { gte: startDate, lte: endDate } },
+      select: { officerId: true },
     }),
   ])
 
   const records = unifiedRecords as UnifiedRecordRow[]
+  const officers = allOfficers as OfficerRow[]
+  const responseLinks = responseOfficerLinks as ResponseOfficerLinkRow[]
+  const evaluations = officerEvaluations as OfficerEvaluationRow[]
 
   const dayMap: Record<
     string,
@@ -157,6 +212,41 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
       detention: number
     }
   > = {}
+
+  const staffMap: Record<
+    string,
+    {
+      id: string
+      name: string
+      badgeNumber: string
+      complaints: number
+      detentions: number
+      eo: number
+      zvern: number
+      application: number
+      detention: number
+      feedback: number
+      evaluations: number
+      total: number
+    }
+  > = {}
+
+  for (const officer of officers) {
+    staffMap[officer.id] = {
+      id: officer.id,
+      name: `${officer.lastName} ${officer.firstName}`.trim(),
+      badgeNumber: officer.badgeNumber,
+      complaints: 0,
+      detentions: 0,
+      eo: 0,
+      zvern: 0,
+      application: 0,
+      detention: 0,
+      feedback: 0,
+      evaluations: 0,
+      total: 0,
+    }
+  }
 
   for (const row of records) {
     const type = normalizeRecordType(row.recordType, row.eoNumber)
@@ -213,6 +303,92 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
     if (type === "ZVERN") executorMap[executorId].zvern += 1
     if (type === "APPLICATION") executorMap[executorId].application += 1
     if (type === "DETENTION_PROTOCOL") executorMap[executorId].detention += 1
+
+    for (const officer of row.officers || []) {
+      if (!staffMap[officer.id]) {
+        staffMap[officer.id] = {
+          id: officer.id,
+          name: `${officer.lastName || ""} ${officer.firstName || ""}`.trim() || `#${officer.badgeNumber}`,
+          badgeNumber: officer.badgeNumber || "",
+          complaints: 0,
+          detentions: 0,
+          eo: 0,
+          zvern: 0,
+          application: 0,
+          detention: 0,
+          feedback: 0,
+          evaluations: 0,
+          total: 0,
+        }
+      }
+
+      staffMap[officer.id].total += 1
+      if (type === "EO") {
+        staffMap[officer.id].eo += 1
+        staffMap[officer.id].complaints += 1
+      }
+      if (type === "ZVERN") {
+        staffMap[officer.id].zvern += 1
+        staffMap[officer.id].complaints += 1
+      }
+      if (type === "APPLICATION") {
+        staffMap[officer.id].application += 1
+        staffMap[officer.id].detentions += 1
+      }
+      if (type === "DETENTION_PROTOCOL") {
+        staffMap[officer.id].detention += 1
+        staffMap[officer.id].detentions += 1
+      }
+    }
+  }
+
+  for (const row of responseLinks) {
+    const linkedOfficerIds = new Set<string>()
+    if (row.officerId) linkedOfficerIds.add(row.officerId)
+    for (const tagged of row.taggedOfficers || []) {
+      if (tagged?.id) linkedOfficerIds.add(tagged.id)
+    }
+
+    for (const officerId of linkedOfficerIds) {
+      if (!staffMap[officerId]) {
+        staffMap[officerId] = {
+          id: officerId,
+          name: `ID ${officerId}`,
+          badgeNumber: "",
+          complaints: 0,
+          detentions: 0,
+          eo: 0,
+          zvern: 0,
+          application: 0,
+          detention: 0,
+          feedback: 0,
+          evaluations: 0,
+          total: 0,
+        }
+      }
+      staffMap[officerId].feedback += 1
+    }
+  }
+
+  for (const row of evaluations) {
+    const officerId = row.officerId
+    if (!staffMap[officerId]) {
+      staffMap[officerId] = {
+        id: officerId,
+        name: `ID ${officerId}`,
+        badgeNumber: "",
+        complaints: 0,
+        detentions: 0,
+        eo: 0,
+        zvern: 0,
+        application: 0,
+        detention: 0,
+        feedback: 0,
+        evaluations: 0,
+        total: 0,
+      }
+    }
+    staffMap[officerId].evaluations += 1
   }
 
   const trendData = Object.values(dayMap).reverse()
@@ -230,6 +406,16 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
   }))
 
   const executorData = Object.values(executorMap).sort((a, b) => b.assigned - a.assigned)
+  const staffData = Object.values(staffMap)
+    .map((row) => ({
+      ...row,
+      total: row.complaints + row.detentions + row.feedback + row.evaluations,
+    }))
+    .sort((a, b) => {
+      const byActivity = b.total - a.total
+      if (byActivity !== 0) return byActivity
+      return a.name.localeCompare(b.name, "uk")
+    })
 
   const rated = responses.filter((r: any) => typeof r.rateOverall === "number" && r.rateOverall > 0)
   const averageRating = rated.length
@@ -268,6 +454,7 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
         typeData={typeData}
         statusData={statusData}
         executorData={executorData}
+        staffData={staffData}
         survey={{
           totalResponses: responses.length,
           ratedResponses: rated.length,

@@ -143,7 +143,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const [filterAssignment, setFilterAssignment] = useState("ALL") // ALL, ASSIGNED, UNASSIGNED
     const [filterEoNumber, setFilterEoNumber] = useState("")
     const [filterInspector, setFilterInspector] = useState("ALL")
-    const [sortBy, setSortBy] = useState("newest")
+    const [sortBy, setSortBy] = useState("registration_newest")
     const [periodFrom, setPeriodFrom] = useState("")
     const [periodTo, setPeriodTo] = useState("")
     const [quickPreset, setQuickPreset] = useState<"ALL" | "MINE" | "OVERDUE" | "UNASSIGNED">("ALL")
@@ -475,7 +475,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         setFilterStatus("ALL")
         setFilterAssignment("ALL")
         setFilterInspector("ALL")
-        setSortBy("newest")
+        setSortBy("registration_newest")
         setPeriodFrom("")
         setPeriodTo("")
         setQuickPreset("ALL")
@@ -605,6 +605,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             <SelectValue placeholder="Сортування" />
                         </SelectTrigger>
                         <SelectContent>
+                            <SelectItem value="registration_newest">Дата реєстрації (новіші)</SelectItem>
+                            <SelectItem value="registration_oldest">Дата реєстрації (старіші)</SelectItem>
                             <SelectItem value="newest">Спочатку нові</SelectItem>
                             <SelectItem value="oldest">Спочатку старі</SelectItem>
                             <SelectItem value="eo_asc">№ ЄО (зростання)</SelectItem>
