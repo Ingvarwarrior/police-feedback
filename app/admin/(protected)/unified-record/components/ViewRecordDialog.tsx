@@ -68,7 +68,19 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
     const currentStatus = statusMap[record.status] || { label: record.status, color: "text-slate-600 bg-slate-50", icon: Info }
     const isApplication = record.recordType === "APPLICATION"
     const isDetentionProtocol = record.recordType === "DETENTION_PROTOCOL"
+    const isServiceInvestigation = record.recordType === "SERVICE_INVESTIGATION"
     const isSpecialCard = isApplication || isDetentionProtocol
+
+    const getServiceStageLabel = () => {
+        const stage = String(record.investigationStage || "REPORT_REVIEW")
+        if (stage === "REPORT_REVIEW") return "Розгляд рапорту/доповідної"
+        if (stage === "SR_INITIATED") return "Ініційовано службове розслідування"
+        if (stage === "SR_ORDER_ASSIGNED") return "Призначено СР (наказ)"
+        if (stage === "SR_COMPLETED_LAWFUL") return "СР завершено: дії правомірні"
+        if (stage === "SR_COMPLETED_UNLAWFUL") return "СР завершено: дії неправомірні"
+        if (stage === "CHECK_COMPLETED_NO_VIOLATION") return "Перевірку завершено: порушень не виявлено"
+        return stage
+    }
 
     const getBirthDateFromAddress = () => {
         if (!record.address || typeof record.address !== "string") return "Не вказано"
@@ -90,6 +102,8 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
         ? `Рапорт №${record.eoNumber || "—"}`
         : isDetentionProtocol
             ? `Протокол ${getProtocolNumberFormatted()}`
+            : isServiceInvestigation
+                ? `${record.investigationDocType === "DOPOVIDNA" ? "Доповідна записка" : "Рапорт"} №${record.eoNumber || "—"}`
             : `№${record.eoNumber || "—"}`
 
     const handleExportPdf = async () => {
@@ -126,14 +140,25 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
         writeParagraph(`Type: ${getRecordTypeLabel(record.recordType, record.eoNumber)}`)
         writeParagraph(`Status: ${currentStatus.label}`)
         writeParagraph(`Date: ${safeFormat(record.eoDate, "dd.MM.yyyy")}`)
-        writeParagraph(`Applicant: ${record.applicant || "Ne vkazano"}`)
-        writeParagraph(`Birth date / Address: ${isSpecialCard ? getBirthDateFromAddress() : (record.address || "Ne vkazano")}`)
+        writeParagraph(`${isServiceInvestigation ? "Target" : "Applicant"}: ${record.applicant || "Ne vkazano"}`)
+        writeParagraph(`${isSpecialCard ? "Birth date" : "Address"}: ${isSpecialCard ? getBirthDateFromAddress() : (record.address || "Ne vkazano")}`)
         writeParagraph(`District: ${record.district || "Ne vkazano"}`)
         writeParagraph(
             `Executor: ${record.assignedUser ? `${record.assignedUser.lastName || ""} ${record.assignedUser.firstName || ""}`.trim() : "Ne pryznacheno"}`
         )
         writeParagraph(`Officers: ${officersText}`)
         writeParagraph(`Description: ${record.description || "Ne vkazano"}`)
+        if (isServiceInvestigation) {
+            writeParagraph(`Service stage: ${getServiceStageLabel()}`)
+            writeParagraph(`Violation: ${record.investigationViolation || "Ne vkazano"}`)
+            writeParagraph(`Document type: ${record.investigationDocType === "DOPOVIDNA" ? "Dopovidna zapyska" : "Raport"}`)
+            if (record.investigationOrderNumber || record.investigationOrderDate) {
+                writeParagraph(`Order: №${record.investigationOrderNumber || "—"} від ${safeFormat(record.investigationOrderDate, "dd.MM.yyyy")}`)
+            }
+            if (record.investigationPenaltyType) {
+                writeParagraph(`Penalty: ${record.investigationPenaltyType}${record.investigationPenaltyOther ? ` (${record.investigationPenaltyOther})` : ""}`)
+            }
+        }
         writeParagraph(`Resolution: ${record.resolution || "Ne vkazano"}`)
         writeParagraph(`Deadline: ${safeFormat(record.deadline, "dd.MM.yyyy")}`)
         writeParagraph(`Created at: ${safeFormat(record.createdAt, "dd.MM.yyyy HH:mm")}`)
@@ -185,7 +210,13 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-xs font-semibold tracking-wide text-slate-500">
-                                        {isDetentionProtocol ? "Дата протоколу" : isApplication ? "Дата рапорту" : "Дата реєстрації"}
+                                        {isDetentionProtocol
+                                            ? "Дата протоколу"
+                                            : isApplication
+                                                ? "Дата рапорту"
+                                                : isServiceInvestigation
+                                                    ? "Дата рапорту/доповідної"
+                                                    : "Дата реєстрації"}
                                     </p>
                                     <p className="font-bold text-slate-900">
                                         {safeFormat(record.eoDate, "PPP")}
@@ -199,7 +230,13 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-xs font-semibold tracking-wide text-slate-500">
-                                        {isDetentionProtocol ? "ПІБ кого затримали" : isApplication ? "ПІБ до кого застосовано" : "Заявник"}
+                                        {isDetentionProtocol
+                                            ? "ПІБ кого затримали"
+                                            : isApplication
+                                                ? "ПІБ до кого застосовано"
+                                                : isServiceInvestigation
+                                                    ? "Відносно кого"
+                                                    : "Заявник"}
                                     </p>
                                     <p className="font-bold text-slate-900">{record.applicant || "Не вказано"}</p>
                                 </div>
@@ -209,14 +246,23 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                         <div className="space-y-6">
                             <div className="flex gap-4">
                                 <div className="p-3 bg-slate-50 rounded-2xl text-slate-600">
-                                    {isSpecialCard ? <Calendar className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
+                                    {isSpecialCard ? <Calendar className="w-5 h-5" /> : isServiceInvestigation ? <FileText className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-xs font-semibold tracking-wide text-slate-500">
-                                        {isSpecialCard ? "Дата народження" : "Місце події (Адреса)"}
+                                        {isSpecialCard ? "Дата народження" : isServiceInvestigation ? "Тип документа / етап" : "Місце події (Адреса)"}
                                     </p>
-                                    <p className="font-bold text-slate-900">{isSpecialCard ? getBirthDateFromAddress() : (record.address || "Не вказано")}</p>
-                                    {!isSpecialCard && record.district && (
+                                    <p className="font-bold text-slate-900">
+                                        {isSpecialCard
+                                            ? getBirthDateFromAddress()
+                                            : isServiceInvestigation
+                                                ? `${record.investigationDocType === "DOPOVIDNA" ? "Доповідна записка" : "Рапорт"}`
+                                                : (record.address || "Не вказано")}
+                                    </p>
+                                    {isServiceInvestigation ? (
+                                        <p className="text-xs font-medium text-slate-500">{getServiceStageLabel()}</p>
+                                    ) : null}
+                                    {!isSpecialCard && !isServiceInvestigation && record.district && (
                                         <p className="text-xs font-medium text-slate-500">{record.district} район</p>
                                     )}
                                 </div>
@@ -242,7 +288,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                     </div>
 
                     {/* Linked Officers Section for Processed Records */}
-                    {record.status === 'PROCESSED' && (
+                    {(record.status === 'PROCESSED' || isServiceInvestigation) && (
                         <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 space-y-4 shadow-sm">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
@@ -256,7 +302,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                 )}
                             </div>
 
-                            {record.concernsBpp ? (
+                            {record.concernsBpp || isServiceInvestigation ? (
                                 record.officers && record.officers.length > 0 ? (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         {record.officers.map((officer: any) => (
@@ -282,12 +328,53 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                     <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 space-y-3 shadow-sm">
                         <div className="flex items-center gap-2">
                             <ClipboardList className="w-4 h-4 text-slate-400" />
-                            <h3 className="text-sm font-semibold tracking-wide text-slate-900">Фабула / Опис події</h3>
+                            <h3 className="text-sm font-semibold tracking-wide text-slate-900">
+                                {isServiceInvestigation ? "Суть порушення" : "Фабула / Опис події"}
+                            </h3>
                         </div>
                         <p className="text-sm font-semibold text-slate-900 leading-relaxed">
-                            {record.description}
+                            {isServiceInvestigation
+                                ? (record.investigationViolation || record.description || "Не вказано")
+                                : record.description}
                         </p>
                     </div>
+
+                    {isServiceInvestigation && (
+                        <div className="p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <Shield className="w-4 h-4 text-blue-600" />
+                                <h3 className="text-sm font-semibold tracking-wide text-blue-900">Етап службового розслідування</h3>
+                            </div>
+                            <p className="text-sm font-bold text-slate-900">{getServiceStageLabel()}</p>
+
+                            {(record.investigationOrderNumber || record.investigationOrderDate) && (
+                                <p className="text-sm text-slate-700">
+                                    Наказ: <span className="font-bold">№{record.investigationOrderNumber || "—"}</span>
+                                    {" "}від{" "}
+                                    <span className="font-bold">{safeFormat(record.investigationOrderDate, "dd.MM.yyyy")}</span>
+                                </p>
+                            )}
+
+                            {record.investigationFinalResult && (
+                                <p className="text-sm text-slate-700">
+                                    Висновок:{" "}
+                                    <span className="font-bold">
+                                        {record.investigationFinalResult === "UNLAWFUL" ? "дії неправомірні" : "дії правомірні"}
+                                    </span>
+                                </p>
+                            )}
+
+                            {record.investigationPenaltyType && (
+                                <p className="text-sm text-slate-700">
+                                    Стягнення:{" "}
+                                    <span className="font-bold">
+                                        {record.investigationPenaltyType}
+                                        {record.investigationPenaltyOther ? ` (${record.investigationPenaltyOther})` : ""}
+                                    </span>
+                                </p>
+                            )}
+                        </div>
+                    )}
 
                     {/* Resolution Section */}
                     {record.status === 'PROCESSED' && (

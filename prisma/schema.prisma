@@ -364,6 +364,18 @@ model UnifiedRecord {
   assignedUser      User?     @relation("AssignedUnifiedRecords", fields: [assignedUserId], references: [id])
   officers          Officer[] @relation("UnifiedRecordOfficers")
   concernsBpp       Boolean   @default(true)
+  investigationDocType       String?
+  investigationTargetType    String?
+  investigationTargetText    String?
+  investigationViolation     String?
+  investigationStage         String?
+  investigationReviewResult  String?
+  investigationOrderNumber   String?
+  investigationOrderDate     DateTime?
+  investigationFinalResult   String?
+  investigationPenaltyType   String?
+  investigationPenaltyOther  String?
+  investigationPenaltyOfficerId String?
 
   @@index([eoNumber])
   @@index([eoDate])

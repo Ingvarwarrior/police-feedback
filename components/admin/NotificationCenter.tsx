@@ -61,6 +61,7 @@ export default function NotificationCenter() {
     const [isLoading, setIsLoading] = useState(false)
     const [soundEnabled, setSoundEnabled] = useState(false)
     const [pushSupported, setPushSupported] = useState(false)
+    const [pushConfigured, setPushConfigured] = useState(true)
     const [pushEnabled, setPushEnabled] = useState(false)
     const [pushLoading, setPushLoading] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
@@ -182,6 +183,20 @@ export default function NotificationCenter() {
 
         const initPush = async () => {
             try {
+                const keyRes = await fetch("/api/admin/push/vapid-public-key", { cache: "no-store" })
+                const keyPayload = await keyRes.json().catch(() => ({} as any))
+                const configured = keyRes.ok && keyPayload?.configured !== false && Boolean(keyPayload?.publicKey)
+
+                if (!cancelled) {
+                    setPushConfigured(configured)
+                }
+                if (!configured) {
+                    if (!cancelled) {
+                        setPushEnabled(false)
+                    }
+                    return
+                }
+
                 const registration = await navigator.serviceWorker.register("/sw.js")
                 const existing = await registration.pushManager.getSubscription()
                 if (!cancelled) {
@@ -232,15 +247,17 @@ export default function NotificationCenter() {
             }
 
             const keyRes = await fetch("/api/admin/push/vapid-public-key", { cache: "no-store" })
-            if (!keyRes.ok) {
-                const payload = await keyRes.json().catch(() => ({ error: "" }))
-                throw new Error(payload?.error || "Push не налаштовано на сервері")
+            const keyPayload = await keyRes.json().catch(() => ({} as any))
+
+            const configured = keyRes.ok && keyPayload?.configured !== false && Boolean(keyPayload?.publicKey)
+            if (!configured) {
+                setPushConfigured(false)
+                setPushEnabled(false)
+                toast.info("Push-сповіщення недоступні: серверні ключі не налаштовані")
+                return
             }
-            const keyPayload = await keyRes.json()
-            const publicKey = keyPayload?.publicKey as string
-            if (!publicKey) {
-                throw new Error("Відсутній публічний VAPID ключ")
-            }
+            setPushConfigured(true)
+            const publicKey = keyPayload.publicKey as string
 
             const registration = await navigator.serviceWorker.register("/sw.js")
             let subscription = await registration.pushManager.getSubscription()
@@ -266,7 +283,14 @@ export default function NotificationCenter() {
             setPushEnabled(true)
             toast.success("Push-сповіщення увімкнено")
         } catch (error: any) {
-            toast.error(error?.message || "Не вдалося увімкнути push-сповіщення")
+            const message = String(error?.message || "")
+            if (message.includes("WEB_PUSH keys are not configured")) {
+                setPushConfigured(false)
+                setPushEnabled(false)
+                toast.info("Push-сповіщення недоступні: серверні ключі не налаштовані")
+                return
+            }
+            toast.error(message || "Не вдалося увімкнути push-сповіщення")
         } finally {
             setPushLoading(false)
         }
@@ -377,19 +401,23 @@ export default function NotificationCenter() {
                                 <button
                                     type="button"
                                     onClick={pushEnabled ? handleDisablePush : handleEnablePush}
-                                    disabled={!pushSupported || pushLoading}
+                                    disabled={!pushSupported || !pushConfigured || pushLoading}
                                     className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50 ${pushEnabled
                                         ? "border-blue-500/40 bg-blue-500/20 text-blue-300"
                                         : "border-white/15 bg-white/5 text-slate-300 hover:bg-white/10"
                                         }`}
                                 >
                                     {pushLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Smartphone className="h-3.5 w-3.5" />}
-                                    {pushEnabled ? "Push: ON" : "Push: OFF"}
+                                    {pushEnabled ? "Push: ON" : (pushConfigured ? "Push: OFF" : "Push: N/A")}
                                 </button>
                             </div>
                             {!pushSupported ? (
                                 <p className="mt-1 text-[10px] font-semibold text-slate-500">
                                     Цей браузер не підтримує Web Push
+                                </p>
+                            ) : !pushConfigured ? (
+                                <p className="mt-1 text-[10px] font-semibold text-slate-500">
+                                    Web Push недоступний: на сервері не налаштовані VAPID ключі
                                 </p>
                             ) : null}
                         </div>

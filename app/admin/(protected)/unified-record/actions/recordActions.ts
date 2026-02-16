@@ -21,7 +21,7 @@ const UnifiedRecordSchema = z.object({
     description: z.string().optional().nullable(),
     applicant: z.string().optional().nullable(),
     category: z.string().optional().nullable(),
-    recordType: z.enum(["EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL"]).default("EO"),
+    recordType: z.enum(["EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL", "SERVICE_INVESTIGATION"]).default("EO"),
     officerName: z.string().optional().nullable(),
     assignedUserId: z.string().optional().nullable(),
     status: z.string().optional().default("PENDING"),
@@ -34,6 +34,18 @@ const UnifiedRecordSchema = z.object({
     resolutionDate: z.date().optional().nullable(),
     officerIds: z.array(z.string()).default([]),
     concernsBpp: z.boolean().default(true),
+    investigationDocType: z.string().optional().nullable(),
+    investigationTargetType: z.string().optional().nullable(),
+    investigationTargetText: z.string().optional().nullable(),
+    investigationViolation: z.string().optional().nullable(),
+    investigationStage: z.string().optional().nullable(),
+    investigationReviewResult: z.string().optional().nullable(),
+    investigationOrderNumber: z.string().optional().nullable(),
+    investigationOrderDate: z.date().optional().nullable(),
+    investigationFinalResult: z.string().optional().nullable(),
+    investigationPenaltyType: z.string().optional().nullable(),
+    investigationPenaltyOther: z.string().optional().nullable(),
+    investigationPenaltyOfficerId: z.string().optional().nullable(),
 })
 
 async function generateNextApplicationNumber() {
@@ -65,6 +77,19 @@ export async function processUnifiedRecordAction(id: string, resolution: string,
     console.log(`Processing unified record ${id}: resolution="${resolution}", officers=${officerIds}, concernsBpp=${concernsBpp}`)
 
     try {
+        const currentRecord = await prisma.unifiedRecord.findUnique({
+            where: { id },
+            select: { recordType: true }
+        })
+
+        if (!currentRecord) {
+            return { error: "Запис не знайдено" }
+        }
+
+        if (currentRecord.recordType === "SERVICE_INVESTIGATION") {
+            return { error: "Для службових розслідувань використовуйте окремий workflow опрацювання" }
+        }
+
         await prisma.unifiedRecord.update({
             where: { id },
             data: {
@@ -85,6 +110,188 @@ export async function processUnifiedRecordAction(id: string, resolution: string,
         console.error("Error processing unified record:", error)
         return { error: error.message || "Failed to process record" }
     }
+}
+
+const ServiceInvestigationProcessSchema = z.object({
+    id: z.string().min(1),
+    action: z.enum([
+        "CLOSE_NO_VIOLATION",
+        "INITIATE_SR",
+        "SET_ORDER",
+        "COMPLETE_LAWFUL",
+        "COMPLETE_UNLAWFUL",
+    ]),
+    orderNumber: z.string().optional(),
+    orderDate: z.string().optional(),
+    penaltyType: z.string().optional(),
+    penaltyOther: z.string().optional(),
+    penaltyOfficerId: z.string().optional(),
+})
+
+export async function processServiceInvestigationAction(input: z.infer<typeof ServiceInvestigationProcessSchema>) {
+    const session = await auth()
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const user = await prisma.user.findUnique({
+        where: { username: session.user.email },
+        select: { id: true, role: true, permProcessUnifiedRecords: true }
+    })
+
+    const parsed = ServiceInvestigationProcessSchema.parse(input)
+
+    const record = await prisma.unifiedRecord.findUnique({
+        where: { id: parsed.id },
+        include: {
+            assignedUser: {
+                select: { id: true, firstName: true, lastName: true, username: true }
+            },
+            officers: {
+                select: { id: true, firstName: true, lastName: true, badgeNumber: true }
+            }
+        }
+    })
+
+    if (!record) throw new Error("Запис не знайдено")
+    if (record.recordType !== "SERVICE_INVESTIGATION") throw new Error("Некоректний тип запису")
+    if (user?.role !== "ADMIN" && !user?.permProcessUnifiedRecords && record.assignedUserId !== user?.id) {
+        throw new Error("У вас немає прав для опрацювання службових розслідувань")
+    }
+
+    const now = new Date()
+    let data: any = {}
+
+    if (parsed.action === "CLOSE_NO_VIOLATION") {
+        data = {
+            status: "PROCESSED",
+            processedAt: now,
+            resolution: "Проведено перевірку - порушень службової дисципліни не виявлено",
+            resolutionDate: now,
+            investigationReviewResult: "NO_VIOLATION",
+            investigationStage: "CHECK_COMPLETED_NO_VIOLATION",
+            investigationFinalResult: "LAWFUL",
+        }
+    }
+
+    if (parsed.action === "INITIATE_SR") {
+        data = {
+            status: "IN_PROGRESS",
+            processedAt: null,
+            resolution: "Ініційовано проведення службового розслідування",
+            resolutionDate: now,
+            investigationReviewResult: "INITIATED_SR",
+            investigationStage: "SR_INITIATED",
+        }
+    }
+
+    if (parsed.action === "SET_ORDER") {
+        if (!parsed.orderNumber?.trim()) {
+            throw new Error("Вкажіть номер наказу")
+        }
+        if (!parsed.orderDate) {
+            throw new Error("Вкажіть дату наказу")
+        }
+
+        const orderDate = new Date(parsed.orderDate)
+        if (Number.isNaN(orderDate.getTime())) {
+            throw new Error("Некоректна дата наказу")
+        }
+
+        const deadline = new Date(orderDate.getTime() + 15 * 24 * 60 * 60 * 1000)
+        const formattedOrderDate = orderDate.toLocaleDateString("uk-UA")
+
+        data = {
+            status: "IN_PROGRESS",
+            processedAt: null,
+            resolution: `Призначено СР. Наказ №${parsed.orderNumber.trim()} від ${formattedOrderDate}`,
+            resolutionDate: now,
+            investigationStage: "SR_ORDER_ASSIGNED",
+            investigationOrderNumber: parsed.orderNumber.trim(),
+            investigationOrderDate: orderDate,
+            deadline,
+        }
+    }
+
+    if (parsed.action === "COMPLETE_LAWFUL") {
+        data = {
+            status: "PROCESSED",
+            processedAt: now,
+            resolution: "Проведено СР - дії правомірні",
+            resolutionDate: now,
+            investigationStage: "SR_COMPLETED_LAWFUL",
+            investigationFinalResult: "LAWFUL",
+        }
+    }
+
+    if (parsed.action === "COMPLETE_UNLAWFUL") {
+        if (!parsed.penaltyType?.trim()) {
+            throw new Error("Оберіть варіант стягнення")
+        }
+        if (parsed.penaltyType.trim().toLowerCase() === "інший варіант" && !parsed.penaltyOther?.trim()) {
+            throw new Error("Вкажіть інший варіант стягнення")
+        }
+        if (!parsed.penaltyOfficerId?.trim()) {
+            throw new Error("Оберіть поліцейського, щодо якого встановлено порушення")
+        }
+
+        const officer = await prisma.officer.findUnique({
+            where: { id: parsed.penaltyOfficerId.trim() },
+            select: { id: true, firstName: true, lastName: true, badgeNumber: true }
+        })
+
+        if (!officer) {
+            throw new Error("Не вдалося знайти обраного поліцейського")
+        }
+
+        const sanction = parsed.penaltyType.trim().toLowerCase() === "інший варіант"
+            ? parsed.penaltyOther!.trim()
+            : parsed.penaltyType.trim()
+        const officerFullName = `${officer.lastName} ${officer.firstName}`.trim()
+        const officerLabel = officer.badgeNumber ? `${officerFullName} (#${officer.badgeNumber})` : officerFullName
+        const shouldConnectOfficer = !record.officers.some((item) => item.id === officer.id)
+
+        data = {
+            status: "PROCESSED",
+            processedAt: now,
+            resolution: `Проведено СР - дії неправомірні. Поліцейський: ${officerLabel}. Стягнення: ${sanction}.`,
+            resolutionDate: now,
+            investigationStage: "SR_COMPLETED_UNLAWFUL",
+            investigationFinalResult: "UNLAWFUL",
+            investigationPenaltyType: parsed.penaltyType.trim(),
+            investigationPenaltyOther: parsed.penaltyType.trim().toLowerCase() === "інший варіант" ? parsed.penaltyOther!.trim() : null,
+            investigationPenaltyOfficerId: officer.id,
+            ...(shouldConnectOfficer ? { officers: { connect: [{ id: officer.id }] } } : {}),
+        }
+    }
+
+    await prisma.unifiedRecord.update({
+        where: { id: parsed.id },
+        data,
+    })
+
+    const updatedRecord = await prisma.unifiedRecord.findUnique({
+        where: { id: parsed.id },
+        include: {
+            assignedUser: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    username: true,
+                }
+            },
+            officers: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    badgeNumber: true,
+                }
+            }
+        }
+    })
+
+    revalidatePath('/admin/unified-record')
+    return { success: true, record: updatedRecord }
 }
 
 export async function requestExtensionAction(id: string, reason: string) {
@@ -225,7 +432,7 @@ export async function getUnifiedRecords(params?: {
     if (!currentUser) throw new Error("User not found")
 
     const where: any = {
-        recordType: { in: ["EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL"] }
+        recordType: { in: ["EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL", "SERVICE_INVESTIGATION"] }
     }
 
     // If not Admin, restrict to assigned records
@@ -445,6 +652,7 @@ export async function upsertUnifiedRecordAction(data: any) {
 
     const payload = { ...data }
     const isApplication = payload.recordType === "APPLICATION"
+    const isServiceInvestigation = payload.recordType === "SERVICE_INVESTIGATION"
     const isCreate = !payload.id
 
     if (isApplication && isCreate) {
@@ -460,8 +668,16 @@ export async function upsertUnifiedRecordAction(data: any) {
     }
 
     payload.eoNumber = normalizeEoNumber(payload.eoNumber) || String(payload.eoNumber || "").trim()
-    payload.applicant = normalizePersonName(payload.applicant) || null
+    payload.applicant = isServiceInvestigation
+        ? (typeof payload.applicant === "string" ? payload.applicant.trim() || null : null)
+        : (normalizePersonName(payload.applicant) || null)
     payload.officerName = normalizePersonName(payload.officerName) || null
+
+    if (isServiceInvestigation) {
+        payload.category = payload.category || "Службові розслідування"
+        payload.investigationStage = payload.investigationStage || "REPORT_REVIEW"
+        payload.investigationViolation = payload.investigationViolation || payload.description || null
+    }
 
     const validated = UnifiedRecordSchema.parse(payload)
     const { officerIds, ...recordData } = validated
@@ -474,8 +690,13 @@ export async function upsertUnifiedRecordAction(data: any) {
         })
     }
 
-    // Calculate deadline if not provided (15 days from eoDate)
-    const deadline = validated.deadline || (validated.eoDate ? new Date(new Date(validated.eoDate).getTime() + 15 * 24 * 60 * 60 * 1000) : null)
+    // Calculate deadline:
+    // 1) for service investigation with order date -> 15 days from order date
+    // 2) otherwise -> 15 days from record date
+    const deadline = validated.deadline ||
+        (validated.recordType === "SERVICE_INVESTIGATION" && validated.investigationOrderDate
+            ? new Date(new Date(validated.investigationOrderDate).getTime() + 15 * 24 * 60 * 60 * 1000)
+            : (validated.eoDate ? new Date(new Date(validated.eoDate).getTime() + 15 * 24 * 60 * 60 * 1000) : null))
 
     const record = await prisma.unifiedRecord.upsert({
         where: { eoNumber: validated.eoNumber },

@@ -47,6 +47,7 @@ function getTypeLabel(type: string) {
   if (type === "ZVERN") return "Звернення"
   if (type === "APPLICATION") return "Застосування"
   if (type === "DETENTION_PROTOCOL") return "Протоколи затримання"
+  if (type === "SERVICE_INVESTIGATION") return "Службові розслідування"
   return "Інше"
 }
 
@@ -60,7 +61,7 @@ function getStatusLabel(status: string) {
 
 function normalizeRecordType(recordType?: string | null, eoNumber?: string | null) {
   const raw = (recordType || "").trim().toUpperCase()
-  if (raw === "EO" || raw === "ZVERN" || raw === "APPLICATION" || raw === "DETENTION_PROTOCOL") {
+  if (raw === "EO" || raw === "ZVERN" || raw === "APPLICATION" || raw === "DETENTION_PROTOCOL" || raw === "SERVICE_INVESTIGATION") {
     return raw
   }
 
@@ -183,6 +184,7 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
     ZVERN: 0,
     APPLICATION: 0,
     DETENTION_PROTOCOL: 0,
+    SERVICE_INVESTIGATION: 0,
     OTHER: 0,
   }
 

@@ -51,6 +51,7 @@ import {
 import CreateRecordDialog from "./CreateRecordDialog"
 import ViewRecordDialog from "./ViewRecordDialog"
 import RecordProcessPopover from "./RecordProcessPopover"
+import ServiceInvestigationProcessPopover from "./ServiceInvestigationProcessPopover"
 import ImportDialog from "./ImportDialog"
 import {
     deleteUnifiedRecordAction,
@@ -58,6 +59,7 @@ import {
     bulkAssignUnifiedRecordsAction,
     bulkUpdateResolutionAction,
     processUnifiedRecordAction,
+    processServiceInvestigationAction,
     requestExtensionAction,
     reviewExtensionAction,
     returnForRevisionAction,
@@ -68,6 +70,7 @@ import {
     getAssignedInspectorName,
     getRecordTypeLabel,
     isApplicationLike,
+    isServiceInvestigationRecord,
 } from "./unifiedRecord.helpers"
 import {
     buildRecordExportData,
@@ -132,6 +135,17 @@ function formatDeadlineDelta(deadlineValue: string | Date, nowTs: number) {
     return `${Math.max(1, minutes)} хв.`
 }
 
+function getServiceInvestigationStageLabel(record: any) {
+    const stage = String(record?.investigationStage || "REPORT_REVIEW")
+    if (stage === "REPORT_REVIEW") return "Розгляд рапорту/доповідної"
+    if (stage === "SR_INITIATED") return "Ініційовано СР"
+    if (stage === "SR_ORDER_ASSIGNED") return "Призначено СР (наказ)"
+    if (stage === "SR_COMPLETED_LAWFUL") return "СР завершено: дії правомірні"
+    if (stage === "SR_COMPLETED_UNLAWFUL") return "СР завершено: дії неправомірні"
+    if (stage === "CHECK_COMPLETED_NO_VIOLATION") return "Перевірку завершено: порушень не виявлено"
+    return stage
+}
+
 export default function RecordList({ initialRecords, users = [], currentUser }: RecordListProps) {
     const [records, setRecords] = useState(
         normalizeInitialRecords(initialRecords)
@@ -186,7 +200,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             if (typeof parsed.periodFrom === "string") setPeriodFrom(parsed.periodFrom)
             if (typeof parsed.periodTo === "string") setPeriodTo(parsed.periodTo)
             if (typeof parsed.quickPreset === "string") setQuickPreset(parsed.quickPreset)
-            if (typeof parsed.activeTab === "string" && ["ALL", "EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL"].includes(parsed.activeTab)) {
+            if (typeof parsed.activeTab === "string" && ["ALL", "EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL", "SERVICE_INVESTIGATION"].includes(parsed.activeTab)) {
                 setActiveTab(parsed.activeTab)
             }
         } catch {
@@ -390,6 +404,32 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         }
     }
 
+    const handleServiceInvestigationProcess = async (payload: {
+        id: string
+        action: "CLOSE_NO_VIOLATION" | "INITIATE_SR" | "SET_ORDER" | "COMPLETE_LAWFUL" | "COMPLETE_UNLAWFUL"
+        orderNumber?: string
+        orderDate?: string
+        penaltyType?: string
+        penaltyOther?: string
+        penaltyOfficerId?: string
+    }) => {
+        try {
+            const result: any = await processServiceInvestigationAction(payload)
+
+            if (result?.success && result?.record) {
+                toast.success("Етап службового розслідування оновлено")
+                setRecords(prev =>
+                    prev.map((r) => (r.id === payload.id ? { ...r, ...result.record } : r))
+                )
+                return
+            }
+
+            toast.error("Не вдалося оновити етап службового розслідування")
+        } catch (error: any) {
+            toast.error(error?.message || "Помилка опрацювання службового розслідування")
+        }
+    }
+
     const handleRequestExtension = async (id: string, reason: string) => {
         try {
             await requestExtensionAction(id, reason)
@@ -530,6 +570,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             Протоколи затримання
                             <span className="bg-fuchsia-50/50 text-fuchsia-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
                                 {records.filter(r => r.recordType === 'DETENTION_PROTOCOL').length}
+                            </span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="SERVICE_INVESTIGATION"
+                            className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-700 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
+                        >
+                            Службові розслідування
+                            <span className="bg-emerald-50/50 text-emerald-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
+                                {records.filter(r => r.recordType === 'SERVICE_INVESTIGATION').length}
                             </span>
                         </TabsTrigger>
                     </TabsList>
@@ -870,6 +919,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             ? `Рапорт №${record.eoNumber}`
                                                             : record.recordType === 'DETENTION_PROTOCOL'
                                                                 ? `Протокол ${record.eoNumber || "—"}`
+                                                                : record.recordType === 'SERVICE_INVESTIGATION'
+                                                                    ? `${record.investigationDocType === "DOPOVIDNA" ? "Доповідна записка" : "Рапорт"} №${record.eoNumber || "—"}`
                                                                 : (record.description || 'Без опису')}
                                                     </h3>
                                                     {record.recordType === 'APPLICATION' && (
@@ -877,6 +928,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                     )}
                                                     {record.recordType === 'DETENTION_PROTOCOL' && (
                                                         <p className="mt-1 text-xs font-semibold tracking-wide text-slate-500">Протоколи затримання</p>
+                                                    )}
+                                                    {record.recordType === 'SERVICE_INVESTIGATION' && (
+                                                        <p className="mt-1 text-xs font-semibold tracking-wide text-slate-500">
+                                                            Службові розслідування • {getServiceInvestigationStageLabel(record)}
+                                                        </p>
                                                     )}
                                                 </div>
 
@@ -957,11 +1013,13 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                 ? 'ПІБ'
                                                                 : record.recordType === 'DETENTION_PROTOCOL'
                                                                     ? 'ПІБ кого затримали'
+                                                                    : record.recordType === 'SERVICE_INVESTIGATION'
+                                                                        ? 'Відносно кого'
                                                                     : 'Заявник'}
                                                         </span>
                                                         </div>
                                                         <p className="text-sm font-black text-slate-900 dark:text-white transition-colors duration-300">
-                                                        {isApplicationLike(record)
+                                                        {isApplicationLike(record) || isServiceInvestigationRecord(record)
                                                             ? (record.applicant || '—')
                                                             : (<><span className="text-slate-400 text-[10px] mr-1">Гр.</span> {record.applicant || '—'}</>)}
                                                         </p>
@@ -971,7 +1029,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                     <div className="flex items-center gap-2 text-slate-500">
                                                         <FileText className="w-4 h-4 shrink-0" />
                                                         <span className="text-xs font-black uppercase tracking-widest">
-                                                            {isApplicationLike(record) ? 'Дата народження / дії' : 'Результат'}
+                                                            {isApplicationLike(record)
+                                                                ? 'Дата народження / дії'
+                                                                : isServiceInvestigationRecord(record)
+                                                                    ? 'Порушення / етап'
+                                                                    : 'Результат'}
                                                         </span>
                                                     </div>
 
@@ -990,6 +1052,22 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                     {record.status === 'PROCESSED'
                                                                         ? (record.resolution || 'Виконано')
                                                                         : (record.assignedUserId ? (record.resolution ? 'Потребує доопрацювання/В процесі...' : 'В процесі розгляду...') : 'Не призначено')}
+                                                                </div>
+                                                            </>
+                                                        ) : isServiceInvestigationRecord(record) ? (
+                                                            <>
+                                                                <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-300">
+                                                                    {record.investigationViolation || record.description || "—"}
+                                                                </div>
+                                                                <div className={cn(
+                                                                    "text-sm font-bold italic transition-colors duration-300",
+                                                                    record.status === 'PROCESSED'
+                                                                        ? "text-emerald-700 dark:text-emerald-400"
+                                                                        : "text-blue-600 dark:text-blue-400"
+                                                                )}>
+                                                                    {record.status === 'PROCESSED'
+                                                                        ? (record.resolution || getServiceInvestigationStageLabel(record))
+                                                                        : getServiceInvestigationStageLabel(record)}
                                                                 </div>
                                                             </>
                                                         ) : (
@@ -1013,12 +1091,12 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 </div>
 
                                                 {/* Tagged Officers */}
-                                                {((isApplicationLike(record) || record.concernsBpp) && record.officers && record.officers.length > 0) && (
+                                                {((isApplicationLike(record) || isServiceInvestigationRecord(record) || record.concernsBpp) && record.officers && record.officers.length > 0) && (
                                                     <div className="space-y-3 col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-1">
                                                         <div className="flex items-center gap-2 text-slate-500">
                                                             <Shield className="w-4 h-4 shrink-0" />
                                                             <span className="text-xs font-black uppercase tracking-widest">
-                                                                {isApplicationLike(record) ? "Поліцейські, яких стосується" : "Прив'язані поліцейські"}
+                                                                {(isApplicationLike(record) || isServiceInvestigationRecord(record)) ? "Поліцейські, яких стосується" : "Прив'язані поліцейські"}
                                                             </span>
                                                         </div>
                                                         <div className="flex flex-wrap gap-2">
@@ -1030,7 +1108,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         </div>
                                                     </div>
                                                 )}
-                                                {(isApplicationLike(record) && (!record.officers || record.officers.length === 0)) && (
+                                                {((isApplicationLike(record) || (isServiceInvestigationRecord(record) && record.investigationTargetType === "OFFICERS")) && (!record.officers || record.officers.length === 0)) && (
                                                     <div className="space-y-3 col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-1">
                                                         <div className="flex items-center gap-2 text-slate-500">
                                                             <Shield className="w-4 h-4 shrink-0" />
@@ -1043,7 +1121,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2 text-slate-500">
                                                         <Briefcase className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs font-black uppercase tracking-widest">{isApplicationLike(record) ? 'Виконавець' : 'Відповідальний'}</span>
+                                                        <span className="text-xs font-black uppercase tracking-widest">{(isApplicationLike(record) || isServiceInvestigationRecord(record)) ? 'Виконавець' : 'Відповідальний'}</span>
                                                     </div>
                                                     <div className="space-y-1">
                                                         {isApplicationLike(record) && currentUser.role !== 'ADMIN' ? (
@@ -1080,7 +1158,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             </Select>
                                                         )}
 
-                                                        {record.status === 'PROCESSED' && (
+                                                        {record.status === 'PROCESSED' && !isServiceInvestigationRecord(record) && (
                                                             <div className="mt-4">
                                                                 <RecordProcessPopover
                                                                     recordId={record.id}
@@ -1102,13 +1180,20 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         {/* Single "DONE" Button for assigned user */}
                                                         {record.assignedUserId === currentUser.id && record.status !== 'PROCESSED' && (
                                                             <div className="flex flex-col gap-2 mt-4">
-                                                                <RecordProcessPopover
-                                                                    recordId={record.id}
-                                                                    onProcess={handleProcess}
-                                                                    mode={isApplicationLike(record) ? "application" : "default"}
-                                                                />
+                                                                {isServiceInvestigationRecord(record) ? (
+                                                                    <ServiceInvestigationProcessPopover
+                                                                        record={record}
+                                                                        onProcess={handleServiceInvestigationProcess}
+                                                                    />
+                                                                ) : (
+                                                                    <RecordProcessPopover
+                                                                        recordId={record.id}
+                                                                        onProcess={handleProcess}
+                                                                        mode={isApplicationLike(record) ? "application" : "default"}
+                                                                    />
+                                                                )}
 
-                                                                {!isApplicationLike(record) && (record.extensionStatus !== 'PENDING' ? (
+                                                                {!isApplicationLike(record) && !isServiceInvestigationRecord(record) && (record.extensionStatus !== 'PENDING' ? (
                                                                     <Popover>
                                                                         <PopoverTrigger asChild>
                                                                             <Button variant="outline" className="w-full border-slate-200 text-slate-600 rounded-xl font-bold h-9 gap-2">
@@ -1142,7 +1227,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         )}
 
                                                         {/* Admin Review for extensions or Return for Revision */}
-                                                        {!isApplicationLike(record) && currentUser.role === 'ADMIN' && (
+                                                        {!isApplicationLike(record) && !isServiceInvestigationRecord(record) && currentUser.role === 'ADMIN' && (
                                                             <div className="mt-3 space-y-2">
                                                                 {record.extensionStatus === 'PENDING' && (
                                                                     <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100 space-y-2">

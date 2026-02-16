@@ -53,6 +53,18 @@ const formSchema = z.object({
     district: z.string().optional(),
     resolution: z.string().optional(),
     resolutionDate: z.date().optional().nullable(),
+    investigationDocType: z.string().optional().nullable(),
+    investigationTargetType: z.string().optional().nullable(),
+    investigationTargetText: z.string().optional().nullable(),
+    investigationViolation: z.string().optional().nullable(),
+    investigationStage: z.string().optional().nullable(),
+    investigationReviewResult: z.string().optional().nullable(),
+    investigationOrderNumber: z.string().optional().nullable(),
+    investigationOrderDate: z.date().optional().nullable(),
+    investigationFinalResult: z.string().optional().nullable(),
+    investigationPenaltyType: z.string().optional().nullable(),
+    investigationPenaltyOther: z.string().optional().nullable(),
+    investigationPenaltyOfficerId: z.string().optional().nullable(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -90,6 +102,10 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
     const [applicationBirthDate, setApplicationBirthDate] = useState("")
     const [detentionProtocolSeries, setDetentionProtocolSeries] = useState("")
     const [detentionProtocolNumber, setDetentionProtocolNumber] = useState("")
+    const [siDocType, setSiDocType] = useState<"RAPORT" | "DOPOVIDNA">("RAPORT")
+    const [siTargetMode, setSiTargetMode] = useState<"OFFICERS" | "BPP">("OFFICERS")
+    const [siTargetText, setSiTargetText] = useState("поліцейських БПП")
+    const [siViolation, setSiViolation] = useState("")
     const autoOfficerNameRef = useRef("")
     const autoAddressRef = useRef("")
     const autoApplicantRef = useRef("")
@@ -114,6 +130,18 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
             district: initialData?.district || "Хмільницький",
             resolution: initialData?.resolution || "",
             resolutionDate: initialData?.resolutionDate ? new Date(initialData.resolutionDate) : null,
+            investigationDocType: (initialData as any)?.investigationDocType || null,
+            investigationTargetType: (initialData as any)?.investigationTargetType || null,
+            investigationTargetText: (initialData as any)?.investigationTargetText || null,
+            investigationViolation: (initialData as any)?.investigationViolation || null,
+            investigationStage: (initialData as any)?.investigationStage || null,
+            investigationReviewResult: (initialData as any)?.investigationReviewResult || null,
+            investigationOrderNumber: (initialData as any)?.investigationOrderNumber || null,
+            investigationOrderDate: (initialData as any)?.investigationOrderDate ? new Date((initialData as any).investigationOrderDate) : null,
+            investigationFinalResult: (initialData as any)?.investigationFinalResult || null,
+            investigationPenaltyType: (initialData as any)?.investigationPenaltyType || null,
+            investigationPenaltyOther: (initialData as any)?.investigationPenaltyOther || null,
+            investigationPenaltyOfficerId: (initialData as any)?.investigationPenaltyOfficerId || null,
         },
     })
 
@@ -137,6 +165,18 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
             district: initialData?.district || "Хмільницький",
             resolution: initialData?.resolution || "",
             resolutionDate: initialData?.resolutionDate ? new Date(initialData.resolutionDate) : null,
+            investigationDocType: (initialData as any)?.investigationDocType || null,
+            investigationTargetType: (initialData as any)?.investigationTargetType || null,
+            investigationTargetText: (initialData as any)?.investigationTargetText || null,
+            investigationViolation: (initialData as any)?.investigationViolation || null,
+            investigationStage: (initialData as any)?.investigationStage || null,
+            investigationReviewResult: (initialData as any)?.investigationReviewResult || null,
+            investigationOrderNumber: (initialData as any)?.investigationOrderNumber || null,
+            investigationOrderDate: (initialData as any)?.investigationOrderDate ? new Date((initialData as any).investigationOrderDate) : null,
+            investigationFinalResult: (initialData as any)?.investigationFinalResult || null,
+            investigationPenaltyType: (initialData as any)?.investigationPenaltyType || null,
+            investigationPenaltyOther: (initialData as any)?.investigationPenaltyOther || null,
+            investigationPenaltyOfficerId: (initialData as any)?.investigationPenaltyOfficerId || null,
         })
     }, [isOpen, form, initialData?.id])
 
@@ -241,7 +281,7 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
     const onSubmit = async (data: FormValues) => {
         setIsLoading(true)
         try {
-            if (data.recordType !== "RAPORT" && data.recordType !== "APPLICATION" && data.recordType !== "DETENTION_PROTOCOL" && !data.eoNumber?.trim()) {
+            if (data.recordType !== "RAPORT" && data.recordType !== "APPLICATION" && data.recordType !== "DETENTION_PROTOCOL" && data.recordType !== "SERVICE_INVESTIGATION" && !data.eoNumber?.trim()) {
                 toast.error('Поле "Номер ЄО" є обовʼязковим')
                 return
             }
@@ -255,6 +295,9 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
             let payloadAddress = data.address
             let payloadCategory = data.category
             let payloadEoNumber = data.eoNumber
+            let payloadConcernsBpp = true
+            let payloadOfficerIds = taggedOfficers.map((o: any) => o.id)
+            let payloadInvestigation: Record<string, any> = {}
             if (data.recordType === "RAPORT") {
                 if (!data.officerName?.trim()) {
                     toast.error('Поле "Ким застосовано..." є обовʼязковим')
@@ -315,6 +358,44 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                 raportDescription = forceDescription.description
             }
 
+            if (data.recordType === "SERVICE_INVESTIGATION") {
+                if (!data.eoNumber?.trim()) {
+                    toast.error('Поле "Номер рапорту/доповідної" є обовʼязковим')
+                    return
+                }
+                if (!siViolation.trim()) {
+                    toast.error('Поле "Яке порушення" є обовʼязковим')
+                    return
+                }
+                if (siTargetMode === "OFFICERS" && taggedOfficers.length === 0) {
+                    toast.error('Оберіть хоча б одного поліцейського або перемкніться на "поліцейських БПП"')
+                    return
+                }
+
+                const targetText = siTargetMode === "BPP"
+                    ? (siTargetText.trim() || "поліцейських БПП")
+                    : taggedOfficers
+                        .map((o: any) => `${o.lastName || ""} ${o.firstName || ""}`.trim())
+                        .filter(Boolean)
+                        .join(", ")
+
+                raportDescription = siViolation.trim()
+                payloadAddress = targetText
+                payloadCategory = "Службові розслідування"
+                payloadConcernsBpp = siTargetMode === "BPP"
+                payloadOfficerIds = siTargetMode === "BPP" ? [] : taggedOfficers.map((o: any) => o.id)
+
+                payloadInvestigation = {
+                    investigationDocType: siDocType,
+                    investigationTargetType: siTargetMode,
+                    investigationTargetText: targetText,
+                    investigationViolation: siViolation.trim(),
+                    investigationStage: (initialData as any)?.investigationStage || "REPORT_REVIEW",
+                }
+
+                data.applicant = targetText
+            }
+
             if (data.recordType === "APPLICATION") {
                 if (!data.applicant?.trim()) {
                     toast.error('Поле "ПІБ до кого застосовано" є обовʼязковим')
@@ -358,7 +439,9 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                 description: raportDescription,
                 address: payloadAddress,
                 category: payloadCategory,
-                officerIds: taggedOfficers.map((o: any) => o.id)
+                concernsBpp: payloadConcernsBpp,
+                officerIds: payloadOfficerIds,
+                ...payloadInvestigation,
             })
             if (result.success) {
                 toast.success(isEdit ? "Запис оновлено" : "Запис успішно збережено")
@@ -401,6 +484,10 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
         setApplicationBirthDate("")
         setDetentionProtocolSeries("")
         setDetentionProtocolNumber("")
+        setSiDocType((initialData as any)?.investigationDocType === "DOPOVIDNA" ? "DOPOVIDNA" : "RAPORT")
+        setSiTargetMode((initialData as any)?.investigationTargetType === "BPP" ? "BPP" : "OFFICERS")
+        setSiTargetText((initialData as any)?.investigationTargetText || "поліцейських БПП")
+        setSiViolation((initialData as any)?.investigationViolation || initialData?.description || "")
         autoOfficerNameRef.current = ""
         autoAddressRef.current = ""
         autoApplicantRef.current = ""
@@ -424,7 +511,13 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
     }, [isOpen, form])
 
     useEffect(() => {
-        if (recordType !== "RAPORT") {
+        if (recordType !== "RAPORT" && recordType !== "SERVICE_INVESTIGATION") {
+            setOfficerSearchQuery("")
+            setOfficerSearchResults([])
+            return
+        }
+
+        if (recordType === "SERVICE_INVESTIGATION" && siTargetMode === "BPP") {
             setOfficerSearchQuery("")
             setOfficerSearchResults([])
             return
@@ -451,7 +544,7 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
         }, 300)
 
         return () => clearTimeout(timer)
-    }, [officerSearchQuery, taggedOfficers, recordType])
+    }, [officerSearchQuery, taggedOfficers, recordType, siTargetMode])
 
     useEffect(() => {
         if (recordType !== "RAPORT") return
@@ -575,7 +668,11 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                         {recordType !== "DETENTION_PROTOCOL" && (
                             <div className="space-y-2">
                                 <Label htmlFor="eoNumber" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                    {recordType === "APPLICATION" ? "Рапорт №" : "Номер ЄО"}
+                                    {recordType === "APPLICATION"
+                                        ? "Рапорт №"
+                                        : recordType === "SERVICE_INVESTIGATION"
+                                            ? "№ рапорту/доповідної"
+                                            : "Номер ЄО"}
                                 </Label>
                                 {recordType === "RAPORT" || recordType === "APPLICATION" ? (
                                     <div className="h-11 rounded-xl border border-slate-100 bg-slate-50 px-3 flex items-center text-sm font-semibold text-slate-600">
@@ -588,7 +685,7 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                                         <Input
                                             id="eoNumber"
                                             {...form.register("eoNumber")}
-                                            placeholder="Напр. 1256"
+                                            placeholder={recordType === "SERVICE_INVESTIGATION" ? "Напр. 42/26" : "Напр. 1256"}
                                             className="rounded-xl border-slate-100 bg-slate-50 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                             disabled={isEdit}
                                         />
@@ -631,7 +728,7 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                             </Popover>
                         </div>
 
-                        {recordType !== "RAPORT" && (
+                        {recordType !== "RAPORT" && recordType !== "SERVICE_INVESTIGATION" && (
                             <div className="space-y-2">
                                 <Label htmlFor="applicant" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     {recordType === "APPLICATION"
@@ -702,6 +799,7 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                                         <SelectItem value="ZVERN">Звернення</SelectItem>
                                         <SelectItem value="APPLICATION">Застосування сили/спецзасобів</SelectItem>
                                         <SelectItem value="DETENTION_PROTOCOL">Протоколи затримання</SelectItem>
+                                        <SelectItem value="SERVICE_INVESTIGATION">Службові розслідування</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -1029,6 +1127,142 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                                     {...form.register("applicant")}
                                     placeholder="Ваша відповідь"
                                     className="rounded-xl border-slate-200 bg-slate-50 min-h-[110px]"
+                                />
+                            </div>
+                        </div>
+                    ) : recordType === "SERVICE_INVESTIGATION" ? (
+                        <div className="space-y-4">
+                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Службове розслідування</p>
+                                <p className="text-xs font-medium text-slate-700 mt-1">
+                                    Строк розгляду рапорту/доповідної: 15 днів. Після призначення СР строк рахується 15 днів від дати наказу.
+                                </p>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+                                <Label className="text-sm font-black tracking-tight text-slate-800">Тип документа</Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Button
+                                        type="button"
+                                        variant={siDocType === "RAPORT" ? "default" : "outline"}
+                                        className="h-10 rounded-xl font-bold"
+                                        onClick={() => setSiDocType("RAPORT")}
+                                    >
+                                        Рапорт
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={siDocType === "DOPOVIDNA" ? "default" : "outline"}
+                                        className="h-10 rounded-xl font-bold"
+                                        onClick={() => setSiDocType("DOPOVIDNA")}
+                                    >
+                                        Доповідна записка
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+                                <Label className="text-sm font-black tracking-tight text-slate-800">
+                                    Відносно якого поліцейського / поліцейських
+                                </Label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <Button
+                                        type="button"
+                                        variant={siTargetMode === "OFFICERS" ? "default" : "outline"}
+                                        className="h-10 rounded-xl font-bold"
+                                        onClick={() => setSiTargetMode("OFFICERS")}
+                                    >
+                                        Обрати поліцейських
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={siTargetMode === "BPP" ? "default" : "outline"}
+                                        className="h-10 rounded-xl font-bold"
+                                        onClick={() => setSiTargetMode("BPP")}
+                                    >
+                                        Відносно поліцейських БПП
+                                    </Button>
+                                </div>
+
+                                {siTargetMode === "OFFICERS" ? (
+                                    <div className="space-y-2">
+                                        {taggedOfficers.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mb-1">
+                                                {taggedOfficers.map((officer: any) => (
+                                                    <div key={officer.id} className="flex items-center gap-2 bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight">
+                                                        <span>{officer.lastName} {officer.firstName} {officer.badgeNumber ? `(${officer.badgeNumber})` : ""}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setTaggedOfficers(taggedOfficers.filter((item: any) => item.id !== officer.id))}
+                                                            className="hover:text-blue-800"
+                                                        >
+                                                            <XCircle className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="relative">
+                                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <Input
+                                                placeholder="Прізвище або жетон..."
+                                                value={officerSearchQuery}
+                                                onChange={(e) => setOfficerSearchQuery(e.target.value)}
+                                                className="pl-10 h-11 rounded-xl border-slate-200 text-sm"
+                                            />
+
+                                            {officerSearchResults.length > 0 && (
+                                                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xl z-50 max-h-64 overflow-y-auto">
+                                                    {officerSearchResults.map((officer: any) => (
+                                                        <button
+                                                            type="button"
+                                                            key={officer.id}
+                                                            onClick={() => {
+                                                                setTaggedOfficers([...taggedOfficers, officer])
+                                                                setOfficerSearchQuery("")
+                                                                setOfficerSearchResults([])
+                                                            }}
+                                                            className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0"
+                                                        >
+                                                            <div className="text-left">
+                                                                <p className="text-sm font-bold text-slate-900">{officer.lastName} {officer.firstName}</p>
+                                                                <p className="text-[10px] text-slate-400 uppercase font-black">{officer.badgeNumber} • {officer.rank || 'Офіцер'}</p>
+                                                            </div>
+                                                            <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                                                                <UserPlus className="w-3.5 h-3.5" />
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {isSearchingOfficers && (
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                    <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Input
+                                        value={siTargetText}
+                                        onChange={(e) => setSiTargetText(e.target.value)}
+                                        placeholder="Напр. поліцейських БПП"
+                                        className="rounded-xl border-slate-200 bg-slate-50 h-11"
+                                    />
+                                )}
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+                                <Label className="text-sm font-black tracking-tight text-slate-800">
+                                    Яке порушення <span className="text-rose-600">*</span>
+                                </Label>
+                                <Textarea
+                                    value={siViolation}
+                                    onChange={(e) => setSiViolation(e.target.value)}
+                                    placeholder="Опишіть суть порушення службової дисципліни"
+                                    className="rounded-xl border-slate-200 bg-slate-50 min-h-[120px]"
                                 />
                             </div>
                         </div>

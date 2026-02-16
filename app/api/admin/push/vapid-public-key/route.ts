@@ -9,11 +9,8 @@ export async function GET() {
   }
 
   if (!isWebPushConfigured()) {
-    return NextResponse.json(
-      { error: "WEB_PUSH keys are not configured on server" },
-      { status: 503 }
-    )
+    return NextResponse.json({ configured: false, publicKey: null })
   }
 
-  return NextResponse.json({ publicKey: getWebPushPublicKey() })
+  return NextResponse.json({ configured: true, publicKey: getWebPushPublicKey() })
 }

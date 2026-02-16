@@ -101,6 +101,10 @@ export function isApplicationLike(record: any) {
     return record.recordType === "APPLICATION" || record.recordType === "DETENTION_PROTOCOL"
 }
 
+export function isServiceInvestigationRecord(record: any) {
+    return record.recordType === "SERVICE_INVESTIGATION"
+}
+
 export function getApplicationBirthDate(record: any) {
     const val = record?.address || ""
     if (typeof val !== "string") return "—"
@@ -117,11 +121,11 @@ export function getAssignedInspectorName(record: any) {
     return `${record.assignedUser.lastName || ""} ${record.assignedUser.firstName || ""}`.trim() || record.assignedUser.username || "Призначено"
 }
 
-export type NormalizedRecordType = "EO" | "ZVERN" | "APPLICATION" | "DETENTION_PROTOCOL" | "OTHER"
+export type NormalizedRecordType = "EO" | "ZVERN" | "APPLICATION" | "DETENTION_PROTOCOL" | "SERVICE_INVESTIGATION" | "OTHER"
 
 export function normalizeRecordType(recordType?: string | null, eoNumber?: string | null): NormalizedRecordType {
     const raw = (recordType || "").trim().toUpperCase()
-    if (raw === "EO" || raw === "ZVERN" || raw === "APPLICATION" || raw === "DETENTION_PROTOCOL") {
+    if (raw === "EO" || raw === "ZVERN" || raw === "APPLICATION" || raw === "DETENTION_PROTOCOL" || raw === "SERVICE_INVESTIGATION") {
         return raw
     }
 
@@ -139,5 +143,6 @@ export function getRecordTypeLabel(recordType?: string | null, eoNumber?: string
     if (normalized === "ZVERN") return "Звернення"
     if (normalized === "APPLICATION") return "Застосування сили/спецзасобів"
     if (normalized === "DETENTION_PROTOCOL") return "Протоколи затримання"
+    if (normalized === "SERVICE_INVESTIGATION") return "Службові розслідування"
     return "Інше"
 }
