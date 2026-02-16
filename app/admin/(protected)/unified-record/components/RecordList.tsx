@@ -470,7 +470,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         penaltyOfficerId?: string
         penalties?: Array<{
             officerId: string
-            penaltyType: string
+            decisionType: "ARTICLE_13" | "ARTICLE_19_PART_11" | "ARTICLE_19_PART_13"
+            penaltyType?: string
             penaltyOther?: string
         }>
         officerIds?: string[]

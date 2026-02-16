@@ -137,7 +137,8 @@ const ServiceInvestigationProcessSchema = z.object({
     penaltyOfficerId: z.string().optional(),
     penalties: z.array(z.object({
         officerId: z.string().min(1),
-        penaltyType: z.string().min(1),
+        decisionType: z.enum(["ARTICLE_13", "ARTICLE_19_PART_11", "ARTICLE_19_PART_13"]),
+        penaltyType: z.string().optional(),
         penaltyOther: z.string().optional(),
     })).optional(),
     officerIds: z.array(z.string()).optional(),
@@ -147,31 +148,63 @@ const ServiceInvestigationProcessSchema = z.object({
     penaltyOrderDate: z.string().optional(),
 })
 
+type ServiceDecisionType = "ARTICLE_13" | "ARTICLE_19_PART_11" | "ARTICLE_19_PART_13"
+
+const PART_11_MEASURE = "попереджено про необхідність дотримання службової дисципліни"
+const PART_13_MEASURE = "обмеженося раніше застосованим дисциплінарним стягненням"
+
+const SERVICE_DECISION_TYPE_LABELS: Record<ServiceDecisionType, string> = {
+    ARTICLE_13: "ст. 13 Дисциплінарного статуту НПУ",
+    ARTICLE_19_PART_11: "ч. 11 ст. 19 Дисциплінарного статуту НПУ",
+    ARTICLE_19_PART_13: "ч. 13 ст. 19 Дисциплінарного статуту НПУ",
+}
+
 type ServicePenaltyInput = {
     officerId: string
-    penaltyType: string
+    decisionType?: ServiceDecisionType
+    penaltyType?: string
     penaltyOther?: string
 }
 
 type ServicePenaltyNormalized = {
     officerId: string
-    penaltyType: string
+    decisionType: ServiceDecisionType
+    penaltyType: string | null
     penaltyOther: string | null
+}
+
+function inferLegacyDecisionType(penaltyType: string, penaltyByArticle13?: boolean): ServiceDecisionType {
+    const normalized = String(penaltyType || "").toLowerCase()
+    if (penaltyByArticle13 === false) {
+        if (normalized.includes("обмеж")) return "ARTICLE_19_PART_13"
+        return "ARTICLE_19_PART_11"
+    }
+    if (normalized.includes("обмеж")) return "ARTICLE_19_PART_13"
+    if (normalized.includes("попереджено про необхідність")) return "ARTICLE_19_PART_11"
+    return "ARTICLE_13"
 }
 
 function normalizePenaltyEntries(input: ServicePenaltyInput[]): ServicePenaltyNormalized[] {
     return input
         .map((entry) => {
             const officerId = String(entry.officerId || "").trim()
+            const decisionType = (entry.decisionType || "ARTICLE_13") as ServiceDecisionType
             const penaltyType = String(entry.penaltyType || "").trim()
             const penaltyOther = typeof entry.penaltyOther === "string" ? entry.penaltyOther.trim() : ""
+            const canonicalPenaltyType =
+                decisionType === "ARTICLE_19_PART_11"
+                    ? PART_11_MEASURE
+                    : decisionType === "ARTICLE_19_PART_13"
+                        ? PART_13_MEASURE
+                        : penaltyType
             return {
                 officerId,
-                penaltyType,
-                penaltyOther: penaltyOther || null,
+                decisionType,
+                penaltyType: canonicalPenaltyType || null,
+                penaltyOther: decisionType === "ARTICLE_13" ? (penaltyOther || null) : null,
             }
         })
-        .filter((entry) => entry.officerId.length > 0 && entry.penaltyType.length > 0)
+        .filter((entry) => entry.officerId.length > 0 && (entry.decisionType !== "ARTICLE_13" || !!entry.penaltyType))
 }
 
 export async function processServiceInvestigationAction(input: z.infer<typeof ServiceInvestigationProcessSchema>) {
@@ -315,6 +348,7 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
         const fallbackPenaltyInput = parsed.penaltyOfficerId?.trim() && parsed.penaltyType?.trim()
             ? [{
                 officerId: parsed.penaltyOfficerId.trim(),
+                decisionType: inferLegacyDecisionType(parsed.penaltyType.trim(), parsed.penaltyByArticle13),
                 penaltyType: parsed.penaltyType.trim(),
                 penaltyOther: parsed.penaltyOther?.trim(),
             }]
@@ -348,7 +382,12 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
         }
 
         for (const penalty of normalizedPenalties) {
-            if (penalty.penaltyType.toLowerCase() === "інший варіант" && !penalty.penaltyOther) {
+            if (penalty.decisionType !== "ARTICLE_13") continue
+            const penaltyType = String(penalty.penaltyType || "").toLowerCase()
+            if (!penaltyType) {
+                throw new Error("Для стягнення за ст. 13 оберіть вид стягнення")
+            }
+            if (penaltyType === "інший варіант" && !penalty.penaltyOther) {
                 throw new Error("Для варіанту \"інший\" вкажіть текст стягнення")
             }
         }
@@ -361,7 +400,7 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
             throw new Error("Некоректна дата затвердження висновку СР")
         }
 
-        const penaltyByArticle13 = parsed.penaltyByArticle13 !== false
+        const penaltyByArticle13 = normalizedPenalties.some((entry) => entry.decisionType === "ARTICLE_13")
         let penaltyOrderDate: Date | null = null
         let penaltyOrderNumber: string | null = null
 
@@ -392,32 +431,43 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
         const officersMap = new Map(officers.map((officer) => [officer.id, officer]))
         const sanctionsByOfficer = normalizedPenalties.map((entry) => {
             const officer = officersMap.get(entry.officerId)!
-            const sanction = entry.penaltyType.toLowerCase() === "інший варіант"
-                ? (entry.penaltyOther || "інший варіант")
-                : entry.penaltyType
+            const sanction = entry.decisionType === "ARTICLE_13"
+                ? (String(entry.penaltyType || "").toLowerCase() === "інший варіант"
+                    ? (entry.penaltyOther || "інший варіант")
+                    : String(entry.penaltyType || ""))
+                : entry.decisionType === "ARTICLE_19_PART_11"
+                    ? PART_11_MEASURE
+                    : PART_13_MEASURE
             const officerFullName = `${officer.lastName || ""} ${officer.firstName || ""}`.trim()
             const officerLabel = officer.badgeNumber ? `${officerFullName} (#${officer.badgeNumber})` : officerFullName
-            return `${officerLabel} — ${sanction}`
+            return `${officerLabel} — ${sanction} (${SERVICE_DECISION_TYPE_LABELS[entry.decisionType]})`
         })
 
         const formattedConclusionDate = conclusionApprovedAt.toLocaleDateString("uk-UA")
         const resolutionChunks: string[] = [
             "Проведено СР - дії неправомірні.",
             `Висновок СР затверджено ${formattedConclusionDate}.`,
-            `Стягнення: ${sanctionsByOfficer.join("; ")}.`,
+            `За результатами СР: ${sanctionsByOfficer.join("; ")}.`,
         ]
 
         if (penaltyByArticle13 && penaltyOrderDate && penaltyOrderNumber) {
             const formattedPenaltyOrderDate = penaltyOrderDate.toLocaleDateString("uk-UA")
-            resolutionChunks.push(`Стягнення відповідно до ст. 13 Дисциплінарного статуту НПУ. Наказ про стягнення №${penaltyOrderNumber} від ${formattedPenaltyOrderDate}.`)
+            resolutionChunks.push(`За ст. 13 Дисциплінарного статуту НПУ видано наказ про стягнення №${penaltyOrderNumber} від ${formattedPenaltyOrderDate}.`)
         } else {
-            resolutionChunks.push("Стягнення не відповідно до ст. 13 Дисциплінарного статуту НПУ (наказ про стягнення не видавався).")
+            resolutionChunks.push("Заходи дисциплінарного впливу застосовано без наказу про стягнення за ст. 13 (лише ч.11/ч.13 ст.19).")
         }
 
         const shouldConnectOfficerIds = penaltyOfficerIds.filter(
             (officerId) => !record.officers.some((item) => item.id === officerId)
         )
         const firstPenalty = normalizedPenalties[0]
+        const firstPenaltyValue = firstPenalty.decisionType === "ARTICLE_13"
+            ? (String(firstPenalty.penaltyType || "").toLowerCase() === "інший варіант"
+                ? (firstPenalty.penaltyOther || "інший варіант")
+                : String(firstPenalty.penaltyType || ""))
+            : firstPenalty.decisionType === "ARTICLE_19_PART_11"
+                ? PART_11_MEASURE
+                : PART_13_MEASURE
         data = {
             status: "PROCESSED",
             processedAt: now,
@@ -426,8 +476,11 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
             investigationStage: "SR_COMPLETED_UNLAWFUL",
             investigationFinalResult: "UNLAWFUL",
             investigationCompletedAt: now,
-            investigationPenaltyType: firstPenalty.penaltyType,
-            investigationPenaltyOther: firstPenalty.penaltyType.toLowerCase() === "інший варіант" ? firstPenalty.penaltyOther : null,
+            investigationPenaltyType: firstPenaltyValue || null,
+            investigationPenaltyOther:
+                firstPenalty.decisionType === "ARTICLE_13" && String(firstPenalty.penaltyType || "").toLowerCase() === "інший варіант"
+                    ? firstPenalty.penaltyOther
+                    : null,
             investigationPenaltyOfficerId: firstPenalty.officerId,
             investigationPenaltyItems: JSON.stringify(normalizedPenalties),
             investigationConclusionApprovedAt: conclusionApprovedAt,

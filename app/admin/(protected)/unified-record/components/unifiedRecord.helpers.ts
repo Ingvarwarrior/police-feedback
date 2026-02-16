@@ -186,8 +186,15 @@ export interface ServiceInvestigationTimelineItem {
 
 export interface ServiceInvestigationPenaltyEntry {
     officerId: string
-    penaltyType: string
+    decisionType: "ARTICLE_13" | "ARTICLE_19_PART_11" | "ARTICLE_19_PART_13"
+    penaltyType?: string | null
     penaltyOther?: string | null
+}
+
+export const SERVICE_DECISION_TYPE_LABELS: Record<ServiceInvestigationPenaltyEntry["decisionType"], string> = {
+    ARTICLE_13: "ст. 13 Дисциплінарного статуту НПУ",
+    ARTICLE_19_PART_11: "ч. 11 ст. 19 Дисциплінарного статуту НПУ",
+    ARTICLE_19_PART_13: "ч. 13 ст. 19 Дисциплінарного статуту НПУ",
 }
 
 export function parseServiceInvestigationPenaltyItems(raw: unknown): ServiceInvestigationPenaltyEntry[] {
@@ -205,21 +212,45 @@ export function parseServiceInvestigationPenaltyItems(raw: unknown): ServiceInve
     if (!Array.isArray(parsed)) return []
 
     return parsed
-        .map((item: any) => ({
-            officerId: String(item?.officerId || "").trim(),
-            penaltyType: String(item?.penaltyType || "").trim(),
-            penaltyOther: typeof item?.penaltyOther === "string" ? item.penaltyOther.trim() : null,
-        }))
-        .filter((item) => item.officerId && item.penaltyType)
+        .map((item: any) => {
+            const officerId = String(item?.officerId || "").trim()
+            const decisionRaw = String(item?.decisionType || "").trim().toUpperCase()
+            const penaltyType = typeof item?.penaltyType === "string" ? item.penaltyType.trim() : ""
+            const penaltyTypeLower = penaltyType.toLowerCase()
+            const decisionType: ServiceInvestigationPenaltyEntry["decisionType"] =
+                decisionRaw === "ARTICLE_19_PART_11"
+                    ? "ARTICLE_19_PART_11"
+                    : decisionRaw === "ARTICLE_19_PART_13"
+                        ? "ARTICLE_19_PART_13"
+                        : penaltyTypeLower.includes("обмеж")
+                            ? "ARTICLE_19_PART_13"
+                            : penaltyTypeLower.includes("попереджено про необхідність")
+                                ? "ARTICLE_19_PART_11"
+                                : "ARTICLE_13"
+            const penaltyOther = typeof item?.penaltyOther === "string" ? item.penaltyOther.trim() : null
+            return {
+                officerId,
+                decisionType,
+                penaltyType: penaltyType || null,
+                penaltyOther,
+            }
+        })
+        .filter((item) => item.officerId && (item.decisionType !== "ARTICLE_13" || !!item.penaltyType))
 }
 
 export function getServiceInvestigationPenaltyValue(entry: ServiceInvestigationPenaltyEntry) {
+    if (entry.decisionType === "ARTICLE_19_PART_11") {
+        return "Попереджено про необхідність дотримання службової дисципліни (ч.11 ст.19)"
+    }
+    if (entry.decisionType === "ARTICLE_19_PART_13") {
+        return "Обмеженося раніше застосованим дисциплінарним стягненням (ч.13 ст.19)"
+    }
     const type = String(entry.penaltyType || "").trim()
     if (!type) return ""
-    if (type.toLowerCase() === "інший варіант") {
-        return String(entry.penaltyOther || "").trim() || type
-    }
-    return type
+    const value = type.toLowerCase() === "інший варіант"
+        ? (String(entry.penaltyOther || "").trim() || type)
+        : type
+    return `${value} (ст.13)`
 }
 
 export function buildServiceInvestigationPenaltySummary(record: any, maxItems: number = 2) {

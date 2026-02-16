@@ -33,10 +33,13 @@ type ServiceAction =
     | "COMPLETE_LAWFUL"
     | "COMPLETE_UNLAWFUL"
 
+type ServiceDecisionType = "ARTICLE_13" | "ARTICLE_19_PART_11" | "ARTICLE_19_PART_13"
+
 type PenaltyDraft = {
     officerId: string
-    penaltyType: string
-    penaltyOther: string
+    decisionType: ServiceDecisionType
+    penaltyType?: string
+    penaltyOther?: string
 }
 
 interface ServiceInvestigationProcessPopoverProps {
@@ -51,7 +54,8 @@ interface ServiceInvestigationProcessPopoverProps {
         penaltyOfficerId?: string
         penalties?: Array<{
             officerId: string
-            penaltyType: string
+            decisionType: ServiceDecisionType
+            penaltyType?: string
             penaltyOther?: string
         }>
         officerIds?: string[]
@@ -67,12 +71,32 @@ const PENALTY_OPTIONS = [
     "зауваження",
     "догана",
     "сувора догана",
-    "попереджено про неповну службову відповідність",
-    "звільнення",
-    "обмежено раніше накладеним стягненням",
-    "попереджено про необхідність дотримання службової дисципліни",
+    "попередження про неповну службову відповідність",
+    "пониження у спеціальному званні на один ступінь",
+    "звільнення з посади",
+    "звільнення із служби в поліції",
     "інший варіант",
 ] as const
+
+const DECISION_TYPE_OPTIONS: Array<{ value: ServiceDecisionType; label: string }> = [
+    { value: "ARTICLE_13", label: "Стягнення за ст. 13 Дисциплінарного статуту НПУ" },
+    { value: "ARTICLE_19_PART_11", label: "Захід за ч. 11 ст. 19 (попереджено про необхідність дотримання дисципліни)" },
+    { value: "ARTICLE_19_PART_13", label: "Захід за ч. 13 ст. 19 (обмеженося раніше застосованим стягненням)" },
+]
+
+const PART_11_LABEL = "попереджено про необхідність дотримання службової дисципліни"
+const PART_13_LABEL = "обмеженося раніше застосованим дисциплінарним стягненням"
+
+function inferDecisionTypeFromLegacy(record: any, penaltyType: string): ServiceDecisionType {
+    const normalized = penaltyType.toLowerCase()
+    if (record?.investigationPenaltyByArticle13 === false) {
+        if (normalized.includes("обмеж")) return "ARTICLE_19_PART_13"
+        return "ARTICLE_19_PART_11"
+    }
+    if (normalized.includes("обмеж")) return "ARTICLE_19_PART_13"
+    if (normalized.includes("попереджено про необхідність")) return "ARTICLE_19_PART_11"
+    return "ARTICLE_13"
+}
 
 function getStageLabel(stage?: string | null) {
     const raw = String(stage || "REPORT_REVIEW")
@@ -99,7 +123,6 @@ export default function ServiceInvestigationProcessPopover({
     const [orderDate, setOrderDate] = useState("")
 
     const [conclusionApprovedDate, setConclusionApprovedDate] = useState("")
-    const [penaltyByArticle13, setPenaltyByArticle13] = useState<"YES" | "NO">("YES")
     const [penaltyOrderNumber, setPenaltyOrderNumber] = useState("")
     const [penaltyOrderDate, setPenaltyOrderDate] = useState("")
     const [penaltyDrafts, setPenaltyDrafts] = useState<Record<string, PenaltyDraft>>({})
@@ -111,6 +134,9 @@ export default function ServiceInvestigationProcessPopover({
 
     const stage = String(record?.investigationStage || "REPORT_REVIEW")
     const isFinalStage = stage === "CHECK_COMPLETED_NO_VIOLATION" || stage === "SR_COMPLETED_LAWFUL" || stage === "SR_COMPLETED_UNLAWFUL"
+    const hasArticle13Selected = taggedOfficers.some((officer: any) =>
+        (penaltyDrafts[officer.id]?.decisionType || "ARTICLE_13") === "ARTICLE_13"
+    )
 
     useEffect(() => {
         if (typeof window === "undefined") return
@@ -127,6 +153,7 @@ export default function ServiceInvestigationProcessPopover({
         const fallbackPenalty = record?.investigationPenaltyOfficerId && record?.investigationPenaltyType
             ? [{
                 officerId: String(record.investigationPenaltyOfficerId),
+                decisionType: inferDecisionTypeFromLegacy(record, String(record.investigationPenaltyType)),
                 penaltyType: String(record.investigationPenaltyType),
                 penaltyOther: String(record?.investigationPenaltyOther || ""),
             }]
@@ -139,6 +166,7 @@ export default function ServiceInvestigationProcessPopover({
             const saved = sourcePenalties.find((item) => item.officerId === officer.id)
             draftMap[officer.id] = {
                 officerId: officer.id,
+                decisionType: saved?.decisionType || "ARTICLE_13",
                 penaltyType: saved?.penaltyType || "",
                 penaltyOther: saved?.penaltyOther || "",
             }
@@ -148,6 +176,7 @@ export default function ServiceInvestigationProcessPopover({
             if (draftMap[saved.officerId]) continue
             draftMap[saved.officerId] = {
                 officerId: saved.officerId,
+                decisionType: saved.decisionType || "ARTICLE_13",
                 penaltyType: saved.penaltyType || "",
                 penaltyOther: saved.penaltyOther || "",
             }
@@ -162,7 +191,6 @@ export default function ServiceInvestigationProcessPopover({
                 ? new Date(record.investigationConclusionApprovedAt).toISOString().slice(0, 10)
                 : ""
         )
-        setPenaltyByArticle13(record?.investigationPenaltyByArticle13 === false ? "NO" : "YES")
         setPenaltyOrderNumber(record?.investigationPenaltyOrderNumber || "")
         setPenaltyOrderDate(
             record?.investigationPenaltyOrderDate
@@ -181,7 +209,6 @@ export default function ServiceInvestigationProcessPopover({
         record?.investigationPenaltyType,
         record?.investigationPenaltyOther,
         record?.investigationConclusionApprovedAt,
-        record?.investigationPenaltyByArticle13,
         record?.investigationPenaltyOrderNumber,
         record?.investigationPenaltyOrderDate,
     ])
@@ -222,6 +249,7 @@ export default function ServiceInvestigationProcessPopover({
             ...prev,
             [officerId]: {
                 officerId,
+                decisionType: prev[officerId]?.decisionType || "ARTICLE_13",
                 penaltyType: prev[officerId]?.penaltyType || "",
                 penaltyOther: prev[officerId]?.penaltyOther || "",
                 ...patch,
@@ -238,6 +266,7 @@ export default function ServiceInvestigationProcessPopover({
             ...prev,
             [officer.id]: prev[officer.id] || {
                 officerId: officer.id,
+                decisionType: "ARTICLE_13",
                 penaltyType: "",
                 penaltyOther: "",
             },
@@ -257,13 +286,21 @@ export default function ServiceInvestigationProcessPopover({
         return taggedOfficers
             .map((officer: any) => {
                 const draft = penaltyDrafts[officer.id]
+                const decisionType = draft?.decisionType || "ARTICLE_13"
+                const penaltyType =
+                    decisionType === "ARTICLE_19_PART_11"
+                        ? PART_11_LABEL
+                        : decisionType === "ARTICLE_19_PART_13"
+                            ? PART_13_LABEL
+                            : (draft?.penaltyType || "").trim()
                 return {
                     officerId: officer.id,
-                    penaltyType: (draft?.penaltyType || "").trim(),
+                    decisionType,
+                    penaltyType,
                     penaltyOther: (draft?.penaltyOther || "").trim() || undefined,
                 }
             })
-            .filter((item) => item.penaltyType.length > 0)
+            .filter((item) => item.decisionType !== "ARTICLE_13" || (item.penaltyType || "").length > 0)
     }
 
     const submit = async (action: ServiceAction) => {
@@ -271,6 +308,7 @@ export default function ServiceInvestigationProcessPopover({
         setIsProcessing(true)
         try {
             const penalties = buildPenaltyPayload()
+            const hasArticle13 = penalties.some((item) => item.decisionType === "ARTICLE_13")
             const firstPenalty = penalties[0]
             await onProcess({
                 id: record.id,
@@ -283,7 +321,7 @@ export default function ServiceInvestigationProcessPopover({
                 penalties,
                 officerIds: taggedOfficers.map((officer: any) => officer.id),
                 conclusionApprovedDate: conclusionApprovedDate || undefined,
-                penaltyByArticle13: penaltyByArticle13 === "YES",
+                penaltyByArticle13: hasArticle13,
                 penaltyOrderNumber: penaltyOrderNumber.trim() || undefined,
                 penaltyOrderDate: penaltyOrderDate || undefined,
             })
@@ -379,47 +417,6 @@ export default function ServiceInvestigationProcessPopover({
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                                Стягнення за ст. 13 Дисциплінарного статуту НПУ
-                            </Label>
-                            <div className="grid grid-cols-2 gap-2">
-                                <Button
-                                    type="button"
-                                    variant={penaltyByArticle13 === "YES" ? "default" : "outline"}
-                                    className="h-9 rounded-xl font-bold"
-                                    onClick={() => setPenaltyByArticle13("YES")}
-                                >
-                                    Так
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant={penaltyByArticle13 === "NO" ? "default" : "outline"}
-                                    className="h-9 rounded-xl font-bold"
-                                    onClick={() => setPenaltyByArticle13("NO")}
-                                >
-                                    Ні
-                                </Button>
-                            </div>
-                        </div>
-
-                        {penaltyByArticle13 === "YES" && (
-                            <div className="grid grid-cols-1 gap-2">
-                                <Input
-                                    value={penaltyOrderNumber}
-                                    onChange={(e) => setPenaltyOrderNumber(e.target.value)}
-                                    placeholder="№ наказу на стягнення"
-                                    className="h-10 rounded-xl"
-                                />
-                                <Input
-                                    type="date"
-                                    value={penaltyOrderDate}
-                                    onChange={(e) => setPenaltyOrderDate(e.target.value)}
-                                    className="h-10 rounded-xl"
-                                />
-                            </div>
-                        )}
-
                         {taggedOfficers.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {taggedOfficers.map((officer: any) => (
@@ -480,11 +477,12 @@ export default function ServiceInvestigationProcessPopover({
                         ) : (
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                                    Стягнення по кожному поліцейському
+                                    Рішення по кожному поліцейському
                                 </Label>
                                 {taggedOfficers.map((officer: any) => {
                                     const draft = penaltyDrafts[officer.id] || {
                                         officerId: officer.id,
+                                        decisionType: "ARTICLE_13",
                                         penaltyType: "",
                                         penaltyOther: "",
                                     }
@@ -494,31 +492,99 @@ export default function ServiceInvestigationProcessPopover({
                                                 {officer.lastName} {officer.firstName} {officer.badgeNumber ? `(${officer.badgeNumber})` : ""}
                                             </p>
                                             <Select
-                                                value={draft.penaltyType}
-                                                onValueChange={(value) => updatePenaltyDraft(officer.id, { penaltyType: value })}
+                                                value={draft.decisionType || "ARTICLE_13"}
+                                                onValueChange={(value: ServiceDecisionType) => {
+                                                    if (value === "ARTICLE_19_PART_11") {
+                                                        updatePenaltyDraft(officer.id, {
+                                                            decisionType: value,
+                                                            penaltyType: PART_11_LABEL,
+                                                            penaltyOther: "",
+                                                        })
+                                                        return
+                                                    }
+                                                    if (value === "ARTICLE_19_PART_13") {
+                                                        updatePenaltyDraft(officer.id, {
+                                                            decisionType: value,
+                                                            penaltyType: PART_13_LABEL,
+                                                            penaltyOther: "",
+                                                        })
+                                                        return
+                                                    }
+                                                    updatePenaltyDraft(officer.id, {
+                                                        decisionType: value,
+                                                        penaltyType: "",
+                                                        penaltyOther: "",
+                                                    })
+                                                }}
                                             >
                                                 <SelectTrigger className="h-9 rounded-xl">
-                                                    <SelectValue placeholder="Оберіть стягнення" />
+                                                    <SelectValue placeholder="Оберіть правову підставу" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {PENALTY_OPTIONS.map((option) => (
-                                                        <SelectItem key={option} value={option}>
-                                                            {option}
+                                                    {DECISION_TYPE_OPTIONS.map((option) => (
+                                                        <SelectItem key={option.value} value={option.value}>
+                                                            {option.label}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-                                            {draft.penaltyType === "інший варіант" && (
-                                                <Input
-                                                    value={draft.penaltyOther}
-                                                    onChange={(e) => updatePenaltyDraft(officer.id, { penaltyOther: e.target.value })}
-                                                    placeholder="Вкажіть інший варіант стягнення"
-                                                    className="h-9 rounded-xl"
-                                                />
+
+                                            {draft.decisionType === "ARTICLE_13" ? (
+                                                <>
+                                                    <Select
+                                                        value={draft.penaltyType || ""}
+                                                        onValueChange={(value) => updatePenaltyDraft(officer.id, { penaltyType: value })}
+                                                    >
+                                                        <SelectTrigger className="h-9 rounded-xl">
+                                                            <SelectValue placeholder="Оберіть стягнення (ст.13)" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {PENALTY_OPTIONS.map((option) => (
+                                                                <SelectItem key={option} value={option}>
+                                                                    {option}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    {draft.penaltyType === "інший варіант" && (
+                                                        <Input
+                                                            value={draft.penaltyOther || ""}
+                                                            onChange={(e) => updatePenaltyDraft(officer.id, { penaltyOther: e.target.value })}
+                                                            placeholder="Вкажіть інший варіант стягнення"
+                                                            className="h-9 rounded-xl"
+                                                        />
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-700">
+                                                    {draft.decisionType === "ARTICLE_19_PART_11"
+                                                        ? "Застосовується захід: попереджено про необхідність дотримання службової дисципліни (ч.11 ст.19)."
+                                                        : "Застосовується захід: обмеженося раніше застосованим дисциплінарним стягненням (ч.13 ст.19)."}
+                                                </div>
                                             )}
                                         </div>
                                     )
                                 })}
+                            </div>
+                        )}
+
+                        {hasArticle13Selected && (
+                            <div className="grid grid-cols-1 gap-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                                    Наказ про стягнення (обов'язково для ст. 13)
+                                </Label>
+                                <Input
+                                    value={penaltyOrderNumber}
+                                    onChange={(e) => setPenaltyOrderNumber(e.target.value)}
+                                    placeholder="№ наказу на стягнення"
+                                    className="h-10 rounded-xl"
+                                />
+                                <Input
+                                    type="date"
+                                    value={penaltyOrderDate}
+                                    onChange={(e) => setPenaltyOrderDate(e.target.value)}
+                                    className="h-10 rounded-xl"
+                                />
                             </div>
                         )}
 
