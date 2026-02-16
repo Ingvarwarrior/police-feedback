@@ -1112,10 +1112,25 @@ export async function returnForRevisionAction(id: string, comment: string) {
 
     const record = await prisma.unifiedRecord.findUnique({
         where: { id },
-        select: { assignedUserId: true, eoNumber: true, recordType: true }
+        select: {
+            assignedUserId: true,
+            eoNumber: true,
+            recordType: true,
+            investigationStage: true,
+        }
     })
 
     if (!record) throw new Error("Запис не знайдено")
+
+    const currentServiceStage = String(record.investigationStage || "REPORT_REVIEW")
+    const previousServiceStage =
+        currentServiceStage === "SR_COMPLETED_UNLAWFUL" || currentServiceStage === "SR_COMPLETED_LAWFUL"
+            ? "SR_ORDER_ASSIGNED"
+            : currentServiceStage === "CHECK_COMPLETED_NO_VIOLATION"
+                ? "REPORT_REVIEW"
+                : currentServiceStage === "SR_ORDER_ASSIGNED"
+                    ? "SR_INITIATED"
+                    : "REPORT_REVIEW"
 
     await prisma.unifiedRecord.update({
         where: { id },
@@ -1125,14 +1140,25 @@ export async function returnForRevisionAction(id: string, comment: string) {
             resolutionDate: null,
             ...(record.recordType === "SERVICE_INVESTIGATION"
                 ? {
-                    investigationStage: "REPORT_REVIEW",
-                    investigationReviewResult: null,
-                    investigationReviewAt: null,
-                    investigationInitiatedAt: null,
+                    investigationStage: previousServiceStage,
+                    ...(previousServiceStage === "REPORT_REVIEW"
+                        ? {
+                            investigationReviewResult: null,
+                            investigationReviewAt: null,
+                            investigationInitiatedAt: null,
+                            investigationOrderNumber: null,
+                            investigationOrderDate: null,
+                            investigationOrderAssignedAt: null,
+                        }
+                        : {}),
+                    ...(previousServiceStage === "SR_INITIATED"
+                        ? {
+                            investigationOrderNumber: null,
+                            investigationOrderDate: null,
+                            investigationOrderAssignedAt: null,
+                        }
+                        : {}),
                     investigationFinalResult: null,
-                    investigationOrderNumber: null,
-                    investigationOrderDate: null,
-                    investigationOrderAssignedAt: null,
                     investigationCompletedAt: null,
                     investigationPenaltyType: null,
                     investigationPenaltyOther: null,
@@ -1144,6 +1170,28 @@ export async function returnForRevisionAction(id: string, comment: string) {
                     investigationPenaltyOrderDate: null,
                 }
                 : {}),
+        }
+    })
+
+    const updatedRecord = await prisma.unifiedRecord.findUnique({
+        where: { id },
+        include: {
+            assignedUser: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    username: true,
+                }
+            },
+            officers: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    badgeNumber: true,
+                }
+            }
         }
     })
 
@@ -1173,7 +1221,7 @@ export async function returnForRevisionAction(id: string, comment: string) {
     }
 
     revalidatePath('/admin/unified-record')
-    return { success: true }
+    return { success: true, record: updatedRecord }
 }
 
 export async function analyzeRecordImageAction(formData: FormData) {

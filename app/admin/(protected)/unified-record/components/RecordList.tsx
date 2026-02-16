@@ -1136,6 +1136,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                                         const res = await returnForRevisionAction(record.id, textarea.value)
                                                                                         if (res.success) {
                                                                                             toast.success("Запис повернуто на доопрацювання")
+                                                                                            if ((res as any).record) {
+                                                                                                setRecords((prev) =>
+                                                                                                    prev.map((r) => (r.id === record.id ? { ...r, ...(res as any).record } : r))
+                                                                                                )
+                                                                                            }
                                                                                         }
                                                                                     } catch (err: any) {
                                                                                         toast.error(err.message)
@@ -1660,6 +1665,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                                         const res = await returnForRevisionAction(record.id, textarea.value)
                                                                                         if (res.success) {
                                                                                             toast.success("Запис повернуто на доопрацювання")
+                                                                                            if ((res as any).record) {
+                                                                                                setRecords((prev) =>
+                                                                                                    prev.map((r) => (r.id === record.id ? { ...r, ...(res as any).record } : r))
+                                                                                                )
+                                                                                            }
                                                                                         }
                                                                                     } catch (err: any) {
                                                                                         toast.error(err.message)
