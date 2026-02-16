@@ -65,6 +65,11 @@ const formSchema = z.object({
     investigationPenaltyType: z.string().optional().nullable(),
     investigationPenaltyOther: z.string().optional().nullable(),
     investigationPenaltyOfficerId: z.string().optional().nullable(),
+    investigationPenaltyItems: z.string().optional().nullable(),
+    investigationConclusionApprovedAt: z.date().optional().nullable(),
+    investigationPenaltyByArticle13: z.boolean().optional().nullable(),
+    investigationPenaltyOrderNumber: z.string().optional().nullable(),
+    investigationPenaltyOrderDate: z.date().optional().nullable(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -142,6 +147,11 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
             investigationPenaltyType: (initialData as any)?.investigationPenaltyType || null,
             investigationPenaltyOther: (initialData as any)?.investigationPenaltyOther || null,
             investigationPenaltyOfficerId: (initialData as any)?.investigationPenaltyOfficerId || null,
+            investigationPenaltyItems: (initialData as any)?.investigationPenaltyItems || null,
+            investigationConclusionApprovedAt: (initialData as any)?.investigationConclusionApprovedAt ? new Date((initialData as any).investigationConclusionApprovedAt) : null,
+            investigationPenaltyByArticle13: typeof (initialData as any)?.investigationPenaltyByArticle13 === "boolean" ? (initialData as any).investigationPenaltyByArticle13 : null,
+            investigationPenaltyOrderNumber: (initialData as any)?.investigationPenaltyOrderNumber || null,
+            investigationPenaltyOrderDate: (initialData as any)?.investigationPenaltyOrderDate ? new Date((initialData as any).investigationPenaltyOrderDate) : null,
         },
     })
 
@@ -177,6 +187,11 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
             investigationPenaltyType: (initialData as any)?.investigationPenaltyType || null,
             investigationPenaltyOther: (initialData as any)?.investigationPenaltyOther || null,
             investigationPenaltyOfficerId: (initialData as any)?.investigationPenaltyOfficerId || null,
+            investigationPenaltyItems: (initialData as any)?.investigationPenaltyItems || null,
+            investigationConclusionApprovedAt: (initialData as any)?.investigationConclusionApprovedAt ? new Date((initialData as any).investigationConclusionApprovedAt) : null,
+            investigationPenaltyByArticle13: typeof (initialData as any)?.investigationPenaltyByArticle13 === "boolean" ? (initialData as any).investigationPenaltyByArticle13 : null,
+            investigationPenaltyOrderNumber: (initialData as any)?.investigationPenaltyOrderNumber || null,
+            investigationPenaltyOrderDate: (initialData as any)?.investigationPenaltyOrderDate ? new Date((initialData as any).investigationPenaltyOrderDate) : null,
         })
     }, [isOpen, form, initialData?.id])
 

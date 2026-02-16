@@ -468,6 +468,16 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         penaltyType?: string
         penaltyOther?: string
         penaltyOfficerId?: string
+        penalties?: Array<{
+            officerId: string
+            penaltyType: string
+            penaltyOther?: string
+        }>
+        officerIds?: string[]
+        conclusionApprovedDate?: string
+        penaltyByArticle13?: boolean
+        penaltyOrderNumber?: string
+        penaltyOrderDate?: string
     }) => {
         try {
             const result: any = await processServiceInvestigationAction(payload)
@@ -1020,6 +1030,29 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                             ? format(new Date(record.investigationOrderDate), "dd.MM.yyyy", { locale: uk })
                                                                             : "—"}
                                                                     </p>
+                                                                </div>
+                                                            )}
+
+                                                            {(record.investigationConclusionApprovedAt || record.investigationPenaltyOrderNumber || record.investigationPenaltyOrderDate) && (
+                                                                <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-2.5 space-y-1">
+                                                                    {record.investigationConclusionApprovedAt && (
+                                                                        <p className="text-xs font-bold text-rose-900">
+                                                                            Висновок СР затверджено: {format(new Date(record.investigationConclusionApprovedAt), "dd.MM.yyyy", { locale: uk })}
+                                                                        </p>
+                                                                    )}
+                                                                    {record.investigationPenaltyByArticle13 && (
+                                                                        <p className="text-[10px] font-black uppercase tracking-wider text-rose-700">
+                                                                            Наказ про стягнення: №{record.investigationPenaltyOrderNumber || "—"} від{" "}
+                                                                            {record.investigationPenaltyOrderDate
+                                                                                ? format(new Date(record.investigationPenaltyOrderDate), "dd.MM.yyyy", { locale: uk })
+                                                                                : "—"}
+                                                                        </p>
+                                                                    )}
+                                                                    {record.investigationPenaltyByArticle13 === false && (
+                                                                        <p className="text-[10px] font-black uppercase tracking-wider text-rose-700">
+                                                                            Стягнення не за ст. 13 (без наказу)
+                                                                        </p>
+                                                                    )}
                                                                 </div>
                                                             )}
 

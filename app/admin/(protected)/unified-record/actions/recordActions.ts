@@ -50,6 +50,11 @@ const UnifiedRecordSchema = z.object({
     investigationPenaltyType: z.string().optional().nullable(),
     investigationPenaltyOther: z.string().optional().nullable(),
     investigationPenaltyOfficerId: z.string().optional().nullable(),
+    investigationPenaltyItems: z.string().optional().nullable(),
+    investigationConclusionApprovedAt: z.date().optional().nullable(),
+    investigationPenaltyByArticle13: z.boolean().optional().nullable(),
+    investigationPenaltyOrderNumber: z.string().optional().nullable(),
+    investigationPenaltyOrderDate: z.date().optional().nullable(),
 })
 
 async function generateNextApplicationNumber() {
@@ -130,7 +135,44 @@ const ServiceInvestigationProcessSchema = z.object({
     penaltyType: z.string().optional(),
     penaltyOther: z.string().optional(),
     penaltyOfficerId: z.string().optional(),
+    penalties: z.array(z.object({
+        officerId: z.string().min(1),
+        penaltyType: z.string().min(1),
+        penaltyOther: z.string().optional(),
+    })).optional(),
+    officerIds: z.array(z.string()).optional(),
+    conclusionApprovedDate: z.string().optional(),
+    penaltyByArticle13: z.boolean().optional(),
+    penaltyOrderNumber: z.string().optional(),
+    penaltyOrderDate: z.string().optional(),
 })
+
+type ServicePenaltyInput = {
+    officerId: string
+    penaltyType: string
+    penaltyOther?: string
+}
+
+type ServicePenaltyNormalized = {
+    officerId: string
+    penaltyType: string
+    penaltyOther: string | null
+}
+
+function normalizePenaltyEntries(input: ServicePenaltyInput[]): ServicePenaltyNormalized[] {
+    return input
+        .map((entry) => {
+            const officerId = String(entry.officerId || "").trim()
+            const penaltyType = String(entry.penaltyType || "").trim()
+            const penaltyOther = typeof entry.penaltyOther === "string" ? entry.penaltyOther.trim() : ""
+            return {
+                officerId,
+                penaltyType,
+                penaltyOther: penaltyOther || null,
+            }
+        })
+        .filter((entry) => entry.officerId.length > 0 && entry.penaltyType.length > 0)
+}
 
 export async function processServiceInvestigationAction(input: z.infer<typeof ServiceInvestigationProcessSchema>) {
     const session = await auth()
@@ -175,6 +217,14 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
             investigationStage: "CHECK_COMPLETED_NO_VIOLATION",
             investigationFinalResult: "LAWFUL",
             investigationCompletedAt: now,
+            investigationPenaltyType: null,
+            investigationPenaltyOther: null,
+            investigationPenaltyOfficerId: null,
+            investigationPenaltyItems: null,
+            investigationConclusionApprovedAt: null,
+            investigationPenaltyByArticle13: null,
+            investigationPenaltyOrderNumber: null,
+            investigationPenaltyOrderDate: null,
         }
     }
 
@@ -188,6 +238,16 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
             investigationReviewAt: now,
             investigationInitiatedAt: now,
             investigationStage: "SR_INITIATED",
+            investigationFinalResult: null,
+            investigationCompletedAt: null,
+            investigationPenaltyType: null,
+            investigationPenaltyOther: null,
+            investigationPenaltyOfficerId: null,
+            investigationPenaltyItems: null,
+            investigationConclusionApprovedAt: null,
+            investigationPenaltyByArticle13: null,
+            investigationPenaltyOrderNumber: null,
+            investigationPenaltyOrderDate: null,
         }
     }
 
@@ -217,6 +277,16 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
             investigationOrderDate: orderDate,
             investigationOrderAssignedAt: now,
             deadline,
+            investigationFinalResult: null,
+            investigationCompletedAt: null,
+            investigationPenaltyType: null,
+            investigationPenaltyOther: null,
+            investigationPenaltyOfficerId: null,
+            investigationPenaltyItems: null,
+            investigationConclusionApprovedAt: null,
+            investigationPenaltyByArticle13: null,
+            investigationPenaltyOrderNumber: null,
+            investigationPenaltyOrderDate: null,
         }
     }
 
@@ -229,48 +299,144 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
             investigationStage: "SR_COMPLETED_LAWFUL",
             investigationFinalResult: "LAWFUL",
             investigationCompletedAt: now,
+            investigationPenaltyType: null,
+            investigationPenaltyOther: null,
+            investigationPenaltyOfficerId: null,
+            investigationPenaltyItems: null,
+            investigationConclusionApprovedAt: null,
+            investigationPenaltyByArticle13: null,
+            investigationPenaltyOrderNumber: null,
+            investigationPenaltyOrderDate: null,
         }
     }
 
     if (parsed.action === "COMPLETE_UNLAWFUL") {
-        if (!parsed.penaltyType?.trim()) {
-            throw new Error("Оберіть варіант стягнення")
-        }
-        if (parsed.penaltyType.trim().toLowerCase() === "інший варіант" && !parsed.penaltyOther?.trim()) {
-            throw new Error("Вкажіть інший варіант стягнення")
-        }
-        if (!parsed.penaltyOfficerId?.trim()) {
-            throw new Error("Оберіть поліцейського, щодо якого встановлено порушення")
+        const penaltiesInputFromUi = Array.isArray(parsed.penalties) ? parsed.penalties : []
+        const fallbackPenaltyInput = parsed.penaltyOfficerId?.trim() && parsed.penaltyType?.trim()
+            ? [{
+                officerId: parsed.penaltyOfficerId.trim(),
+                penaltyType: parsed.penaltyType.trim(),
+                penaltyOther: parsed.penaltyOther?.trim(),
+            }]
+            : []
+
+        const normalizedPenalties = normalizePenaltyEntries(
+            penaltiesInputFromUi.length > 0 ? penaltiesInputFromUi : fallbackPenaltyInput
+        )
+
+        if (!normalizedPenalties.length) {
+            throw new Error("Оберіть стягнення для поліцейських")
         }
 
-        const officer = await prisma.officer.findUnique({
-            where: { id: parsed.penaltyOfficerId.trim() },
+        const duplicateOfficer = normalizedPenalties.find((entry, idx, arr) =>
+            arr.findIndex((test) => test.officerId === entry.officerId) !== idx
+        )
+        if (duplicateOfficer) {
+            throw new Error("Кожен поліцейський має бути вказаний лише один раз")
+        }
+
+        const selectedOfficerIds = Array.from(
+            new Set((parsed.officerIds || []).map((id) => String(id || "").trim()).filter(Boolean))
+        )
+        if (selectedOfficerIds.length > 0) {
+            const missingFromPenalties = selectedOfficerIds.filter(
+                (officerId) => !normalizedPenalties.some((entry) => entry.officerId === officerId)
+            )
+            if (missingFromPenalties.length > 0) {
+                throw new Error("Оберіть стягнення для кожного зазначеного поліцейського")
+            }
+        }
+
+        for (const penalty of normalizedPenalties) {
+            if (penalty.penaltyType.toLowerCase() === "інший варіант" && !penalty.penaltyOther) {
+                throw new Error("Для варіанту \"інший\" вкажіть текст стягнення")
+            }
+        }
+
+        if (!parsed.conclusionApprovedDate) {
+            throw new Error("Вкажіть дату затвердження висновку СР")
+        }
+        const conclusionApprovedAt = new Date(parsed.conclusionApprovedDate)
+        if (Number.isNaN(conclusionApprovedAt.getTime())) {
+            throw new Error("Некоректна дата затвердження висновку СР")
+        }
+
+        const penaltyByArticle13 = parsed.penaltyByArticle13 !== false
+        let penaltyOrderDate: Date | null = null
+        let penaltyOrderNumber: string | null = null
+
+        if (penaltyByArticle13) {
+            if (!parsed.penaltyOrderNumber?.trim()) {
+                throw new Error("Вкажіть № наказу на стягнення")
+            }
+            if (!parsed.penaltyOrderDate) {
+                throw new Error("Вкажіть дату наказу на стягнення")
+            }
+            penaltyOrderDate = new Date(parsed.penaltyOrderDate)
+            if (Number.isNaN(penaltyOrderDate.getTime())) {
+                throw new Error("Некоректна дата наказу на стягнення")
+            }
+            penaltyOrderNumber = parsed.penaltyOrderNumber.trim()
+        }
+
+        const penaltyOfficerIds = Array.from(new Set(normalizedPenalties.map((entry) => entry.officerId)))
+        const officers = await prisma.officer.findMany({
+            where: { id: { in: penaltyOfficerIds } },
             select: { id: true, firstName: true, lastName: true, badgeNumber: true }
         })
 
-        if (!officer) {
-            throw new Error("Не вдалося знайти обраного поліцейського")
+        if (officers.length !== penaltyOfficerIds.length) {
+            throw new Error("Не вдалося знайти одного або кількох поліцейських для стягнення")
         }
 
-        const sanction = parsed.penaltyType.trim().toLowerCase() === "інший варіант"
-            ? parsed.penaltyOther!.trim()
-            : parsed.penaltyType.trim()
-        const officerFullName = `${officer.lastName} ${officer.firstName}`.trim()
-        const officerLabel = officer.badgeNumber ? `${officerFullName} (#${officer.badgeNumber})` : officerFullName
-        const shouldConnectOfficer = !record.officers.some((item) => item.id === officer.id)
+        const officersMap = new Map(officers.map((officer) => [officer.id, officer]))
+        const sanctionsByOfficer = normalizedPenalties.map((entry) => {
+            const officer = officersMap.get(entry.officerId)!
+            const sanction = entry.penaltyType.toLowerCase() === "інший варіант"
+                ? (entry.penaltyOther || "інший варіант")
+                : entry.penaltyType
+            const officerFullName = `${officer.lastName || ""} ${officer.firstName || ""}`.trim()
+            const officerLabel = officer.badgeNumber ? `${officerFullName} (#${officer.badgeNumber})` : officerFullName
+            return `${officerLabel} — ${sanction}`
+        })
 
+        const formattedConclusionDate = conclusionApprovedAt.toLocaleDateString("uk-UA")
+        const resolutionChunks: string[] = [
+            "Проведено СР - дії неправомірні.",
+            `Висновок СР затверджено ${formattedConclusionDate}.`,
+            `Стягнення: ${sanctionsByOfficer.join("; ")}.`,
+        ]
+
+        if (penaltyByArticle13 && penaltyOrderDate && penaltyOrderNumber) {
+            const formattedPenaltyOrderDate = penaltyOrderDate.toLocaleDateString("uk-UA")
+            resolutionChunks.push(`Стягнення відповідно до ст. 13 Дисциплінарного статуту НПУ. Наказ про стягнення №${penaltyOrderNumber} від ${formattedPenaltyOrderDate}.`)
+        } else {
+            resolutionChunks.push("Стягнення не відповідно до ст. 13 Дисциплінарного статуту НПУ (наказ про стягнення не видавався).")
+        }
+
+        const shouldConnectOfficerIds = penaltyOfficerIds.filter(
+            (officerId) => !record.officers.some((item) => item.id === officerId)
+        )
+        const firstPenalty = normalizedPenalties[0]
         data = {
             status: "PROCESSED",
             processedAt: now,
-            resolution: `Проведено СР - дії неправомірні. Поліцейський: ${officerLabel}. Стягнення: ${sanction}.`,
+            resolution: resolutionChunks.join(" "),
             resolutionDate: now,
             investigationStage: "SR_COMPLETED_UNLAWFUL",
             investigationFinalResult: "UNLAWFUL",
             investigationCompletedAt: now,
-            investigationPenaltyType: parsed.penaltyType.trim(),
-            investigationPenaltyOther: parsed.penaltyType.trim().toLowerCase() === "інший варіант" ? parsed.penaltyOther!.trim() : null,
-            investigationPenaltyOfficerId: officer.id,
-            ...(shouldConnectOfficer ? { officers: { connect: [{ id: officer.id }] } } : {}),
+            investigationPenaltyType: firstPenalty.penaltyType,
+            investigationPenaltyOther: firstPenalty.penaltyType.toLowerCase() === "інший варіант" ? firstPenalty.penaltyOther : null,
+            investigationPenaltyOfficerId: firstPenalty.officerId,
+            investigationPenaltyItems: JSON.stringify(normalizedPenalties),
+            investigationConclusionApprovedAt: conclusionApprovedAt,
+            investigationPenaltyByArticle13: penaltyByArticle13,
+            investigationPenaltyOrderNumber: penaltyByArticle13 ? penaltyOrderNumber : null,
+            investigationPenaltyOrderDate: penaltyByArticle13 ? penaltyOrderDate : null,
+            ...(shouldConnectOfficerIds.length > 0 ? {
+                officers: { connect: shouldConnectOfficerIds.map((id) => ({ id })) }
+            } : {}),
         }
     }
 
@@ -918,6 +1084,11 @@ export async function returnForRevisionAction(id: string, comment: string) {
                     investigationPenaltyType: null,
                     investigationPenaltyOther: null,
                     investigationPenaltyOfficerId: null,
+                    investigationPenaltyItems: null,
+                    investigationConclusionApprovedAt: null,
+                    investigationPenaltyByArticle13: null,
+                    investigationPenaltyOrderNumber: null,
+                    investigationPenaltyOrderDate: null,
                 }
                 : {}),
         }

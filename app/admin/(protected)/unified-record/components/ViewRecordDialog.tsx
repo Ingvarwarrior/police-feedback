@@ -21,10 +21,13 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
+    buildServiceInvestigationPenaltySummary,
     formatDateTimeUa,
+    getServiceInvestigationPenaltyValue,
     getRecordTypeLabel,
     getServiceInvestigationStageLabel,
     getServiceInvestigationTimeline,
+    parseServiceInvestigationPenaltyItems,
 } from "./unifiedRecord.helpers"
 
 interface ViewRecordDialogProps {
@@ -75,6 +78,23 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
     const isDetentionProtocol = record.recordType === "DETENTION_PROTOCOL"
     const isServiceInvestigation = record.recordType === "SERVICE_INVESTIGATION"
     const isSpecialCard = isApplication || isDetentionProtocol
+    const servicePenaltyItems = parseServiceInvestigationPenaltyItems(record?.investigationPenaltyItems)
+    const servicePenaltySummary = buildServiceInvestigationPenaltySummary(record, 3)
+    const servicePenaltyRows = servicePenaltyItems
+        .map((item) => {
+            const officer = Array.isArray(record?.officers)
+                ? record.officers.find((entry: any) => entry.id === item.officerId)
+                : null
+            const officerLabel = officer
+                ? `${officer.lastName || ""} ${officer.firstName || ""}`.trim() || officer.badgeNumber || item.officerId
+                : item.officerId
+            return {
+                id: item.officerId,
+                officerLabel,
+                penaltyLabel: getServiceInvestigationPenaltyValue(item),
+            }
+        })
+        .filter((item) => item.penaltyLabel)
 
     const getBirthDateFromAddress = () => {
         if (!record.address || typeof record.address !== "string") return "Не вказано"
@@ -149,7 +169,17 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
             if (record.investigationOrderNumber || record.investigationOrderDate) {
                 writeParagraph(`Order: №${record.investigationOrderNumber || "—"} від ${safeFormat(record.investigationOrderDate, "dd.MM.yyyy")}`)
             }
-            if (record.investigationPenaltyType) {
+            if (record.investigationConclusionApprovedAt) {
+                writeParagraph(`SR conclusion approved at: ${safeFormat(record.investigationConclusionApprovedAt, "dd.MM.yyyy")}`)
+            }
+            if (record.investigationPenaltyByArticle13) {
+                writeParagraph(`Penalty order: №${record.investigationPenaltyOrderNumber || "—"} від ${safeFormat(record.investigationPenaltyOrderDate, "dd.MM.yyyy")}`)
+            } else if (record.investigationFinalResult === "UNLAWFUL") {
+                writeParagraph("Penalty without article 13 order")
+            }
+            if (servicePenaltyRows.length > 0) {
+                writeParagraph(`Penalty details: ${servicePenaltyRows.map((item) => `${item.officerLabel} - ${item.penaltyLabel}`).join("; ")}`)
+            } else if (record.investigationPenaltyType) {
                 writeParagraph(`Penalty: ${record.investigationPenaltyType}${record.investigationPenaltyOther ? ` (${record.investigationPenaltyOther})` : ""}`)
             }
         }
@@ -371,6 +401,41 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                     </div>
                                 ))}
                             </div>
+
+                            {(servicePenaltySummary || record.investigationConclusionApprovedAt || record.investigationPenaltyOrderNumber || record.investigationPenaltyOrderDate) && (
+                                <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-3 space-y-2">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-rose-700">Висновок та стягнення</p>
+                                    {record.investigationConclusionApprovedAt && (
+                                        <p className="text-xs font-bold text-slate-800">
+                                            Дата затвердження висновку СР: {safeFormat(record.investigationConclusionApprovedAt, "dd.MM.yyyy")}
+                                        </p>
+                                    )}
+                                    {servicePenaltyRows.length > 0 ? (
+                                        <div className="space-y-1">
+                                            {servicePenaltyRows.map((item) => (
+                                                <p key={item.id} className="text-xs font-semibold text-slate-800">
+                                                    {item.officerLabel}: {item.penaltyLabel}
+                                                </p>
+                                            ))}
+                                        </div>
+                                    ) : servicePenaltySummary ? (
+                                        <p className="text-xs font-semibold text-slate-800">{servicePenaltySummary}</p>
+                                    ) : null}
+
+                                    {record.investigationPenaltyByArticle13 === true ? (
+                                        <p className="text-xs font-bold text-rose-900">
+                                            Наказ про стягнення №{record.investigationPenaltyOrderNumber || "—"} від{" "}
+                                            {record.investigationPenaltyOrderDate
+                                                ? safeFormat(record.investigationPenaltyOrderDate, "dd.MM.yyyy")
+                                                : "—"}
+                                        </p>
+                                    ) : record.investigationPenaltyByArticle13 === false ? (
+                                        <p className="text-xs font-semibold text-slate-700">
+                                            Стягнення не відповідно до ст. 13 Дисциплінарного статуту НПУ (наказ не потрібен).
+                                        </p>
+                                    ) : null}
+                                </div>
+                            )}
                         </div>
                     )}
 

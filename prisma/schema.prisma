@@ -380,6 +380,11 @@ model UnifiedRecord {
   investigationPenaltyType   String?
   investigationPenaltyOther  String?
   investigationPenaltyOfficerId String?
+  investigationPenaltyItems  String?
+  investigationConclusionApprovedAt DateTime?
+  investigationPenaltyByArticle13 Boolean?
+  investigationPenaltyOrderNumber String?
+  investigationPenaltyOrderDate DateTime?
 
   @@index([eoNumber])
   @@index([eoDate])

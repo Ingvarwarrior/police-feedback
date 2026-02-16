@@ -184,6 +184,70 @@ export interface ServiceInvestigationTimelineItem {
     hint?: string
 }
 
+export interface ServiceInvestigationPenaltyEntry {
+    officerId: string
+    penaltyType: string
+    penaltyOther?: string | null
+}
+
+export function parseServiceInvestigationPenaltyItems(raw: unknown): ServiceInvestigationPenaltyEntry[] {
+    if (!raw) return []
+    let parsed: unknown = raw
+
+    if (typeof raw === "string") {
+        try {
+            parsed = JSON.parse(raw)
+        } catch {
+            return []
+        }
+    }
+
+    if (!Array.isArray(parsed)) return []
+
+    return parsed
+        .map((item: any) => ({
+            officerId: String(item?.officerId || "").trim(),
+            penaltyType: String(item?.penaltyType || "").trim(),
+            penaltyOther: typeof item?.penaltyOther === "string" ? item.penaltyOther.trim() : null,
+        }))
+        .filter((item) => item.officerId && item.penaltyType)
+}
+
+export function getServiceInvestigationPenaltyValue(entry: ServiceInvestigationPenaltyEntry) {
+    const type = String(entry.penaltyType || "").trim()
+    if (!type) return ""
+    if (type.toLowerCase() === "інший варіант") {
+        return String(entry.penaltyOther || "").trim() || type
+    }
+    return type
+}
+
+export function buildServiceInvestigationPenaltySummary(record: any, maxItems: number = 2) {
+    const officers = Array.isArray(record?.officers) ? record.officers : []
+    const penaltyItems = parseServiceInvestigationPenaltyItems(record?.investigationPenaltyItems)
+
+    if (!penaltyItems.length) {
+        if (!record?.investigationPenaltyType) return ""
+        const fallbackType = String(record.investigationPenaltyType || "").trim()
+        if (!fallbackType) return ""
+        return fallbackType.toLowerCase() === "інший варіант"
+            ? (String(record?.investigationPenaltyOther || "").trim() || fallbackType)
+            : fallbackType
+    }
+
+    const chunks = penaltyItems.map((item) => {
+        const officer = officers.find((o: any) => o.id === item.officerId)
+        const officerLabel = officer
+            ? `${officer.lastName || ""} ${officer.firstName || ""}`.trim() || officer.badgeNumber || item.officerId
+            : item.officerId
+        return `${officerLabel}: ${getServiceInvestigationPenaltyValue(item)}`
+    })
+
+    if (chunks.length <= maxItems) return chunks.join("; ")
+    const visible = chunks.slice(0, maxItems).join("; ")
+    return `${visible}; +${chunks.length - maxItems} ще`
+}
+
 const SERVICE_STAGE_ORDER: Record<string, number> = {
     REPORT_REVIEW: 1,
     SR_INITIATED: 2,
@@ -279,9 +343,22 @@ export function getServiceInvestigationTimeline(record: any): ServiceInvestigati
         finalLabel = "СР завершено: дії правомірні"
     }
 
-    const finalHint = record?.investigationPenaltyType
-        ? `Стягнення: ${record.investigationPenaltyType}${record?.investigationPenaltyOther ? ` (${record.investigationPenaltyOther})` : ""}`
-        : undefined
+    const hintParts: string[] = []
+    const penaltySummary = buildServiceInvestigationPenaltySummary(record, 1)
+    if (penaltySummary) {
+        hintParts.push(`Стягнення: ${penaltySummary}`)
+    }
+    if (record?.investigationConclusionApprovedAt) {
+        const dateLabel = formatDateTimeUa(record.investigationConclusionApprovedAt).split(" ")[0]
+        hintParts.push(`Висновок СР: ${dateLabel}`)
+    }
+    if (record?.investigationPenaltyByArticle13 && (record?.investigationPenaltyOrderNumber || record?.investigationPenaltyOrderDate)) {
+        const orderDate = record?.investigationPenaltyOrderDate
+            ? formatDateTimeUa(record.investigationPenaltyOrderDate).split(" ")[0]
+            : ""
+        hintParts.push(`Наказ про стягнення №${record?.investigationPenaltyOrderNumber || "—"}${orderDate ? ` від ${orderDate}` : ""}`)
+    }
+    const finalHint = hintParts.length > 0 ? hintParts.join(" • ") : undefined
 
     items.push({
         key: "final",

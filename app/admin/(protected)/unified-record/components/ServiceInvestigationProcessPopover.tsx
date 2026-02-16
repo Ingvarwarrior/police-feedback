@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,6 +24,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import { CheckSquare, FileText, Loader2, Search, Shield, UserPlus, XCircle } from "lucide-react"
+import { parseServiceInvestigationPenaltyItems } from "./unifiedRecord.helpers"
 
 type ServiceAction =
     | "CLOSE_NO_VIOLATION"
@@ -31,6 +32,12 @@ type ServiceAction =
     | "SET_ORDER"
     | "COMPLETE_LAWFUL"
     | "COMPLETE_UNLAWFUL"
+
+type PenaltyDraft = {
+    officerId: string
+    penaltyType: string
+    penaltyOther: string
+}
 
 interface ServiceInvestigationProcessPopoverProps {
     record: any
@@ -42,6 +49,16 @@ interface ServiceInvestigationProcessPopoverProps {
         penaltyType?: string
         penaltyOther?: string
         penaltyOfficerId?: string
+        penalties?: Array<{
+            officerId: string
+            penaltyType: string
+            penaltyOther?: string
+        }>
+        officerIds?: string[]
+        conclusionApprovedDate?: string
+        penaltyByArticle13?: boolean
+        penaltyOrderNumber?: string
+        penaltyOrderDate?: string
     }) => Promise<void>
     trigger?: ReactNode
 }
@@ -80,9 +97,12 @@ export default function ServiceInvestigationProcessPopover({
 
     const [orderNumber, setOrderNumber] = useState("")
     const [orderDate, setOrderDate] = useState("")
-    const [penaltyType, setPenaltyType] = useState("")
-    const [penaltyOther, setPenaltyOther] = useState("")
-    const [penaltyOfficerId, setPenaltyOfficerId] = useState("")
+
+    const [conclusionApprovedDate, setConclusionApprovedDate] = useState("")
+    const [penaltyByArticle13, setPenaltyByArticle13] = useState<"YES" | "NO">("YES")
+    const [penaltyOrderNumber, setPenaltyOrderNumber] = useState("")
+    const [penaltyOrderDate, setPenaltyOrderDate] = useState("")
+    const [penaltyDrafts, setPenaltyDrafts] = useState<Record<string, PenaltyDraft>>({})
 
     const [taggedOfficers, setTaggedOfficers] = useState<any[]>([])
     const [officerSearchQuery, setOfficerSearchQuery] = useState("")
@@ -103,15 +123,68 @@ export default function ServiceInvestigationProcessPopover({
 
     useEffect(() => {
         const officers = Array.isArray(record?.officers) ? record.officers : []
+        const savedPenalties = parseServiceInvestigationPenaltyItems(record?.investigationPenaltyItems)
+        const fallbackPenalty = record?.investigationPenaltyOfficerId && record?.investigationPenaltyType
+            ? [{
+                officerId: String(record.investigationPenaltyOfficerId),
+                penaltyType: String(record.investigationPenaltyType),
+                penaltyOther: String(record?.investigationPenaltyOther || ""),
+            }]
+            : []
+
+        const sourcePenalties = savedPenalties.length > 0 ? savedPenalties : fallbackPenalty
+        const draftMap: Record<string, PenaltyDraft> = {}
+
+        for (const officer of officers) {
+            const saved = sourcePenalties.find((item) => item.officerId === officer.id)
+            draftMap[officer.id] = {
+                officerId: officer.id,
+                penaltyType: saved?.penaltyType || "",
+                penaltyOther: saved?.penaltyOther || "",
+            }
+        }
+
+        for (const saved of sourcePenalties) {
+            if (draftMap[saved.officerId]) continue
+            draftMap[saved.officerId] = {
+                officerId: saved.officerId,
+                penaltyType: saved.penaltyType || "",
+                penaltyOther: saved.penaltyOther || "",
+            }
+        }
+
         setTaggedOfficers(officers)
+        setPenaltyDrafts(draftMap)
         setOrderNumber(record?.investigationOrderNumber || "")
         setOrderDate(record?.investigationOrderDate ? new Date(record.investigationOrderDate).toISOString().slice(0, 10) : "")
-        setPenaltyType(record?.investigationPenaltyType || "")
-        setPenaltyOther(record?.investigationPenaltyOther || "")
-        setPenaltyOfficerId(record?.investigationPenaltyOfficerId || officers[0]?.id || "")
+        setConclusionApprovedDate(
+            record?.investigationConclusionApprovedAt
+                ? new Date(record.investigationConclusionApprovedAt).toISOString().slice(0, 10)
+                : ""
+        )
+        setPenaltyByArticle13(record?.investigationPenaltyByArticle13 === false ? "NO" : "YES")
+        setPenaltyOrderNumber(record?.investigationPenaltyOrderNumber || "")
+        setPenaltyOrderDate(
+            record?.investigationPenaltyOrderDate
+                ? new Date(record.investigationPenaltyOrderDate).toISOString().slice(0, 10)
+                : ""
+        )
         setOfficerSearchQuery("")
         setOfficerSearchResults([])
-    }, [record?.id, record?.investigationOrderNumber, record?.investigationOrderDate, record?.investigationPenaltyType, record?.investigationPenaltyOther, record?.investigationPenaltyOfficerId, record?.officers])
+    }, [
+        record?.id,
+        record?.officers,
+        record?.investigationOrderNumber,
+        record?.investigationOrderDate,
+        record?.investigationPenaltyItems,
+        record?.investigationPenaltyOfficerId,
+        record?.investigationPenaltyType,
+        record?.investigationPenaltyOther,
+        record?.investigationConclusionApprovedAt,
+        record?.investigationPenaltyByArticle13,
+        record?.investigationPenaltyOrderNumber,
+        record?.investigationPenaltyOrderDate,
+    ])
 
     useEffect(() => {
         if (!officerSearchQuery.trim() || officerSearchQuery.length < 2) {
@@ -139,31 +212,80 @@ export default function ServiceInvestigationProcessPopover({
         return () => clearTimeout(timer)
     }, [officerSearchQuery, taggedOfficers])
 
-    const officersForSelect = useMemo(() => {
-        return taggedOfficers.map((officer: any) => ({
-            id: officer.id,
-            label: `${officer.lastName || ""} ${officer.firstName || ""}`.trim() || officer.badgeNumber || officer.id,
-            badgeNumber: officer.badgeNumber || "",
-        }))
-    }, [taggedOfficers])
-
     const closeContainer = () => {
         setIsDesktopOpen(false)
         setIsMobileOpen(false)
+    }
+
+    const updatePenaltyDraft = (officerId: string, patch: Partial<PenaltyDraft>) => {
+        setPenaltyDrafts((prev) => ({
+            ...prev,
+            [officerId]: {
+                officerId,
+                penaltyType: prev[officerId]?.penaltyType || "",
+                penaltyOther: prev[officerId]?.penaltyOther || "",
+                ...patch,
+            },
+        }))
+    }
+
+    const addOfficerToTagged = (officer: any) => {
+        setTaggedOfficers((prev) => {
+            if (prev.some((item) => item.id === officer.id)) return prev
+            return [...prev, officer]
+        })
+        setPenaltyDrafts((prev) => ({
+            ...prev,
+            [officer.id]: prev[officer.id] || {
+                officerId: officer.id,
+                penaltyType: "",
+                penaltyOther: "",
+            },
+        }))
+    }
+
+    const removeTaggedOfficer = (officerId: string) => {
+        setTaggedOfficers((prev) => prev.filter((item) => item.id !== officerId))
+        setPenaltyDrafts((prev) => {
+            const copy = { ...prev }
+            delete copy[officerId]
+            return copy
+        })
+    }
+
+    const buildPenaltyPayload = () => {
+        return taggedOfficers
+            .map((officer: any) => {
+                const draft = penaltyDrafts[officer.id]
+                return {
+                    officerId: officer.id,
+                    penaltyType: (draft?.penaltyType || "").trim(),
+                    penaltyOther: (draft?.penaltyOther || "").trim() || undefined,
+                }
+            })
+            .filter((item) => item.penaltyType.length > 0)
     }
 
     const submit = async (action: ServiceAction) => {
         if (isProcessing) return
         setIsProcessing(true)
         try {
+            const penalties = buildPenaltyPayload()
+            const firstPenalty = penalties[0]
             await onProcess({
                 id: record.id,
                 action,
                 orderNumber: orderNumber.trim() || undefined,
                 orderDate: orderDate || undefined,
-                penaltyType: penaltyType.trim() || undefined,
-                penaltyOther: penaltyOther.trim() || undefined,
-                penaltyOfficerId: penaltyOfficerId || undefined,
+                penaltyType: firstPenalty?.penaltyType,
+                penaltyOther: firstPenalty?.penaltyOther,
+                penaltyOfficerId: firstPenalty?.officerId,
+                penalties,
+                officerIds: taggedOfficers.map((officer: any) => officer.id),
+                conclusionApprovedDate: conclusionApprovedDate || undefined,
+                penaltyByArticle13: penaltyByArticle13 === "YES",
+                penaltyOrderNumber: penaltyOrderNumber.trim() || undefined,
+                penaltyOrderDate: penaltyOrderDate || undefined,
             })
             closeContainer()
         } finally {
@@ -245,6 +367,59 @@ export default function ServiceInvestigationProcessPopover({
                             Проведено СР - дії неправомірні
                         </p>
 
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                                Дата затвердження висновку СР
+                            </Label>
+                            <Input
+                                type="date"
+                                value={conclusionApprovedDate}
+                                onChange={(e) => setConclusionApprovedDate(e.target.value)}
+                                className="h-10 rounded-xl"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                                Стягнення за ст. 13 Дисциплінарного статуту НПУ
+                            </Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    type="button"
+                                    variant={penaltyByArticle13 === "YES" ? "default" : "outline"}
+                                    className="h-9 rounded-xl font-bold"
+                                    onClick={() => setPenaltyByArticle13("YES")}
+                                >
+                                    Так
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant={penaltyByArticle13 === "NO" ? "default" : "outline"}
+                                    className="h-9 rounded-xl font-bold"
+                                    onClick={() => setPenaltyByArticle13("NO")}
+                                >
+                                    Ні
+                                </Button>
+                            </div>
+                        </div>
+
+                        {penaltyByArticle13 === "YES" && (
+                            <div className="grid grid-cols-1 gap-2">
+                                <Input
+                                    value={penaltyOrderNumber}
+                                    onChange={(e) => setPenaltyOrderNumber(e.target.value)}
+                                    placeholder="№ наказу на стягнення"
+                                    className="h-10 rounded-xl"
+                                />
+                                <Input
+                                    type="date"
+                                    value={penaltyOrderDate}
+                                    onChange={(e) => setPenaltyOrderDate(e.target.value)}
+                                    className="h-10 rounded-xl"
+                                />
+                            </div>
+                        )}
+
                         {taggedOfficers.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {taggedOfficers.map((officer: any) => (
@@ -253,12 +428,7 @@ export default function ServiceInvestigationProcessPopover({
                                         <button
                                             type="button"
                                             className="hover:text-blue-900"
-                                            onClick={() => {
-                                                setTaggedOfficers((prev) => prev.filter((item) => item.id !== officer.id))
-                                                if (penaltyOfficerId === officer.id) {
-                                                    setPenaltyOfficerId("")
-                                                }
-                                            }}
+                                            onClick={() => removeTaggedOfficer(officer.id)}
                                         >
                                             <XCircle className="h-3.5 w-3.5" />
                                         </button>
@@ -287,10 +457,7 @@ export default function ServiceInvestigationProcessPopover({
                                         key={officer.id}
                                         type="button"
                                         onClick={() => {
-                                            setTaggedOfficers((prev) => [...prev, officer])
-                                            if (!penaltyOfficerId) {
-                                                setPenaltyOfficerId(officer.id)
-                                            }
+                                            addOfficerToTagged(officer)
                                             setOfficerSearchQuery("")
                                             setOfficerSearchResults([])
                                         }}
@@ -306,45 +473,53 @@ export default function ServiceInvestigationProcessPopover({
                             </div>
                         )}
 
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-600">Поліцейський</Label>
-                            <Select value={penaltyOfficerId} onValueChange={setPenaltyOfficerId}>
-                                <SelectTrigger className="h-10 rounded-xl">
-                                    <SelectValue placeholder="Оберіть поліцейського" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {officersForSelect.map((officer) => (
-                                        <SelectItem key={officer.id} value={officer.id}>
-                                            {officer.label}{officer.badgeNumber ? ` (${officer.badgeNumber})` : ""}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-600">Варіант стягнення</Label>
-                            <Select value={penaltyType} onValueChange={setPenaltyType}>
-                                <SelectTrigger className="h-10 rounded-xl">
-                                    <SelectValue placeholder="Оберіть стягнення" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {PENALTY_OPTIONS.map((option) => (
-                                        <SelectItem key={option} value={option}>
-                                            {option}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {penaltyType === "інший варіант" && (
-                            <Input
-                                value={penaltyOther}
-                                onChange={(e) => setPenaltyOther(e.target.value)}
-                                placeholder="Вкажіть інший варіант стягнення"
-                                className="h-10 rounded-xl"
-                            />
+                        {taggedOfficers.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-slate-300 bg-white/70 px-3 py-2 text-xs font-medium text-slate-500">
+                                Додайте поліцейських, для яких потрібно обрати стягнення.
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                                    Стягнення по кожному поліцейському
+                                </Label>
+                                {taggedOfficers.map((officer: any) => {
+                                    const draft = penaltyDrafts[officer.id] || {
+                                        officerId: officer.id,
+                                        penaltyType: "",
+                                        penaltyOther: "",
+                                    }
+                                    return (
+                                        <div key={officer.id} className="rounded-xl border border-slate-200 bg-white p-2.5 space-y-2">
+                                            <p className="text-xs font-bold text-slate-800">
+                                                {officer.lastName} {officer.firstName} {officer.badgeNumber ? `(${officer.badgeNumber})` : ""}
+                                            </p>
+                                            <Select
+                                                value={draft.penaltyType}
+                                                onValueChange={(value) => updatePenaltyDraft(officer.id, { penaltyType: value })}
+                                            >
+                                                <SelectTrigger className="h-9 rounded-xl">
+                                                    <SelectValue placeholder="Оберіть стягнення" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {PENALTY_OPTIONS.map((option) => (
+                                                        <SelectItem key={option} value={option}>
+                                                            {option}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {draft.penaltyType === "інший варіант" && (
+                                                <Input
+                                                    value={draft.penaltyOther}
+                                                    onChange={(e) => updatePenaltyDraft(officer.id, { penaltyOther: e.target.value })}
+                                                    placeholder="Вкажіть інший варіант стягнення"
+                                                    className="h-9 rounded-xl"
+                                                />
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
                         )}
 
                         <Button
@@ -403,7 +578,7 @@ export default function ServiceInvestigationProcessPopover({
                     </Button>
                 )}
             </PopoverTrigger>
-            <PopoverContent className="w-[380px] rounded-[1.5rem] border-none p-4 shadow-2xl space-y-4" align="end">
+            <PopoverContent className="w-[420px] rounded-[1.5rem] border-none p-4 shadow-2xl space-y-4" align="end">
                 <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-emerald-600" />
                     <p className="text-xs font-black uppercase tracking-widest text-slate-700">Службове розслідування</p>
