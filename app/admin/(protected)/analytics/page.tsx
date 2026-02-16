@@ -411,6 +411,7 @@ export default async function AnalyticsPage(props: { searchParams: Promise<Searc
       ...row,
       total: row.complaints + row.detentions + row.feedback + row.evaluations,
     }))
+    .filter((row) => row.total > 0)
     .sort((a, b) => {
       const byActivity = b.total - a.total
       if (byActivity !== 0) return byActivity
