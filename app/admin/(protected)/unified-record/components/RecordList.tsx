@@ -186,6 +186,11 @@ function formatDeadlineDelta(deadlineValue: string | Date, nowTs: number) {
     return `${Math.max(1, minutes)} хв.`
 }
 
+function calculateInclusiveDeadlineClient(startDate: Date, termDays: number = 15) {
+    const offsetDays = Math.max(1, Math.floor(termDays)) - 1
+    return new Date(startDate.getTime() + offsetDays * 24 * 60 * 60 * 1000)
+}
+
 export default function RecordList({ initialRecords, users = [], currentUser }: RecordListProps) {
     const [records, setRecords] = useState(
         normalizeInitialRecords(initialRecords)
@@ -504,7 +509,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             setRecords(prev => prev.map(r => {
                 if (r.id === id) {
                     const newDeadline = approved && r.deadline
-                        ? new Date(new Date(r.deadline).getTime() + 15 * 24 * 60 * 60 * 1000).toISOString()
+                        ? calculateInclusiveDeadlineClient(new Date(r.deadline), 15).toISOString()
                         : r.deadline
                     return { ...r, extensionStatus: approved ? "APPROVED" : "REJECTED", deadline: newDeadline }
                 }

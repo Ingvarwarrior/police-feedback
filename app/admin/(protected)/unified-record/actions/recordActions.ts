@@ -11,6 +11,8 @@ import { createAdminNotification } from "@/lib/admin-notification-service"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "")
+const DAY_MS = 24 * 60 * 60 * 1000
+const DEFAULT_TERM_DAYS = 15
 
 const UnifiedRecordSchema = z.object({
     id: z.string().optional(),
@@ -77,6 +79,12 @@ async function generateNextApplicationNumber() {
     }
 
     return `${prefix}${String(maxSeq + 1).padStart(4, "0")}`
+}
+
+function calculateInclusiveDeadline(startDate: Date, termDays: number = DEFAULT_TERM_DAYS) {
+    const safeDays = Number.isFinite(termDays) ? Math.max(1, Math.floor(termDays)) : DEFAULT_TERM_DAYS
+    const offsetDays = safeDays - 1
+    return new Date(startDate.getTime() + offsetDays * DAY_MS)
 }
 
 export async function processUnifiedRecordAction(id: string, resolution: string, officerIds?: string[], concernsBpp: boolean = true): Promise<{ success?: boolean, error?: string }> {
@@ -297,7 +305,7 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
             throw new Error("Некоректна дата наказу")
         }
 
-        const deadline = new Date(orderDate.getTime() + 15 * 24 * 60 * 60 * 1000)
+        const deadline = calculateInclusiveDeadline(orderDate, DEFAULT_TERM_DAYS)
         const formattedOrderDate = orderDate.toLocaleDateString("uk-UA")
 
         data = {
@@ -558,7 +566,7 @@ export async function reviewExtensionAction(id: string, approved: boolean) {
     if (!record) throw new Error("Record not found")
 
     const newDeadline = approved && record.deadline
-        ? new Date(record.deadline.getTime() + 15 * 24 * 60 * 60 * 1000)
+        ? calculateInclusiveDeadline(record.deadline, DEFAULT_TERM_DAYS)
         : record.deadline
 
     await prisma.unifiedRecord.update({
@@ -920,13 +928,14 @@ export async function upsertUnifiedRecordAction(data: any) {
         })
     }
 
-    // Calculate deadline:
-    // 1) for service investigation with order date -> 15 days from order date
-    // 2) otherwise -> 15 days from record date
+    // Calculate deadline (inclusive counting):
+    // day of record/order is day 1, so 15 days => +14 calendar days
+    // 1) for service investigation with order date
+    // 2) otherwise from record date
     const deadline = validated.deadline ||
         (validated.recordType === "SERVICE_INVESTIGATION" && validated.investigationOrderDate
-            ? new Date(new Date(validated.investigationOrderDate).getTime() + 15 * 24 * 60 * 60 * 1000)
-            : (validated.eoDate ? new Date(new Date(validated.eoDate).getTime() + 15 * 24 * 60 * 60 * 1000) : null))
+            ? calculateInclusiveDeadline(new Date(validated.investigationOrderDate), DEFAULT_TERM_DAYS)
+            : (validated.eoDate ? calculateInclusiveDeadline(new Date(validated.eoDate), DEFAULT_TERM_DAYS) : null))
 
     let record
     if (validated.id) {
