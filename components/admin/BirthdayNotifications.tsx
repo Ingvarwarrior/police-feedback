@@ -38,11 +38,9 @@ export default function BirthdayNotifications() {
         fetchBirthdays()
     }, [])
 
-    if (loading) return null
-    if (data.today.length === 0 && data.tomorrow.length === 0) return null
-
     const hasToday = data.today.length > 0
     const hasTomorrow = data.tomorrow.length > 0
+    const hasBirthdays = hasToday || hasTomorrow
 
     return (
         <Popover>
@@ -51,9 +49,20 @@ export default function BirthdayNotifications() {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className={`relative rounded-full transition-colors w-10 h-10 ${hasToday ? 'hover:bg-pink-50 hover:text-pink-500' : 'hover:bg-indigo-50 hover:text-indigo-500'}`}
+                        className={[
+                            "relative rounded-full transition-colors w-10 h-10",
+                            hasToday
+                                ? "hover:bg-pink-50 hover:text-pink-500"
+                                : hasTomorrow
+                                    ? "hover:bg-indigo-50 hover:text-indigo-500"
+                                    : "hover:bg-slate-100 text-slate-500",
+                        ].join(" ")}
                     >
-                        <Cake className={`w-5 h-5 ${!hasToday && hasTomorrow ? 'text-indigo-400 opacity-70' : ''}`} />
+                        {loading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Cake className={`w-5 h-5 ${!hasToday && hasTomorrow ? 'text-indigo-400 opacity-70' : ''}`} />
+                        )}
                         {hasToday && (
                             <span className="absolute top-2 right-2 w-2 h-2 bg-pink-500 rounded-full animate-pulse border border-white" />
                         )}
@@ -76,7 +85,7 @@ export default function BirthdayNotifications() {
 
                 <div className="max-h-[400px] overflow-y-auto">
                     {/* Today Section */}
-                    {hasToday && (
+                    {!loading && hasToday && (
                         <div className="p-2">
                             <h5 className="px-2 py-1 text-[10px] font-black uppercase tracking-wider text-pink-500 mb-1">Сьогодні 🎉</h5>
                             {data.today.map((officer) => (
@@ -89,12 +98,19 @@ export default function BirthdayNotifications() {
                     {hasToday && hasTomorrow && <div className="h-px bg-slate-100 mx-4 my-1" />}
 
                     {/* Tomorrow Section */}
-                    {hasTomorrow && (
+                    {!loading && hasTomorrow && (
                         <div className="p-2">
                             <h5 className="px-2 py-1 text-[10px] font-black uppercase tracking-wider text-indigo-500 mb-1">Завтра 🕒</h5>
                             {data.tomorrow.map((officer) => (
                                 <OfficerItem key={officer.id} officer={officer} />
                             ))}
+                        </div>
+                    )}
+
+                    {!loading && !hasBirthdays && (
+                        <div className="p-4 text-center">
+                            <p className="text-sm font-semibold text-slate-700">Сьогодні та завтра днів народження немає</p>
+                            <p className="mt-1 text-xs text-slate-500">Іконка залишається активною, щоб ви завжди могли це перевірити.</p>
                         </div>
                     )}
                 </div>

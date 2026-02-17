@@ -7,23 +7,29 @@ export async function getOfficersWithBirthdays() {
     const session = await auth()
     if (!session) return { today: [], tomorrow: [] }
 
-    // Get current date
     const today = new Date()
-    const currentMonth = today.getMonth() + 1 // 0-11 -> 1-12
-    const currentDay = today.getDate()
 
-    // Get tomorrow's date
     const tomorrow = new Date(today)
     tomorrow.setDate(today.getDate() + 1)
-    const tomorrowMonth = tomorrow.getMonth() + 1
-    const tomorrowDay = tomorrow.getDate()
 
-    // Fetch active officers
-    // Note: SQLite doesn't have great date functions in Prisma raw query easily across environments,
-    // so fetching active officers and filtering in JS is safer for this scale.
+    const kyivFormatter = new Intl.DateTimeFormat("uk-UA", {
+        timeZone: "Europe/Kyiv",
+        day: "2-digit",
+        month: "2-digit",
+    })
+
+    const getMonthDayKey = (date: Date) => {
+        const parts = kyivFormatter.formatToParts(date)
+        const day = parts.find((p) => p.type === "day")?.value || ""
+        const month = parts.find((p) => p.type === "month")?.value || ""
+        return `${month}-${day}`
+    }
+
+    const todayKey = getMonthDayKey(today)
+    const tomorrowKey = getMonthDayKey(tomorrow)
+
     const officers = await prisma.officer.findMany({
         where: {
-            status: 'ACTIVE',
             birthDate: {
                 not: null
             }
@@ -36,8 +42,10 @@ export async function getOfficersWithBirthdays() {
             birthDate: true,
             imageUrl: true,
             rank: true,
-            department: true
-        }
+            department: true,
+            status: true,
+        },
+        orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     })
 
     const result = {
@@ -47,13 +55,18 @@ export async function getOfficersWithBirthdays() {
 
     officers.forEach(officer => {
         if (!officer.birthDate) return
-        const d = new Date(officer.birthDate)
-        const m = d.getMonth() + 1
-        const day = d.getDate()
 
-        if (m === currentMonth && day === currentDay) {
+        const status = String(officer.status || "ACTIVE").trim().toUpperCase()
+        if (status === "INACTIVE" || status === "DISMISSED" || status === "ARCHIVED") return
+
+        const birthDate = new Date(officer.birthDate)
+        if (Number.isNaN(birthDate.getTime())) return
+
+        const birthdayKey = getMonthDayKey(birthDate)
+
+        if (birthdayKey === todayKey) {
             result.today.push(officer)
-        } else if (m === tomorrowMonth && day === tomorrowDay) {
+        } else if (birthdayKey === tomorrowKey) {
             result.tomorrow.push(officer)
         }
     })
