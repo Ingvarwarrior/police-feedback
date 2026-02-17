@@ -204,6 +204,14 @@ function calculateInclusiveDeadlineClient(startDate: Date, termDays: number = 15
     return new Date(startDate.getTime() + offsetDays * 24 * 60 * 60 * 1000)
 }
 
+function splitServiceResolutionToList(value?: string | null): string[] {
+    if (!value) return []
+    return value
+        .split(/\r?\n|;\s*/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+}
+
 export default function RecordList({ initialRecords, users = [], currentUser }: RecordListProps) {
     const [records, setRecords] = useState(
         normalizeInitialRecords(initialRecords)
@@ -986,6 +994,9 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     <div className="grid grid-cols-1 gap-4">
                         {filteredRecords.map((record) => {
                             const serviceStageTheme = isServiceInvestigationRecord(record) ? getServiceStageTheme(record) : null
+                            const serviceResolutionItems = isServiceInvestigationRecord(record)
+                                ? splitServiceResolutionToList(record.resolution)
+                                : []
 
                             return (
                             <Card key={record.id} className={cn(
@@ -1183,21 +1194,36 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             </>
                                                         ) : isServiceInvestigationRecord(record) ? (
                                                             <>
-                                                                <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-300">
+                                                                <div className="text-[12px] font-semibold leading-5 text-slate-700 dark:text-slate-300 transition-colors duration-300">
                                                                     {record.investigationViolation || record.description || "—"}
                                                                 </div>
-                                                                <div className={cn(
-                                                                    "text-sm font-bold italic transition-colors duration-300",
-                                                                    serviceStageTheme
-                                                                        ? serviceStageTheme.resultText
-                                                                        : (record.status === 'PROCESSED'
-                                                                            ? "text-emerald-700 dark:text-emerald-400"
-                                                                            : "text-blue-600 dark:text-blue-400")
-                                                                )}>
-                                                                    {record.status === 'PROCESSED'
-                                                                        ? (record.resolution || getServiceInvestigationStageLabel(record))
-                                                                        : getServiceInvestigationStageLabel(record)}
-                                                                </div>
+                                                                {record.status === "PROCESSED" && serviceResolutionItems.length > 0 ? (
+                                                                    <ul className={cn(
+                                                                        "list-disc pl-5 space-y-1 text-sm font-bold transition-colors duration-300",
+                                                                        serviceStageTheme
+                                                                            ? serviceStageTheme.resultText
+                                                                            : "text-emerald-700 dark:text-emerald-400"
+                                                                    )}>
+                                                                        {serviceResolutionItems.map((item, index) => (
+                                                                            <li key={`${record.id}-resolution-${index}`} className="leading-5">
+                                                                                {item}
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                ) : (
+                                                                    <div className={cn(
+                                                                        "text-sm font-bold italic transition-colors duration-300",
+                                                                        serviceStageTheme
+                                                                            ? serviceStageTheme.resultText
+                                                                            : (record.status === 'PROCESSED'
+                                                                                ? "text-emerald-700 dark:text-emerald-400"
+                                                                                : "text-blue-600 dark:text-blue-400")
+                                                                    )}>
+                                                                        {record.status === 'PROCESSED'
+                                                                            ? (record.resolution || getServiceInvestigationStageLabel(record))
+                                                                            : getServiceInvestigationStageLabel(record)}
+                                                                    </div>
+                                                                )}
                                                                 <div className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50/70 p-2.5">
                                                                     {getServiceInvestigationTimeline(record).map((step) => (
                                                                         <div
@@ -1212,7 +1238,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                         >
                                                                             <div className="min-w-0">
                                                                                 <p className={cn(
-                                                                                    "text-[11px] font-semibold leading-tight",
+                                                                                    "text-[13px] font-semibold leading-tight",
                                                                                     step.status === "done" && "text-emerald-800",
                                                                                     step.status === "current" && "text-blue-800",
                                                                                     step.status === "pending" && "text-slate-700",
@@ -1221,10 +1247,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                                     {step.label}
                                                                                 </p>
                                                                                 {step.hint && (
-                                                                                    <p className="text-[10px] text-slate-500 mt-0.5">{step.hint}</p>
+                                                                                    <p className="text-[12px] text-slate-500 mt-0.5 leading-5">{step.hint}</p>
                                                                                 )}
                                                                             </div>
-                                                                            <span className="shrink-0 text-[10px] font-bold text-slate-500">
+                                                                            <span className="shrink-0 text-[12px] font-bold text-slate-500">
                                                                                 {step.at ? formatDateTimeUa(step.at) : (step.status === "skipped" ? "не застос." : "—")}
                                                                             </span>
                                                                         </div>
