@@ -124,6 +124,14 @@ type UnifiedRecordStatus = "ALL" | "PENDING" | "PROCESSED"
 
 const ALLOWED_TABS: UnifiedRecordTab[] = ["ALL", "EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL", "SERVICE_INVESTIGATION"]
 const ALLOWED_STATUS: UnifiedRecordStatus[] = ["ALL", "PENDING", "PROCESSED"]
+const TAB_LABELS: Record<UnifiedRecordTab, string> = {
+    ALL: "Всі документи",
+    EO: "Єдиний облік",
+    ZVERN: "Звернення",
+    APPLICATION: "Застосування сили/спецзасобів",
+    DETENTION_PROTOCOL: "Протоколи затримання",
+    SERVICE_INVESTIGATION: "Службові розслідування",
+}
 
 const SERVICE_STAGE_THEME: Record<
     ServiceStageColumnKey,
@@ -225,6 +233,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
 
 
     const searchParams = useSearchParams()
+    const hasStructuredMenuParams = searchParams.has("activeTab")
 
     useEffect(() => {
         setRecords(normalizeInitialRecords(initialRecords))
@@ -381,6 +390,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         () => ({ recordType: activeTab === "ALL" ? "EO" : activeTab }),
         [activeTab]
     )
+    const activeTabLabel = TAB_LABELS[activeTab as UnifiedRecordTab] || "Всі документи"
 
     const toggleSelectAll = () => {
         if (selectedIds.length === filteredRecords.length) {
@@ -614,64 +624,76 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         <div className="space-y-6">
             {/* Tabs & Actions Bar */}
             <div className="space-y-3">
-                <Tabs value={activeTab} className="w-full" onValueChange={(v) => setActiveTab(v as any)}>
-                    <TabsList className="bg-white/80 backdrop-blur-md p-1.5 rounded-[2rem] border border-slate-300 shadow-xl min-h-16 h-auto flex flex-wrap items-stretch justify-start w-full gap-1">
-                        <TabsTrigger
-                            value="ALL"
-                            className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-800 data-[state=active]:to-slate-950 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
-                        >
-                            Всі записи
-                            <span className="bg-slate-200/50 text-slate-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
-                                {records.length}
+                {hasStructuredMenuParams ? (
+                    <div className="rounded-[2rem] border border-slate-200 bg-white/90 px-5 py-4 shadow-sm">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Розділ</p>
+                        <div className="mt-1 flex items-center gap-3">
+                            <h2 className="text-lg font-black text-slate-900">{activeTabLabel}</h2>
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">
+                                {filteredRecords.length}
                             </span>
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="EO"
-                            className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-800 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
-                        >
-                            Єдиний облік
-                            <span className="bg-blue-50/50 text-blue-600 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
-                                {records.filter(r => r.recordType === 'EO').length}
-                            </span>
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="ZVERN"
-                            className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
-                        >
-                            Звернення
-                            <span className="bg-amber-50/50 text-amber-600 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
-                                {records.filter(r => r.recordType === 'ZVERN').length}
-                            </span>
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="APPLICATION"
-                            className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-600 data-[state=active]:to-red-700 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
-                        >
-                            Застосування сили/спецзасобів
-                            <span className="bg-rose-50/50 text-rose-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
-                                {records.filter(r => r.recordType === 'APPLICATION').length}
-                            </span>
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="DETENTION_PROTOCOL"
-                            className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-fuchsia-600 data-[state=active]:to-violet-700 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
-                        >
-                            Протоколи затримання
-                            <span className="bg-fuchsia-50/50 text-fuchsia-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
-                                {records.filter(r => r.recordType === 'DETENTION_PROTOCOL').length}
-                            </span>
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="SERVICE_INVESTIGATION"
-                            className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-700 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
-                        >
-                            Службові розслідування
-                            <span className="bg-emerald-50/50 text-emerald-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
-                                {records.filter(r => r.recordType === 'SERVICE_INVESTIGATION').length}
-                            </span>
-                        </TabsTrigger>
-                    </TabsList>
-                </Tabs>
+                        </div>
+                    </div>
+                ) : (
+                    <Tabs value={activeTab} className="w-full" onValueChange={(v) => setActiveTab(v as any)}>
+                        <TabsList className="bg-white/80 backdrop-blur-md p-1.5 rounded-[2rem] border border-slate-300 shadow-xl min-h-16 h-auto flex flex-wrap items-stretch justify-start w-full gap-1">
+                            <TabsTrigger
+                                value="ALL"
+                                className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-800 data-[state=active]:to-slate-950 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
+                            >
+                                Всі записи
+                                <span className="bg-slate-200/50 text-slate-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
+                                    {records.length}
+                                </span>
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="EO"
+                                className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-800 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
+                            >
+                                Єдиний облік
+                                <span className="bg-blue-50/50 text-blue-600 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
+                                    {records.filter(r => r.recordType === 'EO').length}
+                                </span>
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="ZVERN"
+                                className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
+                            >
+                                Звернення
+                                <span className="bg-amber-50/50 text-amber-600 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
+                                    {records.filter(r => r.recordType === 'ZVERN').length}
+                                </span>
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="APPLICATION"
+                                className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-600 data-[state=active]:to-red-700 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
+                            >
+                                Застосування сили/спецзасобів
+                                <span className="bg-rose-50/50 text-rose-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
+                                    {records.filter(r => r.recordType === 'APPLICATION').length}
+                                </span>
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="DETENTION_PROTOCOL"
+                                className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-fuchsia-600 data-[state=active]:to-violet-700 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
+                            >
+                                Протоколи затримання
+                                <span className="bg-fuchsia-50/50 text-fuchsia-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
+                                    {records.filter(r => r.recordType === 'DETENTION_PROTOCOL').length}
+                                </span>
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="SERVICE_INVESTIGATION"
+                                className="rounded-[1.2rem] sm:rounded-[1.5rem] px-3 sm:px-6 md:px-10 min-h-[44px] h-auto font-black uppercase tracking-widest text-[9px] sm:text-[10px] md:text-[11px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-700 data-[state=active]:text-white transition-all duration-300 gap-2 sm:gap-3 grow sm:grow-0 basis-[calc(50%-0.25rem)] sm:basis-auto whitespace-normal leading-tight shadow-sm"
+                            >
+                                Службові розслідування
+                                <span className="bg-emerald-50/50 text-emerald-700 px-2.5 py-1 rounded-xl text-[10px] font-black min-w-[24px] text-center">
+                                    {records.filter(r => r.recordType === 'SERVICE_INVESTIGATION').length}
+                                </span>
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                )}
 
                 {currentUser.role === 'ADMIN' && (
                     <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 p-2 bg-white/90 backdrop-blur-md rounded-[2rem] border border-slate-200 shadow-xl w-full justify-start min-h-16 transition-all hover:shadow-2xl">
