@@ -928,26 +928,40 @@ export async function upsertUnifiedRecordAction(data: any) {
             ? new Date(new Date(validated.investigationOrderDate).getTime() + 15 * 24 * 60 * 60 * 1000)
             : (validated.eoDate ? new Date(new Date(validated.eoDate).getTime() + 15 * 24 * 60 * 60 * 1000) : null))
 
-    const record = await prisma.unifiedRecord.upsert({
-        where: { eoNumber: validated.eoNumber },
-        update: {
-            ...recordData,
-            deadline: deadline,
-            updatedAt: new Date(),
-            officers: {
-                set: officerIds.map(id => ({ id }))
-            }
-        },
-        create: {
-            ...recordData,
-            deadline: deadline,
-            officers: officerIds.length > 0
-                ? {
-                    connect: officerIds.map(id => ({ id }))
+    let record
+    if (validated.id) {
+        record = await prisma.unifiedRecord.update({
+            where: { id: validated.id },
+            data: {
+                ...recordData,
+                deadline: deadline,
+                updatedAt: new Date(),
+                officers: {
+                    set: officerIds.map(id => ({ id }))
                 }
-                : undefined
+            }
+        })
+    } else {
+        const duplicate = await prisma.unifiedRecord.findUnique({
+            where: { eoNumber: validated.eoNumber },
+            select: { id: true, recordType: true, eoNumber: true }
+        })
+        if (duplicate) {
+            throw new Error(`Запис з номером ${duplicate.eoNumber} вже існує. Створення дубля заблоковано.`)
         }
-    })
+
+        record = await prisma.unifiedRecord.create({
+            data: {
+                ...recordData,
+                deadline: deadline,
+                officers: officerIds.length > 0
+                    ? {
+                        connect: officerIds.map(id => ({ id }))
+                    }
+                    : undefined
+            }
+        })
+    }
 
     // Create notification only if assignment changed or is new
     if (validated.assignedUserId && (!oldRecord || oldRecord.assignedUserId !== validated.assignedUserId)) {
