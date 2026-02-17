@@ -119,6 +119,11 @@ interface RecordListProps {
 
 const FILTERS_STORAGE_KEY = "pf:filters:unified-record"
 type ServiceStageColumnKey = "REPORT_REVIEW" | "SR_INITIATED" | "SR_ORDER_ASSIGNED" | "FINAL"
+type UnifiedRecordTab = "ALL" | "EO" | "ZVERN" | "APPLICATION" | "DETENTION_PROTOCOL" | "SERVICE_INVESTIGATION"
+type UnifiedRecordStatus = "ALL" | "PENDING" | "PROCESSED"
+
+const ALLOWED_TABS: UnifiedRecordTab[] = ["ALL", "EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL", "SERVICE_INVESTIGATION"]
+const ALLOWED_STATUS: UnifiedRecordStatus[] = ["ALL", "PENDING", "PROCESSED"]
 
 const SERVICE_STAGE_THEME: Record<
     ServiceStageColumnKey,
@@ -303,8 +308,23 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     }, [searchParams, initialRecords])
 
     useEffect(() => {
+        const tabParam = searchParams.get("activeTab")
+        const statusParam = searchParams.get("status")
         const quickPresetParam = searchParams.get("quickPreset")
-        if (!quickPresetParam) return
+
+        const hasMenuParams = Boolean(tabParam || statusParam)
+
+        if (tabParam && ALLOWED_TABS.includes(tabParam as UnifiedRecordTab)) {
+            setActiveTab(tabParam as UnifiedRecordTab)
+        }
+
+        if (statusParam && ALLOWED_STATUS.includes(statusParam as UnifiedRecordStatus)) {
+            setFilterStatus(statusParam as UnifiedRecordStatus)
+        }
+
+        if (hasMenuParams) {
+            setQuickPreset("ALL")
+        }
 
         if (quickPresetParam === "OVERDUE") {
             setQuickPreset("OVERDUE")
@@ -316,6 +336,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             setQuickPreset("UNASSIGNED")
             setFilterStatus("PENDING")
             return
+        }
+
+        if (quickPresetParam === "MINE") {
+            setQuickPreset("MINE")
+            return
+        }
+
+        if (quickPresetParam === "ALL") {
+            setQuickPreset("ALL")
         }
     }, [searchParams])
 

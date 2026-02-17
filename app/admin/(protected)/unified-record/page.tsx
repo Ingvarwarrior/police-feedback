@@ -59,11 +59,11 @@ export default async function UnifiedRecordPage() {
                         <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400/80">Центр адміністрування</h2>
                     </div>
                     <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none">
-                        Єдиний облік <br />
-                        <span className="text-blue-400">& звернення</span>
+                        ВИКОНАВЧА <br />
+                        <span className="text-blue-400">ДИСЦИПЛІНА</span>
                     </h1>
                     <p className="max-w-md text-slate-400 font-medium text-sm">
-                        Офіційний реєстр подій та звернень громадян для контролю виконавчої дисципліни та класифікації інцидентів.
+                        Централізований контроль документів: ЄО, звернення, застосування, затримання та службові розслідування.
                     </p>
                 </div>
 
@@ -76,7 +76,7 @@ export default async function UnifiedRecordPage() {
                     <Info className="w-5 h-5" />
                 </div>
                 <p className="text-xs font-medium text-slate-600">
-                    Тут відображаються дані журналів ЄО. Ви можете редагувати існуючі картки, призначати відповідальних інспекторів (користувачів системи) та фільтрувати записи.
+                    Натисніть пункт меню зліва: кореневий розділ показує всі документи в роботі, а підрозділи відкривають окремі категорії.
                 </p>
             </div>
 

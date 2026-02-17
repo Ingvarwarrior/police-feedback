@@ -104,10 +104,52 @@ export default async function AdminLayout({
                             </Link>
                         ) : null}
                         {canViewUnifiedRecords ? (
-                            <Link href="/admin/unified-record" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">
-                                <ClipboardList className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
-                                Єдиний облік
-                            </Link>
+                            <div className="space-y-1">
+                                <Link
+                                    href="/admin/unified-record?activeTab=ALL&status=PENDING"
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4"
+                                >
+                                    <ClipboardList className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                                    ВИКОНАВЧА ДИСЦИПЛІНА
+                                </Link>
+                                <div className="ml-8 pl-3 border-l border-slate-800/80 space-y-1">
+                                    <Link
+                                        href="/admin/unified-record?activeTab=EO&status=ALL"
+                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                                    >
+                                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                                        Єдиний облік
+                                    </Link>
+                                    <Link
+                                        href="/admin/unified-record?activeTab=ZVERN&status=ALL"
+                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                                    >
+                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                        Звернення
+                                    </Link>
+                                    <Link
+                                        href="/admin/unified-record?activeTab=APPLICATION&status=ALL"
+                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                                    >
+                                        <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                                        Застосування сили/спецзасобів
+                                    </Link>
+                                    <Link
+                                        href="/admin/unified-record?activeTab=DETENTION_PROTOCOL&status=ALL"
+                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                                    >
+                                        <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-500" />
+                                        Протоколи затримання
+                                    </Link>
+                                    <Link
+                                        href="/admin/unified-record?activeTab=SERVICE_INVESTIGATION&status=ALL"
+                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                                    >
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                        Службові розслідування
+                                    </Link>
+                                </div>
+                            </div>
                         ) : null}
                         {canViewReports ? (
                             <Link href="/admin/callbacks" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">

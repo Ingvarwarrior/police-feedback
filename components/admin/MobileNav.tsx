@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Menu, X, LayoutDashboard, FileText, Users, Settings, LogOut, ShieldCheck, Map as MapIcon, Activity, ClipboardList, PhoneCall } from "lucide-react"
+import { Menu, X, LayoutDashboard, FileText, Users, Settings, LogOut, ShieldCheck, Map as MapIcon, Activity, ClipboardList, PhoneCall, type LucideIcon } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { ThemeToggle } from "@/components/ThemeToggle"
 
@@ -35,6 +35,7 @@ interface MobileNavProps {
 export default function MobileNav({ user }: MobileNavProps) {
     const [isOpen, setIsOpen] = useState(false)
     const pathname = usePathname()
+    const searchParams = useSearchParams()
 
     const displayName = user.firstName || user.lastName
         ? `${user.lastName || ''} ${user.firstName || ''}`.trim()
@@ -55,7 +56,22 @@ export default function MobileNav({ user }: MobileNavProps) {
         user.permCreateEvaluations ||
         user.permManageOfficerStatus
 
-    const navItems = [
+    type MobileNavSubItem = {
+        href: string
+        label: string
+        tab?: string
+        status?: string
+    }
+
+    type MobileNavItem = {
+        href: string
+        label: string
+        icon: LucideIcon
+        permission?: boolean
+        children?: MobileNavSubItem[]
+    }
+
+    const navItems: MobileNavItem[] = [
         {
             href: "/admin/dashboard",
             label: "Дашборд",
@@ -75,10 +91,17 @@ export default function MobileNav({ user }: MobileNavProps) {
             permission: canViewReports
         },
         {
-            href: "/admin/unified-record",
-            label: "Єдиний облік",
+            href: "/admin/unified-record?activeTab=ALL&status=PENDING",
+            label: "ВИКОНАВЧА ДИСЦИПЛІНА",
             icon: ClipboardList,
-            permission: canViewUnifiedRecords
+            permission: canViewUnifiedRecords,
+            children: [
+                { href: "/admin/unified-record?activeTab=EO&status=ALL", label: "Єдиний облік", tab: "EO", status: "ALL" },
+                { href: "/admin/unified-record?activeTab=ZVERN&status=ALL", label: "Звернення", tab: "ZVERN", status: "ALL" },
+                { href: "/admin/unified-record?activeTab=APPLICATION&status=ALL", label: "Застосування сили/спецзасобів", tab: "APPLICATION", status: "ALL" },
+                { href: "/admin/unified-record?activeTab=DETENTION_PROTOCOL&status=ALL", label: "Протоколи затримання", tab: "DETENTION_PROTOCOL", status: "ALL" },
+                { href: "/admin/unified-record?activeTab=SERVICE_INVESTIGATION&status=ALL", label: "Службові розслідування", tab: "SERVICE_INVESTIGATION", status: "ALL" },
+            ],
         },
         {
             href: "/admin/callbacks",
@@ -144,19 +167,54 @@ export default function MobileNav({ user }: MobileNavProps) {
                     </div>
 
                     <nav className="flex-1 p-6 space-y-4 overflow-y-auto">
-                        {navItems.filter(item => item.permission !== false).map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={() => setIsOpen(false)}
-                                className={`flex items-center gap-4 p-4 rounded-2xl font-bold transition-all ${pathname === item.href
-                                    ? 'bg-gradient-to-r from-blue-900/50 to-slate-800 border border-blue-500/30 text-yellow-400 shadow-lg shadow-blue-900/20'
-                                    : 'bg-slate-800/50 text-slate-300 border border-slate-700/50'}`}
-                            >
-                                <item.icon className={`w-5 h-5 ${pathname === item.href ? 'text-yellow-400' : 'text-slate-500'}`} />
-                                {item.label}
-                            </Link>
-                        ))}
+                        {navItems.filter(item => item.permission !== false).map((item) => {
+                            const itemPath = item.href.split("?")[0]
+                            const isUnifiedRoot =
+                                itemPath === "/admin/unified-record" &&
+                                pathname === "/admin/unified-record" &&
+                                (searchParams.get("activeTab") || "ALL") === "ALL" &&
+                                (searchParams.get("status") || "PENDING") === "PENDING"
+                            const isItemActive = itemPath === pathname && (itemPath !== "/admin/unified-record" ? true : isUnifiedRoot)
+
+                            return (
+                                <div key={item.href} className="space-y-2">
+                                    <Link
+                                        href={item.href}
+                                        onClick={() => setIsOpen(false)}
+                                        className={`flex items-center gap-4 p-4 rounded-2xl font-bold transition-all ${isItemActive
+                                            ? 'bg-gradient-to-r from-blue-900/50 to-slate-800 border border-blue-500/30 text-yellow-400 shadow-lg shadow-blue-900/20'
+                                            : 'bg-slate-800/50 text-slate-300 border border-slate-700/50'}`}
+                                    >
+                                        <item.icon className={`w-5 h-5 ${isItemActive ? 'text-yellow-400' : 'text-slate-500'}`} />
+                                        {item.label}
+                                    </Link>
+
+                                    {item.children && pathname === "/admin/unified-record" ? (
+                                        <div className="ml-3 rounded-2xl border border-slate-700/50 bg-slate-900/40 p-2 space-y-1">
+                                            {item.children.map((child) => {
+                                                const isChildActive =
+                                                    (searchParams.get("activeTab") || "") === (child.tab || "") &&
+                                                    (searchParams.get("status") || "ALL") === (child.status || "ALL")
+                                                return (
+                                                    <Link
+                                                        key={child.href}
+                                                        href={child.href}
+                                                        onClick={() => setIsOpen(false)}
+                                                        className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all ${isChildActive
+                                                            ? "bg-blue-900/40 text-blue-200 border border-blue-500/30"
+                                                            : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
+                                                            }`}
+                                                    >
+                                                        <span className={`h-1.5 w-1.5 rounded-full ${isChildActive ? "bg-blue-300" : "bg-slate-500"}`} />
+                                                        {child.label}
+                                                    </Link>
+                                                )
+                                            })}
+                                        </div>
+                                    ) : null}
+                                </div>
+                            )
+                        })}
                     </nav>
 
                     <div className="p-6 border-t border-slate-800 bg-slate-900">
