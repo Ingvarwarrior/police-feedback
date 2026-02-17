@@ -600,25 +600,29 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     }
 
     const renderServiceInvestigationCard = (record: any) => (
-        <Card className="h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <CardContent className="space-y-3 p-4">
+        <Card className="h-full rounded-xl border border-slate-200 bg-white shadow-sm">
+            <CardContent className="space-y-2.5 p-2.5">
                 <div className="flex items-start justify-between gap-2">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setViewRecord(record)
-                            setIsViewOpen(true)
-                        }}
-                        className="text-left"
-                    >
-                        <p className="text-sm font-black text-blue-700">{record.eoNumber || "—"}</p>
-                        <p className="text-[10px] font-semibold text-slate-500">
-                            {format(new Date(record.eoDate), "dd.MM.yyyy", { locale: uk })}
-                        </p>
-                    </button>
+                    <div className="min-w-0 flex-1">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setViewRecord(record)
+                                setIsViewOpen(true)
+                            }}
+                            className="min-w-0 text-left"
+                        >
+                            <p className="truncate text-[12px] font-extrabold text-slate-900 hover:text-blue-700">
+                                {record.eoNumber || "—"}
+                            </p>
+                            <p className="text-[10px] font-medium text-slate-500">
+                                {format(new Date(record.eoDate), "dd.MM.yyyy", { locale: uk })}
+                            </p>
+                        </button>
+                    </div>
                     <span
                         className={cn(
-                            "rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-wide",
+                            "shrink-0 rounded-md px-2 py-0.5 text-[9px] font-bold tracking-wide",
                             record.status === "PROCESSED" ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700"
                         )}
                     >
@@ -627,59 +631,54 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                 </div>
 
                 <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Відносно кого</p>
-                    <p className="text-sm font-bold text-slate-900">{record.applicant || "—"}</p>
+                    <p className="line-clamp-1 text-[11px] leading-snug text-slate-700">
+                        <span className="font-semibold text-slate-500">Відносно:</span>{" "}
+                        <span className="font-semibold text-slate-900">{record.applicant || "—"}</span>
+                    </p>
+                    <p className="line-clamp-2 text-[11px] leading-snug text-slate-700">
+                        <span className="font-semibold text-slate-500">Порушення:</span>{" "}
+                        <span className="font-medium">{record.investigationViolation || record.description || "—"}</span>
+                    </p>
                 </div>
 
-                <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Порушення</p>
-                    <p className="text-xs font-medium text-slate-700">{record.investigationViolation || record.description || "—"}</p>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Поточний етап</p>
-                    <p className="mt-1 text-xs font-bold text-slate-800">{getServiceInvestigationStageLabel(record)}</p>
-                    <p className="mt-1 text-[11px] font-semibold text-slate-500">{getCurrentServiceStageTime(record)}</p>
-                </div>
-
-                {(record.investigationOrderNumber || record.investigationOrderDate) && (
-                    <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-2.5">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-indigo-700">Наказ про призначення СР</p>
-                        <p className="mt-1 text-xs font-bold text-indigo-900">
-                            №{record.investigationOrderNumber || "—"} від{" "}
+                <div className="flex flex-wrap gap-1">
+                    <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-semibold text-slate-700">
+                        {getServiceInvestigationStageLabel(record)}
+                    </span>
+                    <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-medium text-slate-500">
+                        {getCurrentServiceStageTime(record)}
+                    </span>
+                    {(record.investigationOrderNumber || record.investigationOrderDate) && (
+                        <span className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[9px] font-semibold text-indigo-700">
+                            Наказ №{record.investigationOrderNumber || "—"} від{" "}
                             {record.investigationOrderDate
                                 ? format(new Date(record.investigationOrderDate), "dd.MM.yyyy", { locale: uk })
                                 : "—"}
-                        </p>
-                    </div>
-                )}
+                        </span>
+                    )}
+                    {record.investigationConclusionApprovedAt && (
+                        <span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[9px] font-semibold text-rose-700">
+                            Висновок: {format(new Date(record.investigationConclusionApprovedAt), "dd.MM.yyyy", { locale: uk })}
+                        </span>
+                    )}
+                    {record.investigationPenaltyByArticle13 && (
+                        <span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[9px] font-semibold text-rose-700">
+                            Стягнення: №{record.investigationPenaltyOrderNumber || "—"} від{" "}
+                            {record.investigationPenaltyOrderDate
+                                ? format(new Date(record.investigationPenaltyOrderDate), "dd.MM.yyyy", { locale: uk })
+                                : "—"}
+                        </span>
+                    )}
+                    {record.investigationPenaltyByArticle13 === false && (
+                        <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-semibold text-amber-700">
+                            Стягнення без наказу ст.13
+                        </span>
+                    )}
+                </div>
 
-                {(record.investigationConclusionApprovedAt || record.investigationPenaltyOrderNumber || record.investigationPenaltyOrderDate) && (
-                    <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-2.5 space-y-1">
-                        {record.investigationConclusionApprovedAt && (
-                            <p className="text-xs font-bold text-rose-900">
-                                Висновок СР затверджено: {format(new Date(record.investigationConclusionApprovedAt), "dd.MM.yyyy", { locale: uk })}
-                            </p>
-                        )}
-                        {record.investigationPenaltyByArticle13 && (
-                            <p className="text-[10px] font-black uppercase tracking-wider text-rose-700">
-                                Наказ про стягнення: №{record.investigationPenaltyOrderNumber || "—"} від{" "}
-                                {record.investigationPenaltyOrderDate
-                                    ? format(new Date(record.investigationPenaltyOrderDate), "dd.MM.yyyy", { locale: uk })
-                                    : "—"}
-                            </p>
-                        )}
-                        {record.investigationPenaltyByArticle13 === false && (
-                            <p className="text-[10px] font-black uppercase tracking-wider text-rose-700">
-                                Стягнення не за ст. 13 (без наказу)
-                            </p>
-                        )}
-                    </div>
-                )}
-
-                <div className="space-y-2 border-t border-slate-100 pt-3">
+                <div className="space-y-2 border-t border-slate-100 pt-2">
                     <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Виконавець</p>
+                        <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">Виконавець</p>
                         {currentUser.role === "ADMIN" ? (
                             <Select
                                 value={record.assignedUserId || undefined}
@@ -700,7 +699,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                     }
                                 }}
                             >
-                                <SelectTrigger className="h-9 rounded-lg">
+                                <SelectTrigger className="h-7 rounded-lg text-[11px]">
                                     <SelectValue placeholder="Оберіть виконавця" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -712,7 +711,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                 </SelectContent>
                             </Select>
                         ) : (
-                            <p className="text-xs font-bold text-slate-800">{getAssignedInspectorName(record)}</p>
+                            <p className="text-[11px] font-semibold text-slate-800">{getAssignedInspectorName(record)}</p>
                         )}
                     </div>
 
@@ -720,9 +719,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <ServiceInvestigationProcessPopover
                             record={record}
                             onProcess={handleServiceInvestigationProcess}
-                            trigger={
-                                <Button className="h-9 w-full rounded-lg bg-slate-900 text-xs font-bold text-white">Оновити етап</Button>
-                            }
+                            trigger={<Button className="h-7 w-full rounded-lg bg-slate-900 text-[10px] font-semibold text-white">Оновити етап</Button>}
                         />
                     )}
 
@@ -731,7 +728,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
-                                    className="h-9 w-full rounded-lg border-red-200 text-xs font-bold text-red-600 hover:bg-red-50"
+                                    className="h-7 w-full rounded-lg border-red-200 text-[10px] font-semibold text-red-600 hover:bg-red-50"
                                 >
                                     <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
                                     Повернути на доопрацювання
@@ -764,10 +761,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         </Popover>
                     )}
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className={cn("grid gap-1.5", currentUser.role === "ADMIN" ? "grid-cols-3" : "grid-cols-1")}>
                         <Button
                             variant="outline"
-                            className="h-8 rounded-lg text-[11px] font-bold"
+                            className="h-7 rounded-lg text-[10px] font-semibold"
                             onClick={() => {
                                 setViewRecord(record)
                                 setIsViewOpen(true)
@@ -777,52 +774,50 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             Перегляд
                         </Button>
 
-                        {currentUser.role === "ADMIN" ? (
+                        {currentUser.role === "ADMIN" && (
                             <CreateRecordDialog
                                 initialData={record}
                                 users={users}
                                 trigger={
-                                    <Button variant="outline" className="h-8 rounded-lg text-[11px] font-bold">
+                                    <Button variant="outline" className="h-7 rounded-lg text-[10px] font-semibold">
                                         <Edit2 className="mr-1.5 h-3.5 w-3.5" />
                                         Змінити
                                     </Button>
                                 }
                             />
-                        ) : (
-                            <div />
+                        )}
+
+                        {currentUser.role === "ADMIN" && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className="h-7 rounded-lg border-red-200 text-[10px] font-semibold text-red-600 hover:bg-red-50"
+                                    >
+                                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                                        Видалити
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle className="text-xl font-black uppercase italic tracking-tight">Будьте обережні!</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-slate-500 font-medium">
+                                            Ви впевнені, що хочете видалити цей запис ({record.eoNumber})?
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter className="bg-slate-50 p-6 -m-6 mt-6 rounded-b-[2rem]">
+                                        <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500">Скасувати</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={() => handleDelete(record.id)}
+                                            className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
+                                        >
+                                            Так, видалити
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         )}
                     </div>
-
-                    {currentUser.role === "ADMIN" && (
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className="h-8 w-full rounded-lg border-red-200 text-[11px] font-bold text-red-600 hover:bg-red-50"
-                                >
-                                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                                    Видалити
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle className="text-xl font-black uppercase italic tracking-tight">Будьте обережні!</AlertDialogTitle>
-                                    <AlertDialogDescription className="text-slate-500 font-medium">
-                                        Ви впевнені, що хочете видалити цей запис ({record.eoNumber})?
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter className="bg-slate-50 p-6 -m-6 mt-6 rounded-b-[2rem]">
-                                    <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500">Скасувати</AlertDialogCancel>
-                                    <AlertDialogAction
-                                        onClick={() => handleDelete(record.id)}
-                                        className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
-                                    >
-                                        Так, видалити
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    )}
                 </div>
             </CardContent>
         </Card>
@@ -1180,14 +1175,14 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     </div>
                 ) : activeTab === "SERVICE_INVESTIGATION" ? (
                     <div className="overflow-x-auto pb-2">
-                        <div className="min-w-[1240px] space-y-3">
-                            <div className="grid grid-cols-4 gap-4">
+                        <div className="min-w-[1100px] space-y-2.5">
+                            <div className="grid grid-cols-4 gap-2.5">
                                 {SERVICE_STAGE_COLUMNS.map((column) => (
-                                    <div key={column.key} className="rounded-[1.2rem] border border-slate-200 bg-white/90 p-2.5 shadow-sm">
-                                        <div className={cn("rounded-xl border px-3 py-2", column.accentClass)}>
+                                    <div key={column.key} className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                                        <div className={cn("rounded-lg border px-2.5 py-1.5", column.accentClass)}>
                                             <div className="flex items-center justify-between gap-2">
-                                                <p className="text-[11px] font-black uppercase tracking-wider text-slate-800">{column.title}</p>
-                                                <span className="rounded-lg bg-white/80 px-2 py-0.5 text-[10px] font-black text-slate-700">
+                                                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-800">{column.title}</p>
+                                                <span className="rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700">
                                                     {serviceRecordsByStage[column.key].length}
                                                 </span>
                                             </div>
@@ -1197,20 +1192,20 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             </div>
 
                             {orderedServiceRecords.length === 0 ? (
-                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm font-semibold text-slate-500">
+                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm font-medium text-slate-500">
                                     Немає записів службових розслідувань
                                 </div>
                             ) : (
                                 orderedServiceRecords.map((record) => {
                                     const currentColumnKey = getServiceStageColumnKey(record)
                                     return (
-                                        <div key={record.id} className="grid grid-cols-4 gap-4 items-start">
+                                        <div key={record.id} className="grid grid-cols-4 gap-2.5 items-start">
                                             {SERVICE_STAGE_COLUMNS.map((column) => (
-                                                <div key={`${record.id}-${column.key}`} className="min-h-[84px]">
+                                                <div key={`${record.id}-${column.key}`} className="min-h-[74px]">
                                                     {column.key === currentColumnKey ? (
                                                         renderServiceInvestigationCard(record)
                                                     ) : (
-                                                        <div className="h-full min-h-[84px] rounded-2xl border border-dashed border-slate-200 bg-slate-50/60" />
+                                                        <div className="h-full min-h-[74px] rounded-xl border border-dashed border-slate-200 bg-slate-50/60" />
                                                     )}
                                                 </div>
                                             ))}
