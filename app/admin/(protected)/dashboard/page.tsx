@@ -1,31 +1,21 @@
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, Users, Star, TrendingUp, Clock, Award, Shield, ClipboardCheck } from "lucide-react"
+import { FileText, Users, Star, TrendingUp, Clock, Award, Shield } from "lucide-react"
 import Link from "next/link"
 import DashboardCharts from "./DashboardCharts"
 import { LiveClock } from "@/components/admin/LiveClock"
 import { RealtimeDashboard } from "@/components/admin/RealtimeDashboard"
 import { getCriticalRatingThreshold, getGlobalSettings } from "@/lib/system-settings"
-import { auth } from "@/auth"
 
 export default async function DashboardPage() {
-    const session = await auth()
-    const sessionUser = session?.user as { id?: string } | undefined
-    const currentUserId = sessionUser?.id || null
     const twentyFourHoursAgo = new Date()
     twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
     const settings = await getGlobalSettings()
     const criticalThreshold = getCriticalRatingThreshold(settings.criticalRatingThreshold)
     const criticalThresholdLabel = Number.isInteger(criticalThreshold) ? String(criticalThreshold) : criticalThreshold.toFixed(1)
-    const writeOffNotificationWhere: any = {
-        type: "UNIFIED_RECORD_WRITEOFF",
-        ...(currentUserId
-            ? { OR: [{ userId: currentUserId }, { userId: null }] }
-            : { userId: null }),
-    }
 
-    // Optimized: single query instead of many separate round-trips
-    const [dbStats, avgRatings, recentResponses, allOfficers, alertCount, recentWriteOffs] = await Promise.all([
+    // Optimized: single query instead of 5 separate ones
+    const [dbStats, avgRatings, recentResponses, allOfficers, alertCount] = await Promise.all([
         // Combined counts
         prisma.response.groupBy({
             by: ['status'],
@@ -77,19 +67,7 @@ export default async function DashboardPage() {
                 rateOverall: { lte: criticalThreshold },
                 createdAt: { gte: twentyFourHoursAgo }
             }
-        }),
-        prisma.adminNotification.findMany({
-            where: writeOffNotificationWhere,
-            orderBy: { createdAt: 'desc' },
-            take: 6,
-            select: {
-                id: true,
-                title: true,
-                message: true,
-                createdAt: true,
-                link: true,
-            }
-        }),
+        })
     ])
 
     // Calculate rankings using allOfficers (the 4th result)
@@ -434,51 +412,6 @@ export default async function DashboardPage() {
                                     </div>
                                 </div>
                             ))}
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-0 shadow-xl ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 transition-all duration-300">
-                        <CardHeader className="border-b bg-slate-50/50 dark:bg-slate-800/50 px-5 sm:px-8 py-4 sm:py-6 transition-colors duration-300">
-                            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-3">
-                                <ClipboardCheck className="w-4 h-4 text-emerald-600" />
-                                Останні списання
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="px-5 sm:px-8 py-5 space-y-3">
-                            {recentWriteOffs.length === 0 ? (
-                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                    Поки що немає подій списання.
-                                </p>
-                            ) : (
-                                recentWriteOffs.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/50 p-3"
-                                    >
-                                        <p className="text-xs font-black text-slate-900 dark:text-slate-100">{item.title}</p>
-                                        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3">{item.message}</p>
-                                        <div className="mt-2 flex items-center justify-between gap-3">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                                                {new Date(item.createdAt).toLocaleString("uk-UA", {
-                                                    day: "2-digit",
-                                                    month: "2-digit",
-                                                    year: "numeric",
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                })}
-                                            </span>
-                                            {item.link ? (
-                                                <Link
-                                                    href={item.link}
-                                                    className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:underline"
-                                                >
-                                                    Відкрити
-                                                </Link>
-                                            ) : null}
-                                        </div>
-                                    </div>
-                                ))
-                            )}
                         </CardContent>
                     </Card>
                 </div>
