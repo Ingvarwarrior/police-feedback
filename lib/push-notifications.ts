@@ -7,9 +7,19 @@ type PushTarget = {
   tag?: string
 }
 
-const VAPID_PUBLIC_KEY = process.env.WEB_PUSH_PUBLIC_KEY || ""
-const VAPID_PRIVATE_KEY = process.env.WEB_PUSH_PRIVATE_KEY || ""
-const VAPID_SUBJECT = process.env.WEB_PUSH_SUBJECT || "mailto:admin@police.gov.ua"
+const VAPID_PUBLIC_KEY =
+  process.env.WEB_PUSH_PUBLIC_KEY ||
+  process.env.VAPID_PUBLIC_KEY ||
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+  ""
+const VAPID_PRIVATE_KEY =
+  process.env.WEB_PUSH_PRIVATE_KEY ||
+  process.env.VAPID_PRIVATE_KEY ||
+  ""
+const VAPID_SUBJECT =
+  process.env.WEB_PUSH_SUBJECT ||
+  process.env.VAPID_SUBJECT ||
+  "mailto:admin@police.gov.ua"
 
 let vapidConfigured = false
 let webPushModulePromise: Promise<any | null> | null = null
