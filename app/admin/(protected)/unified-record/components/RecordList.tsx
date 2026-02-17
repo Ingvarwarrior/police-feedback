@@ -343,6 +343,17 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         return grouped
     }, [filteredRecords])
 
+    const orderedServiceRecords = useMemo(() => {
+        return filteredRecords
+            .filter((record) => isServiceInvestigationRecord(record))
+            .sort((a, b) => {
+                const dateB = new Date(b.eoDate || b.createdAt || 0).getTime()
+                const dateA = new Date(a.eoDate || a.createdAt || 0).getTime()
+                if (dateB !== dateA) return dateB - dateA
+                return String(b.eoNumber || "").localeCompare(String(a.eoNumber || ""))
+            })
+    }, [filteredRecords])
+
     const categories = useMemo(() => {
         return getRecordCategories(initialRecords)
     }, [initialRecords])
@@ -587,6 +598,235 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         setPeriodTo("")
         setQuickPreset("ALL")
     }
+
+    const renderServiceInvestigationCard = (record: any) => (
+        <Card className="h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <CardContent className="space-y-3 p-4">
+                <div className="flex items-start justify-between gap-2">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setViewRecord(record)
+                            setIsViewOpen(true)
+                        }}
+                        className="text-left"
+                    >
+                        <p className="text-sm font-black text-blue-700">{record.eoNumber || "—"}</p>
+                        <p className="text-[10px] font-semibold text-slate-500">
+                            {format(new Date(record.eoDate), "dd.MM.yyyy", { locale: uk })}
+                        </p>
+                    </button>
+                    <span
+                        className={cn(
+                            "rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-wide",
+                            record.status === "PROCESSED" ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700"
+                        )}
+                    >
+                        {record.status === "PROCESSED" ? "Завершено" : "В роботі"}
+                    </span>
+                </div>
+
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Відносно кого</p>
+                    <p className="text-sm font-bold text-slate-900">{record.applicant || "—"}</p>
+                </div>
+
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Порушення</p>
+                    <p className="text-xs font-medium text-slate-700">{record.investigationViolation || record.description || "—"}</p>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Поточний етап</p>
+                    <p className="mt-1 text-xs font-bold text-slate-800">{getServiceInvestigationStageLabel(record)}</p>
+                    <p className="mt-1 text-[11px] font-semibold text-slate-500">{getCurrentServiceStageTime(record)}</p>
+                </div>
+
+                {(record.investigationOrderNumber || record.investigationOrderDate) && (
+                    <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-2.5">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-indigo-700">Наказ про призначення СР</p>
+                        <p className="mt-1 text-xs font-bold text-indigo-900">
+                            №{record.investigationOrderNumber || "—"} від{" "}
+                            {record.investigationOrderDate
+                                ? format(new Date(record.investigationOrderDate), "dd.MM.yyyy", { locale: uk })
+                                : "—"}
+                        </p>
+                    </div>
+                )}
+
+                {(record.investigationConclusionApprovedAt || record.investigationPenaltyOrderNumber || record.investigationPenaltyOrderDate) && (
+                    <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-2.5 space-y-1">
+                        {record.investigationConclusionApprovedAt && (
+                            <p className="text-xs font-bold text-rose-900">
+                                Висновок СР затверджено: {format(new Date(record.investigationConclusionApprovedAt), "dd.MM.yyyy", { locale: uk })}
+                            </p>
+                        )}
+                        {record.investigationPenaltyByArticle13 && (
+                            <p className="text-[10px] font-black uppercase tracking-wider text-rose-700">
+                                Наказ про стягнення: №{record.investigationPenaltyOrderNumber || "—"} від{" "}
+                                {record.investigationPenaltyOrderDate
+                                    ? format(new Date(record.investigationPenaltyOrderDate), "dd.MM.yyyy", { locale: uk })
+                                    : "—"}
+                            </p>
+                        )}
+                        {record.investigationPenaltyByArticle13 === false && (
+                            <p className="text-[10px] font-black uppercase tracking-wider text-rose-700">
+                                Стягнення не за ст. 13 (без наказу)
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                <div className="space-y-2 border-t border-slate-100 pt-3">
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Виконавець</p>
+                        {currentUser.role === "ADMIN" ? (
+                            <Select
+                                value={record.assignedUserId || undefined}
+                                onValueChange={async (val) => {
+                                    setIsAssigning(true)
+                                    try {
+                                        await bulkAssignUnifiedRecordsAction([record.id], val)
+                                        toast.success("Виконавця призначено")
+                                        setRecords((prev) =>
+                                            prev.map((r) =>
+                                                r.id === record.id ? { ...r, assignedUserId: val, assignedUser: users.find((u) => u.id === val) } : r
+                                            )
+                                        )
+                                    } catch {
+                                        toast.error("Помилка призначення")
+                                    } finally {
+                                        setIsAssigning(false)
+                                    }
+                                }}
+                            >
+                                <SelectTrigger className="h-9 rounded-lg">
+                                    <SelectValue placeholder="Оберіть виконавця" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {users.map((user) => (
+                                        <SelectItem key={user.id} value={user.id}>
+                                            {user.lastName} {user.firstName || user.username}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        ) : (
+                            <p className="text-xs font-bold text-slate-800">{getAssignedInspectorName(record)}</p>
+                        )}
+                    </div>
+
+                    {record.assignedUserId === currentUser.id && record.status !== "PROCESSED" && (
+                        <ServiceInvestigationProcessPopover
+                            record={record}
+                            onProcess={handleServiceInvestigationProcess}
+                            trigger={
+                                <Button className="h-9 w-full rounded-lg bg-slate-900 text-xs font-bold text-white">Оновити етап</Button>
+                            }
+                        />
+                    )}
+
+                    {currentUser.role === "ADMIN" && record.status === "PROCESSED" && (
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="h-9 w-full rounded-lg border-red-200 text-xs font-bold text-red-600 hover:bg-red-50"
+                                >
+                                    <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
+                                    Повернути на доопрацювання
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 space-y-3 rounded-2xl border-none p-4 shadow-2xl">
+                                <h4 className="text-xs font-black uppercase tracking-widest text-red-600">Причина повернення:</h4>
+                                <Textarea placeholder="Вкажіть, що потрібно виправити..." className="min-h-[80px] rounded-xl border-none bg-slate-50" />
+                                <Button
+                                    className="w-full rounded-xl bg-red-600 font-bold text-white"
+                                    onClick={async (e) => {
+                                        const textarea = e.currentTarget.previousElementSibling as HTMLTextAreaElement
+                                        if (!textarea.value) return toast.error("Вкажіть причину")
+                                        try {
+                                            const res = await returnForRevisionAction(record.id, textarea.value)
+                                            if (res.success) {
+                                                toast.success("Запис повернуто на доопрацювання")
+                                                if ((res as any).record) {
+                                                    setRecords((prev) => prev.map((r) => (r.id === record.id ? { ...r, ...(res as any).record } : r)))
+                                                }
+                                            }
+                                        } catch (err: any) {
+                                            toast.error(err.message)
+                                        }
+                                    }}
+                                >
+                                    Підтвердити повернення
+                                </Button>
+                            </PopoverContent>
+                        </Popover>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button
+                            variant="outline"
+                            className="h-8 rounded-lg text-[11px] font-bold"
+                            onClick={() => {
+                                setViewRecord(record)
+                                setIsViewOpen(true)
+                            }}
+                        >
+                            <Eye className="mr-1.5 h-3.5 w-3.5" />
+                            Перегляд
+                        </Button>
+
+                        {currentUser.role === "ADMIN" ? (
+                            <CreateRecordDialog
+                                initialData={record}
+                                users={users}
+                                trigger={
+                                    <Button variant="outline" className="h-8 rounded-lg text-[11px] font-bold">
+                                        <Edit2 className="mr-1.5 h-3.5 w-3.5" />
+                                        Змінити
+                                    </Button>
+                                }
+                            />
+                        ) : (
+                            <div />
+                        )}
+                    </div>
+
+                    {currentUser.role === "ADMIN" && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="h-8 w-full rounded-lg border-red-200 text-[11px] font-bold text-red-600 hover:bg-red-50"
+                                >
+                                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                                    Видалити
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-xl font-black uppercase italic tracking-tight">Будьте обережні!</AlertDialogTitle>
+                                    <AlertDialogDescription className="text-slate-500 font-medium">
+                                        Ви впевнені, що хочете видалити цей запис ({record.eoNumber})?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="bg-slate-50 p-6 -m-6 mt-6 rounded-b-[2rem]">
+                                    <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500">Скасувати</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={() => handleDelete(record.id)}
+                                        className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
+                                    >
+                                        Так, видалити
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    )
 
     return (
         <div className="space-y-6">
@@ -940,287 +1180,44 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     </div>
                 ) : activeTab === "SERVICE_INVESTIGATION" ? (
                     <div className="overflow-x-auto pb-2">
-                        <div className="grid min-w-[1100px] grid-cols-4 gap-4">
-                            {SERVICE_STAGE_COLUMNS.map((column) => {
-                                const stageItems = serviceRecordsByStage[column.key]
-
-                                return (
-                                    <div
-                                        key={column.key}
-                                        className="rounded-[1.6rem] border border-slate-200 bg-white/90 p-3 shadow-sm"
-                                    >
+                        <div className="min-w-[1240px] space-y-3">
+                            <div className="grid grid-cols-4 gap-4">
+                                {SERVICE_STAGE_COLUMNS.map((column) => (
+                                    <div key={column.key} className="rounded-[1.2rem] border border-slate-200 bg-white/90 p-2.5 shadow-sm">
                                         <div className={cn("rounded-xl border px-3 py-2", column.accentClass)}>
                                             <div className="flex items-center justify-between gap-2">
-                                                <p className="text-[11px] font-black uppercase tracking-wider text-slate-800">
-                                                    {column.title}
-                                                </p>
+                                                <p className="text-[11px] font-black uppercase tracking-wider text-slate-800">{column.title}</p>
                                                 <span className="rounded-lg bg-white/80 px-2 py-0.5 text-[10px] font-black text-slate-700">
-                                                    {stageItems.length}
+                                                    {serviceRecordsByStage[column.key].length}
                                                 </span>
                                             </div>
                                         </div>
-
-                                        <div className="mt-3 space-y-3">
-                                            {stageItems.length === 0 ? (
-                                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-xs font-semibold text-slate-400">
-                                                    Немає записів на цьому етапі
-                                                </div>
-                                            ) : (
-                                                stageItems.map((record) => (
-                                                    <Card
-                                                        key={record.id}
-                                                        className="rounded-2xl border border-slate-200 bg-white shadow-sm"
-                                                    >
-                                                        <CardContent className="space-y-3 p-4">
-                                                            <div className="flex items-start justify-between gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setViewRecord(record)
-                                                                        setIsViewOpen(true)
-                                                                    }}
-                                                                    className="text-left"
-                                                                >
-                                                                    <p className="text-sm font-black text-blue-700">{record.eoNumber || "—"}</p>
-                                                                    <p className="text-[10px] font-semibold text-slate-500">
-                                                                        {format(new Date(record.eoDate), "dd.MM.yyyy", { locale: uk })}
-                                                                    </p>
-                                                                </button>
-                                                                <span className={cn(
-                                                                    "rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-wide",
-                                                                    record.status === "PROCESSED"
-                                                                        ? "bg-emerald-50 text-emerald-700"
-                                                                        : "bg-blue-50 text-blue-700"
-                                                                )}>
-                                                                    {record.status === "PROCESSED" ? "Завершено" : "В роботі"}
-                                                                </span>
-                                                            </div>
-
-                                                            <div className="space-y-1">
-                                                                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                                                                    Відносно кого
-                                                                </p>
-                                                                <p className="text-sm font-bold text-slate-900">{record.applicant || "—"}</p>
-                                                            </div>
-
-                                                            <div className="space-y-1">
-                                                                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                                                                    Порушення
-                                                                </p>
-                                                                <p className="text-xs font-medium text-slate-700">
-                                                                    {record.investigationViolation || record.description || "—"}
-                                                                </p>
-                                                            </div>
-
-                                                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-                                                                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Поточний етап</p>
-                                                                <p className="mt-1 text-xs font-bold text-slate-800">{getServiceInvestigationStageLabel(record)}</p>
-                                                                <p className="mt-1 text-[11px] font-semibold text-slate-500">
-                                                                    {getCurrentServiceStageTime(record)}
-                                                                </p>
-                                                            </div>
-
-                                                            {(record.investigationOrderNumber || record.investigationOrderDate) && (
-                                                                <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-2.5">
-                                                                    <p className="text-[10px] font-black uppercase tracking-wider text-indigo-700">
-                                                                        Наказ про призначення СР
-                                                                    </p>
-                                                                    <p className="mt-1 text-xs font-bold text-indigo-900">
-                                                                        №{record.investigationOrderNumber || "—"} від{" "}
-                                                                        {record.investigationOrderDate
-                                                                            ? format(new Date(record.investigationOrderDate), "dd.MM.yyyy", { locale: uk })
-                                                                            : "—"}
-                                                                    </p>
-                                                                </div>
-                                                            )}
-
-                                                            {(record.investigationConclusionApprovedAt || record.investigationPenaltyOrderNumber || record.investigationPenaltyOrderDate) && (
-                                                                <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-2.5 space-y-1">
-                                                                    {record.investigationConclusionApprovedAt && (
-                                                                        <p className="text-xs font-bold text-rose-900">
-                                                                            Висновок СР затверджено: {format(new Date(record.investigationConclusionApprovedAt), "dd.MM.yyyy", { locale: uk })}
-                                                                        </p>
-                                                                    )}
-                                                                    {record.investigationPenaltyByArticle13 && (
-                                                                        <p className="text-[10px] font-black uppercase tracking-wider text-rose-700">
-                                                                            Наказ про стягнення: №{record.investigationPenaltyOrderNumber || "—"} від{" "}
-                                                                            {record.investigationPenaltyOrderDate
-                                                                                ? format(new Date(record.investigationPenaltyOrderDate), "dd.MM.yyyy", { locale: uk })
-                                                                                : "—"}
-                                                                        </p>
-                                                                    )}
-                                                                    {record.investigationPenaltyByArticle13 === false && (
-                                                                        <p className="text-[10px] font-black uppercase tracking-wider text-rose-700">
-                                                                            Стягнення не за ст. 13 (без наказу)
-                                                                        </p>
-                                                                    )}
-                                                                </div>
-                                                            )}
-
-                                                            <div className="space-y-2 border-t border-slate-100 pt-3">
-                                                                <div className="space-y-1">
-                                                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Виконавець</p>
-                                                                    {currentUser.role === "ADMIN" ? (
-                                                                        <Select
-                                                                            value={record.assignedUserId || undefined}
-                                                                            onValueChange={async (val) => {
-                                                                                setIsAssigning(true)
-                                                                                try {
-                                                                                    await bulkAssignUnifiedRecordsAction([record.id], val)
-                                                                                    toast.success("Виконавця призначено")
-                                                                                    setRecords(prev =>
-                                                                                        prev.map(r =>
-                                                                                            r.id === record.id
-                                                                                                ? { ...r, assignedUserId: val, assignedUser: users.find(u => u.id === val) }
-                                                                                                : r
-                                                                                        )
-                                                                                    )
-                                                                                } catch (error) {
-                                                                                    toast.error("Помилка призначення")
-                                                                                } finally {
-                                                                                    setIsAssigning(false)
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            <SelectTrigger className="h-9 rounded-lg">
-                                                                                <SelectValue placeholder="Оберіть виконавця" />
-                                                                            </SelectTrigger>
-                                                                            <SelectContent>
-                                                                                {users.map(user => (
-                                                                                    <SelectItem key={user.id} value={user.id}>
-                                                                                        {user.lastName} {user.firstName || user.username}
-                                                                                    </SelectItem>
-                                                                                ))}
-                                                                            </SelectContent>
-                                                                        </Select>
-                                                                    ) : (
-                                                                        <p className="text-xs font-bold text-slate-800">{getAssignedInspectorName(record)}</p>
-                                                                    )}
-                                                                </div>
-
-                                                                {record.assignedUserId === currentUser.id && record.status !== "PROCESSED" && (
-                                                                    <ServiceInvestigationProcessPopover
-                                                                        record={record}
-                                                                        onProcess={handleServiceInvestigationProcess}
-                                                                        trigger={
-                                                                            <Button className="h-9 w-full rounded-lg bg-slate-900 text-xs font-bold text-white">
-                                                                                Оновити етап
-                                                                            </Button>
-                                                                        }
-                                                                    />
-                                                                )}
-
-                                                                {currentUser.role === "ADMIN" && record.status === "PROCESSED" && (
-                                                                    <Popover>
-                                                                        <PopoverTrigger asChild>
-                                                                            <Button
-                                                                                variant="outline"
-                                                                                className="h-9 w-full rounded-lg border-red-200 text-xs font-bold text-red-600 hover:bg-red-50"
-                                                                            >
-                                                                                <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
-                                                                                Повернути на доопрацювання
-                                                                            </Button>
-                                                                        </PopoverTrigger>
-                                                                        <PopoverContent className="w-80 space-y-3 rounded-2xl border-none p-4 shadow-2xl">
-                                                                            <h4 className="text-xs font-black uppercase tracking-widest text-red-600">Причина повернення:</h4>
-                                                                            <Textarea
-                                                                                placeholder="Вкажіть, що потрібно виправити..."
-                                                                                className="min-h-[80px] rounded-xl border-none bg-slate-50"
-                                                                            />
-                                                                            <Button
-                                                                                className="w-full rounded-xl bg-red-600 font-bold text-white"
-                                                                                onClick={async (e) => {
-                                                                                    const textarea = e.currentTarget.previousElementSibling as HTMLTextAreaElement
-                                                                                    if (!textarea.value) return toast.error("Вкажіть причину")
-                                                                                    try {
-                                                                                        const res = await returnForRevisionAction(record.id, textarea.value)
-                                                                                        if (res.success) {
-                                                                                            toast.success("Запис повернуто на доопрацювання")
-                                                                                            if ((res as any).record) {
-                                                                                                setRecords((prev) =>
-                                                                                                    prev.map((r) => (r.id === record.id ? { ...r, ...(res as any).record } : r))
-                                                                                                )
-                                                                                            }
-                                                                                        }
-                                                                                    } catch (err: any) {
-                                                                                        toast.error(err.message)
-                                                                                    }
-                                                                                }}
-                                                                            >
-                                                                                Підтвердити повернення
-                                                                            </Button>
-                                                                        </PopoverContent>
-                                                                    </Popover>
-                                                                )}
-
-                                                                <div className="grid grid-cols-2 gap-2">
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        className="h-8 rounded-lg text-[11px] font-bold"
-                                                                        onClick={() => {
-                                                                            setViewRecord(record)
-                                                                            setIsViewOpen(true)
-                                                                        }}
-                                                                    >
-                                                                        <Eye className="mr-1.5 h-3.5 w-3.5" />
-                                                                        Перегляд
-                                                                    </Button>
-
-                                                                    {currentUser.role === "ADMIN" ? (
-                                                                        <CreateRecordDialog
-                                                                            initialData={record}
-                                                                            users={users}
-                                                                            trigger={
-                                                                                <Button variant="outline" className="h-8 rounded-lg text-[11px] font-bold">
-                                                                                    <Edit2 className="mr-1.5 h-3.5 w-3.5" />
-                                                                                    Змінити
-                                                                                </Button>
-                                                                            }
-                                                                        />
-                                                                    ) : (
-                                                                        <div />
-                                                                    )}
-                                                                </div>
-
-                                                                {currentUser.role === "ADMIN" && (
-                                                                    <AlertDialog>
-                                                                        <AlertDialogTrigger asChild>
-                                                                            <Button
-                                                                                variant="outline"
-                                                                                className="h-8 w-full rounded-lg border-red-200 text-[11px] font-bold text-red-600 hover:bg-red-50"
-                                                                            >
-                                                                                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                                                                                Видалити
-                                                                            </Button>
-                                                                        </AlertDialogTrigger>
-                                                                        <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
-                                                                            <AlertDialogHeader>
-                                                                                <AlertDialogTitle className="text-xl font-black uppercase italic tracking-tight">Будьте обережні!</AlertDialogTitle>
-                                                                                <AlertDialogDescription className="text-slate-500 font-medium">
-                                                                                    Ви впевнені, що хочете видалити цей запис ({record.eoNumber})?
-                                                                                </AlertDialogDescription>
-                                                                            </AlertDialogHeader>
-                                                                            <AlertDialogFooter className="bg-slate-50 p-6 -m-6 mt-6 rounded-b-[2rem]">
-                                                                                <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500">Скасувати</AlertDialogCancel>
-                                                                                <AlertDialogAction
-                                                                                    onClick={() => handleDelete(record.id)}
-                                                                                    className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
-                                                                                >
-                                                                                    Так, видалити
-                                                                                </AlertDialogAction>
-                                                                            </AlertDialogFooter>
-                                                                        </AlertDialogContent>
-                                                                    </AlertDialog>
-                                                                )}
-                                                            </div>
-                                                        </CardContent>
-                                                    </Card>
-                                                ))
-                                            )}
-                                        </div>
                                     </div>
-                                )
-                            })}
+                                ))}
+                            </div>
+
+                            {orderedServiceRecords.length === 0 ? (
+                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm font-semibold text-slate-500">
+                                    Немає записів службових розслідувань
+                                </div>
+                            ) : (
+                                orderedServiceRecords.map((record) => {
+                                    const currentColumnKey = getServiceStageColumnKey(record)
+                                    return (
+                                        <div key={record.id} className="grid grid-cols-4 gap-4 items-start">
+                                            {SERVICE_STAGE_COLUMNS.map((column) => (
+                                                <div key={`${record.id}-${column.key}`} className="min-h-[84px]">
+                                                    {column.key === currentColumnKey ? (
+                                                        renderServiceInvestigationCard(record)
+                                                    ) : (
+                                                        <div className="h-full min-h-[84px] rounded-2xl border border-dashed border-slate-200 bg-slate-50/60" />
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )
+                                })
+                            )}
                         </div>
                     </div>
                 ) : (
