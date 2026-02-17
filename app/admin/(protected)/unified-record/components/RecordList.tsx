@@ -118,30 +118,42 @@ interface RecordListProps {
 }
 
 const FILTERS_STORAGE_KEY = "pf:filters:unified-record"
-const SERVICE_STAGE_COLUMNS = [
-    {
-        key: "REPORT_REVIEW",
-        title: "1. Розгляд рапорту/доповідної",
-        accentClass: "border-amber-200 bg-amber-50",
-    },
-    {
-        key: "SR_INITIATED",
-        title: "2. Ініційовано СР",
-        accentClass: "border-blue-200 bg-blue-50",
-    },
-    {
-        key: "SR_ORDER_ASSIGNED",
-        title: "3. Призначено СР (наказ)",
-        accentClass: "border-indigo-200 bg-indigo-50",
-    },
-    {
-        key: "FINAL",
-        title: "4. Завершено",
-        accentClass: "border-emerald-200 bg-emerald-50",
-    },
-] as const
+type ServiceStageColumnKey = "REPORT_REVIEW" | "SR_INITIATED" | "SR_ORDER_ASSIGNED" | "FINAL"
 
-type ServiceStageColumnKey = (typeof SERVICE_STAGE_COLUMNS)[number]["key"]
+const SERVICE_STAGE_THEME: Record<
+    ServiceStageColumnKey,
+    {
+        sidebar: string
+        eoChip: string
+        stageChip: string
+        resultText: string
+    }
+> = {
+    REPORT_REVIEW: {
+        sidebar: "bg-amber-500",
+        eoChip: "text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-900/40",
+        stageChip: "text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40",
+        resultText: "text-amber-700 dark:text-amber-400",
+    },
+    SR_INITIATED: {
+        sidebar: "bg-blue-500",
+        eoChip: "text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-900/40",
+        stageChip: "text-blue-700 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/40",
+        resultText: "text-blue-700 dark:text-blue-400",
+    },
+    SR_ORDER_ASSIGNED: {
+        sidebar: "bg-indigo-500",
+        eoChip: "text-indigo-700 bg-indigo-50 dark:text-indigo-300 dark:bg-indigo-900/40",
+        stageChip: "text-indigo-700 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/40",
+        resultText: "text-indigo-700 dark:text-indigo-400",
+    },
+    FINAL: {
+        sidebar: "bg-emerald-500",
+        eoChip: "text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-900/40",
+        stageChip: "text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/40",
+        resultText: "text-emerald-700 dark:text-emerald-400",
+    },
+}
 
 function getServiceStageColumnKey(record: any): ServiceStageColumnKey {
     const stage = String(record?.investigationStage || "REPORT_REVIEW")
@@ -151,15 +163,8 @@ function getServiceStageColumnKey(record: any): ServiceStageColumnKey {
     return "REPORT_REVIEW"
 }
 
-function getCurrentServiceStageTime(record: any) {
-    const timeline = getServiceInvestigationTimeline(record)
-    const currentStep = timeline.find((step) => step.status === "current")
-    if (currentStep?.at) return formatDateTimeUa(currentStep.at)
-
-    const latestDoneStep = [...timeline].reverse().find((step) => step.status === "done" && !!step.at)
-    if (latestDoneStep?.at) return formatDateTimeUa(latestDoneStep.at)
-
-    return "—"
+function getServiceStageTheme(record: any) {
+    return SERVICE_STAGE_THEME[getServiceStageColumnKey(record)]
 }
 
 function formatDeadlineDelta(deadlineValue: string | Date, nowTs: number) {
@@ -325,34 +330,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             currentUserId: currentUser.id,
         })
     }, [records, filterSearch, filterCategory, activeTab, filterStatus, filterAssignment, filterEoNumber, filterInspector, sortBy, quickPreset, periodFrom, periodTo, currentUser.id])
-
-    const serviceRecordsByStage = useMemo(() => {
-        const grouped: Record<ServiceStageColumnKey, any[]> = {
-            REPORT_REVIEW: [],
-            SR_INITIATED: [],
-            SR_ORDER_ASSIGNED: [],
-            FINAL: [],
-        }
-
-        filteredRecords
-            .filter((record) => isServiceInvestigationRecord(record))
-            .forEach((record) => {
-                grouped[getServiceStageColumnKey(record)].push(record)
-            })
-
-        return grouped
-    }, [filteredRecords])
-
-    const orderedServiceRecords = useMemo(() => {
-        return filteredRecords
-            .filter((record) => isServiceInvestigationRecord(record))
-            .sort((a, b) => {
-                const dateB = new Date(b.eoDate || b.createdAt || 0).getTime()
-                const dateA = new Date(a.eoDate || a.createdAt || 0).getTime()
-                if (dateB !== dateA) return dateB - dateA
-                return String(b.eoNumber || "").localeCompare(String(a.eoNumber || ""))
-            })
-    }, [filteredRecords])
 
     const categories = useMemo(() => {
         return getRecordCategories(initialRecords)
@@ -598,230 +575,6 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         setPeriodTo("")
         setQuickPreset("ALL")
     }
-
-    const renderServiceInvestigationCard = (record: any) => (
-        <Card className="h-full rounded-xl border border-slate-200 bg-white shadow-sm">
-            <CardContent className="space-y-2.5 p-2.5">
-                <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setViewRecord(record)
-                                setIsViewOpen(true)
-                            }}
-                            className="min-w-0 text-left"
-                        >
-                            <p className="truncate text-[12px] font-extrabold text-slate-900 hover:text-blue-700">
-                                {record.eoNumber || "—"}
-                            </p>
-                            <p className="text-[10px] font-medium text-slate-500">
-                                {format(new Date(record.eoDate), "dd.MM.yyyy", { locale: uk })}
-                            </p>
-                        </button>
-                    </div>
-                    <span
-                        className={cn(
-                            "shrink-0 rounded-md px-2 py-0.5 text-[9px] font-bold tracking-wide",
-                            record.status === "PROCESSED" ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700"
-                        )}
-                    >
-                        {record.status === "PROCESSED" ? "Завершено" : "В роботі"}
-                    </span>
-                </div>
-
-                <div className="space-y-1">
-                    <p className="line-clamp-1 text-[11px] leading-snug text-slate-700">
-                        <span className="font-semibold text-slate-500">Відносно:</span>{" "}
-                        <span className="font-semibold text-slate-900">{record.applicant || "—"}</span>
-                    </p>
-                    <p className="line-clamp-2 text-[11px] leading-snug text-slate-700">
-                        <span className="font-semibold text-slate-500">Порушення:</span>{" "}
-                        <span className="font-medium">{record.investigationViolation || record.description || "—"}</span>
-                    </p>
-                </div>
-
-                <div className="flex flex-wrap gap-1">
-                    <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-semibold text-slate-700">
-                        {getServiceInvestigationStageLabel(record)}
-                    </span>
-                    <span className="rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-medium text-slate-500">
-                        {getCurrentServiceStageTime(record)}
-                    </span>
-                    {(record.investigationOrderNumber || record.investigationOrderDate) && (
-                        <span className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[9px] font-semibold text-indigo-700">
-                            Наказ №{record.investigationOrderNumber || "—"} від{" "}
-                            {record.investigationOrderDate
-                                ? format(new Date(record.investigationOrderDate), "dd.MM.yyyy", { locale: uk })
-                                : "—"}
-                        </span>
-                    )}
-                    {record.investigationConclusionApprovedAt && (
-                        <span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[9px] font-semibold text-rose-700">
-                            Висновок: {format(new Date(record.investigationConclusionApprovedAt), "dd.MM.yyyy", { locale: uk })}
-                        </span>
-                    )}
-                    {record.investigationPenaltyByArticle13 && (
-                        <span className="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[9px] font-semibold text-rose-700">
-                            Стягнення: №{record.investigationPenaltyOrderNumber || "—"} від{" "}
-                            {record.investigationPenaltyOrderDate
-                                ? format(new Date(record.investigationPenaltyOrderDate), "dd.MM.yyyy", { locale: uk })
-                                : "—"}
-                        </span>
-                    )}
-                    {record.investigationPenaltyByArticle13 === false && (
-                        <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-semibold text-amber-700">
-                            Стягнення без наказу ст.13
-                        </span>
-                    )}
-                </div>
-
-                <div className="space-y-2 border-t border-slate-100 pt-2">
-                    <div className="space-y-1">
-                        <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">Виконавець</p>
-                        {currentUser.role === "ADMIN" ? (
-                            <Select
-                                value={record.assignedUserId || undefined}
-                                onValueChange={async (val) => {
-                                    setIsAssigning(true)
-                                    try {
-                                        await bulkAssignUnifiedRecordsAction([record.id], val)
-                                        toast.success("Виконавця призначено")
-                                        setRecords((prev) =>
-                                            prev.map((r) =>
-                                                r.id === record.id ? { ...r, assignedUserId: val, assignedUser: users.find((u) => u.id === val) } : r
-                                            )
-                                        )
-                                    } catch {
-                                        toast.error("Помилка призначення")
-                                    } finally {
-                                        setIsAssigning(false)
-                                    }
-                                }}
-                            >
-                                <SelectTrigger className="h-7 rounded-lg text-[11px]">
-                                    <SelectValue placeholder="Оберіть виконавця" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {users.map((user) => (
-                                        <SelectItem key={user.id} value={user.id}>
-                                            {user.lastName} {user.firstName || user.username}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        ) : (
-                            <p className="text-[11px] font-semibold text-slate-800">{getAssignedInspectorName(record)}</p>
-                        )}
-                    </div>
-
-                    {record.assignedUserId === currentUser.id && record.status !== "PROCESSED" && (
-                        <ServiceInvestigationProcessPopover
-                            record={record}
-                            onProcess={handleServiceInvestigationProcess}
-                            trigger={<Button className="h-7 w-full rounded-lg bg-slate-900 text-[10px] font-semibold text-white">Оновити етап</Button>}
-                        />
-                    )}
-
-                    {currentUser.role === "ADMIN" && record.status === "PROCESSED" && (
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className="h-7 w-full rounded-lg border-red-200 text-[10px] font-semibold text-red-600 hover:bg-red-50"
-                                >
-                                    <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
-                                    Повернути на доопрацювання
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 space-y-3 rounded-2xl border-none p-4 shadow-2xl">
-                                <h4 className="text-xs font-black uppercase tracking-widest text-red-600">Причина повернення:</h4>
-                                <Textarea placeholder="Вкажіть, що потрібно виправити..." className="min-h-[80px] rounded-xl border-none bg-slate-50" />
-                                <Button
-                                    className="w-full rounded-xl bg-red-600 font-bold text-white"
-                                    onClick={async (e) => {
-                                        const textarea = e.currentTarget.previousElementSibling as HTMLTextAreaElement
-                                        if (!textarea.value) return toast.error("Вкажіть причину")
-                                        try {
-                                            const res = await returnForRevisionAction(record.id, textarea.value)
-                                            if (res.success) {
-                                                toast.success("Запис повернуто на доопрацювання")
-                                                if ((res as any).record) {
-                                                    setRecords((prev) => prev.map((r) => (r.id === record.id ? { ...r, ...(res as any).record } : r)))
-                                                }
-                                            }
-                                        } catch (err: any) {
-                                            toast.error(err.message)
-                                        }
-                                    }}
-                                >
-                                    Підтвердити повернення
-                                </Button>
-                            </PopoverContent>
-                        </Popover>
-                    )}
-
-                    <div className={cn("grid gap-1.5", currentUser.role === "ADMIN" ? "grid-cols-3" : "grid-cols-1")}>
-                        <Button
-                            variant="outline"
-                            className="h-7 rounded-lg text-[10px] font-semibold"
-                            onClick={() => {
-                                setViewRecord(record)
-                                setIsViewOpen(true)
-                            }}
-                        >
-                            <Eye className="mr-1.5 h-3.5 w-3.5" />
-                            Перегляд
-                        </Button>
-
-                        {currentUser.role === "ADMIN" && (
-                            <CreateRecordDialog
-                                initialData={record}
-                                users={users}
-                                trigger={
-                                    <Button variant="outline" className="h-7 rounded-lg text-[10px] font-semibold">
-                                        <Edit2 className="mr-1.5 h-3.5 w-3.5" />
-                                        Змінити
-                                    </Button>
-                                }
-                            />
-                        )}
-
-                        {currentUser.role === "ADMIN" && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className="h-7 rounded-lg border-red-200 text-[10px] font-semibold text-red-600 hover:bg-red-50"
-                                    >
-                                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                                        Видалити
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle className="text-xl font-black uppercase italic tracking-tight">Будьте обережні!</AlertDialogTitle>
-                                        <AlertDialogDescription className="text-slate-500 font-medium">
-                                            Ви впевнені, що хочете видалити цей запис ({record.eoNumber})?
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter className="bg-slate-50 p-6 -m-6 mt-6 rounded-b-[2rem]">
-                                        <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500">Скасувати</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={() => handleDelete(record.id)}
-                                            className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
-                                        >
-                                            Так, видалити
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        )}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
 
     return (
         <div className="space-y-6">
@@ -1173,51 +926,12 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             ) : null}
                         </div>
                     </div>
-                ) : activeTab === "SERVICE_INVESTIGATION" ? (
-                    <div className="overflow-x-auto pb-2">
-                        <div className="min-w-[1100px] space-y-2.5">
-                            <div className="grid grid-cols-4 gap-2.5">
-                                {SERVICE_STAGE_COLUMNS.map((column) => (
-                                    <div key={column.key} className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-                                        <div className={cn("rounded-lg border px-2.5 py-1.5", column.accentClass)}>
-                                            <div className="flex items-center justify-between gap-2">
-                                                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-800">{column.title}</p>
-                                                <span className="rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700">
-                                                    {serviceRecordsByStage[column.key].length}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {orderedServiceRecords.length === 0 ? (
-                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center text-sm font-medium text-slate-500">
-                                    Немає записів службових розслідувань
-                                </div>
-                            ) : (
-                                orderedServiceRecords.map((record) => {
-                                    const currentColumnKey = getServiceStageColumnKey(record)
-                                    return (
-                                        <div key={record.id} className="grid grid-cols-4 gap-2.5 items-start">
-                                            {SERVICE_STAGE_COLUMNS.map((column) => (
-                                                <div key={`${record.id}-${column.key}`} className="min-h-[74px]">
-                                                    {column.key === currentColumnKey ? (
-                                                        renderServiceInvestigationCard(record)
-                                                    ) : (
-                                                        <div className="h-full min-h-[74px] rounded-xl border border-dashed border-slate-200 bg-slate-50/60" />
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )
-                                })
-                            )}
-                        </div>
-                    </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
-                        {filteredRecords.map((record) => (
+                        {filteredRecords.map((record) => {
+                            const serviceStageTheme = isServiceInvestigationRecord(record) ? getServiceStageTheme(record) : null
+
+                            return (
                             <Card key={record.id} className={cn(
                                 "border-0 shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden group border border-transparent bg-white dark:bg-slate-900/50 backdrop-blur-sm",
                                 selectedIds.includes(record.id) ? "border-blue-200 dark:border-blue-800 ring-2 ring-blue-500/10 dark:ring-blue-500/20" : "hover:border-blue-100 dark:hover:border-blue-900"
@@ -1236,13 +950,18 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                         </button>
 
                                         {/* Status Sidebar */}
-                                        <div className={`w-full lg:w-2 ${record.status === 'PROCESSED' ? 'bg-emerald-500' : (record.assignedUser || record.officerName ? 'bg-blue-500' : 'bg-amber-500')}`} />
+                                        <div className={`w-full lg:w-2 ${serviceStageTheme ? serviceStageTheme.sidebar : (record.status === 'PROCESSED' ? 'bg-emerald-500' : (record.assignedUser || record.officerName ? 'bg-blue-500' : 'bg-amber-500'))}`} />
 
                                         <div className="flex-1 p-5 md:p-8">
                                             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
                                                 <div className="space-y-1">
                                                     <div className="flex items-center gap-3">
-                                                        <span className="text-[10px] md:text-sm font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-50 dark:bg-blue-900/40 px-3 py-1 rounded-full shrink-0 transition-colors duration-300">
+                                                        <span className={cn(
+                                                            "text-[10px] md:text-sm font-black uppercase tracking-widest px-3 py-1 rounded-full shrink-0 transition-colors duration-300",
+                                                            serviceStageTheme
+                                                                ? serviceStageTheme.eoChip
+                                                                : "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40"
+                                                        )}>
                                                             {record.eoNumber}
                                                         </span>
                                                         <div className="flex items-center gap-1.5 text-slate-400">
@@ -1274,9 +993,17 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         <p className="mt-1 text-xs font-semibold tracking-wide text-slate-500">Протоколи затримання</p>
                                                     )}
                                                     {record.recordType === 'SERVICE_INVESTIGATION' && (
-                                                        <p className="mt-1 text-xs font-semibold tracking-wide text-slate-500">
-                                                            Службові розслідування • {getServiceInvestigationStageLabel(record)}
-                                                        </p>
+                                                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                                            <p className="text-xs font-semibold tracking-wide text-slate-500">
+                                                                Службові розслідування
+                                                            </p>
+                                                            <span className={cn(
+                                                                "rounded-full px-2 py-0.5 text-[10px] font-bold",
+                                                                serviceStageTheme ? serviceStageTheme.stageChip : "bg-slate-100 text-slate-700"
+                                                            )}>
+                                                                {getServiceInvestigationStageLabel(record)}
+                                                            </span>
+                                                        </div>
                                                     )}
                                                 </div>
 
@@ -1405,9 +1132,11 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                 </div>
                                                                 <div className={cn(
                                                                     "text-sm font-bold italic transition-colors duration-300",
-                                                                    record.status === 'PROCESSED'
-                                                                        ? "text-emerald-700 dark:text-emerald-400"
-                                                                        : "text-blue-600 dark:text-blue-400"
+                                                                    serviceStageTheme
+                                                                        ? serviceStageTheme.resultText
+                                                                        : (record.status === 'PROCESSED'
+                                                                            ? "text-emerald-700 dark:text-emerald-400"
+                                                                            : "text-blue-600 dark:text-blue-400")
                                                                 )}>
                                                                     {record.status === 'PROCESSED'
                                                                         ? (record.resolution || getServiceInvestigationStageLabel(record))
@@ -1688,7 +1417,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                     </div>
                                 </CardContent>
                             </Card>
-                        ))}
+                        )})}
                     </div>
                 )}
             </div>
