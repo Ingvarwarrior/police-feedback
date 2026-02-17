@@ -12,6 +12,96 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "")
 
+type ActorSnapshot = {
+    id: string
+    firstName: string | null
+    lastName: string | null
+    username: string | null
+}
+
+function formatActorName(actor?: Partial<ActorSnapshot> | null) {
+    const fullName = `${actor?.lastName || ""} ${actor?.firstName || ""}`.trim()
+    if (fullName) return fullName
+    if (actor?.username) return actor.username
+    return "Невідомий користувач"
+}
+
+function getRecordTypeLabel(recordType?: string | null) {
+    switch (recordType) {
+        case "EO":
+            return "ЄО"
+        case "ZVERN":
+            return "Звернення"
+        case "APPLICATION":
+            return "Застосування сили/спецзасобів"
+        case "DETENTION_PROTOCOL":
+            return "Протокол затримання"
+        case "SERVICE_INVESTIGATION":
+            return "Службове розслідування"
+        default:
+            return "Документ"
+    }
+}
+
+function formatDateTimeUa(value: Date) {
+    return new Intl.DateTimeFormat("uk-UA", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(value)
+}
+
+async function notifyAboutWriteOff(params: {
+    actor?: Partial<ActorSnapshot> | null
+    recordType?: string | null
+    recordRef: string
+    processedAt: Date
+    resolution?: string | null
+    count?: number
+    link?: string
+}) {
+    try {
+        const adminUsers = await prisma.user.findMany({
+            where: { role: "ADMIN", active: true },
+            select: { id: true }
+        })
+        const adminIds = adminUsers.map((item) => item.id)
+        const actorName = formatActorName(params.actor)
+        const formattedAt = formatDateTimeUa(params.processedAt)
+        const isBulk = (params.count || 0) > 1
+        const normalizedResolution = String(params.resolution || "").replace(/\s+/g, " ").trim()
+        const shortResolution =
+            normalizedResolution.length > 220
+                ? `${normalizedResolution.slice(0, 217)}...`
+                : normalizedResolution
+
+        const title = isBulk
+            ? `Масове списання (${params.count})`
+            : `Списано: ${getRecordTypeLabel(params.recordType)} №${params.recordRef}`
+
+        const messageParts = isBulk
+            ? [`${actorName} виконав(ла) масове списання ${params.count} записів (${params.recordRef}) о ${formattedAt}.`]
+            : [`${actorName} списав(ла) ${getRecordTypeLabel(params.recordType).toLowerCase()} №${params.recordRef} о ${formattedAt}.`]
+
+        if (shortResolution) {
+            messageParts.push(`Рішення: ${shortResolution}`)
+        }
+
+        await createAdminNotification({
+            type: "UNIFIED_RECORD_WRITEOFF",
+            priority: "HIGH",
+            title,
+            message: messageParts.join(" "),
+            link: params.link || "/admin/unified-record",
+            ...(adminIds.length > 0 ? { userIds: adminIds } : {}),
+        })
+    } catch (error) {
+        console.error("Failed to create write-off notification:", error)
+    }
+}
+
 const UnifiedRecordSchema = z.object({
     id: z.string().optional(),
     eoNumber: z.string().min(1, "Номер обов'язковий"),
@@ -86,9 +176,14 @@ export async function processUnifiedRecordAction(id: string, resolution: string,
     console.log(`Processing unified record ${id}: resolution="${resolution}", officers=${officerIds}, concernsBpp=${concernsBpp}`)
 
     try {
+        const actor = await prisma.user.findUnique({
+            where: { username: session.user.email },
+            select: { id: true, firstName: true, lastName: true, username: true }
+        })
+
         const currentRecord = await prisma.unifiedRecord.findUnique({
             where: { id },
-            select: { recordType: true }
+            select: { recordType: true, eoNumber: true }
         })
 
         if (!currentRecord) {
@@ -99,18 +194,29 @@ export async function processUnifiedRecordAction(id: string, resolution: string,
             return { error: "Для службових розслідувань використовуйте окремий workflow опрацювання" }
         }
 
+        const processedAt = new Date()
+
         await prisma.unifiedRecord.update({
             where: { id },
             data: {
                 resolution,
-                resolutionDate: new Date(),
+                resolutionDate: processedAt,
                 status: "PROCESSED",
-                processedAt: new Date(),
+                processedAt,
                 concernsBpp,
                 officers: officerIds && officerIds.length > 0 ? {
                     set: officerIds.map(oid => ({ id: oid }))
                 } : { set: [] }
             }
+        })
+
+        await notifyAboutWriteOff({
+            actor,
+            recordType: currentRecord.recordType,
+            recordRef: currentRecord.eoNumber,
+            processedAt,
+            resolution,
+            link: `/admin/unified-record?search=${encodeURIComponent(currentRecord.eoNumber)}`,
         })
 
         revalidatePath('/admin/unified-record')
@@ -213,7 +319,7 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { id: true, role: true, permProcessUnifiedRecords: true }
+        select: { id: true, role: true, permProcessUnifiedRecords: true, firstName: true, lastName: true, username: true }
     })
 
     const parsed = ServiceInvestigationProcessSchema.parse(input)
@@ -497,6 +603,17 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
         where: { id: parsed.id },
         data,
     })
+
+    if (data.status === "PROCESSED") {
+        await notifyAboutWriteOff({
+            actor: user,
+            recordType: record.recordType,
+            recordRef: record.eoNumber,
+            processedAt: now,
+            resolution: typeof data.resolution === "string" ? data.resolution : null,
+            link: `/admin/unified-record?search=${encodeURIComponent(record.eoNumber)}`,
+        })
+    }
 
     const updatedRecord = await prisma.unifiedRecord.findUnique({
         where: { id: parsed.id },
@@ -1082,11 +1199,18 @@ export async function bulkUpdateResolutionAction(ids: string[], resolution: stri
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { role: true, permProcessUnifiedRecords: true }
+        select: { role: true, permProcessUnifiedRecords: true, id: true, firstName: true, lastName: true, username: true }
     })
     if (user?.role !== 'ADMIN' && !user?.permProcessUnifiedRecords) throw new Error("У вас немає прав для масового опрацювання")
 
-    await prisma.unifiedRecord.updateMany({
+    const targetRecords = ids.length > 0
+        ? await prisma.unifiedRecord.findMany({
+            where: { id: { in: ids } },
+            select: { eoNumber: true, recordType: true }
+        })
+        : []
+
+    const result = await prisma.unifiedRecord.updateMany({
         where: { id: { in: ids } },
         data: {
             resolution,
@@ -1095,6 +1219,36 @@ export async function bulkUpdateResolutionAction(ids: string[], resolution: stri
             processedAt: date
         }
     })
+
+    if (result.count > 0) {
+        if (targetRecords.length === 1) {
+            await notifyAboutWriteOff({
+                actor: user,
+                recordType: targetRecords[0].recordType,
+                recordRef: targetRecords[0].eoNumber,
+                processedAt: date,
+                resolution,
+                link: `/admin/unified-record?search=${encodeURIComponent(targetRecords[0].eoNumber)}`,
+            })
+        } else {
+            const preview = targetRecords
+                .slice(0, 4)
+                .map((record) => `${getRecordTypeLabel(record.recordType)} №${record.eoNumber}`)
+                .join(", ")
+            const withRemainder = targetRecords.length > 4
+                ? `${preview} +${targetRecords.length - 4} ще`
+                : preview
+
+            await notifyAboutWriteOff({
+                actor: user,
+                recordRef: withRemainder || `${result.count} записів`,
+                processedAt: date,
+                resolution,
+                count: result.count,
+                link: "/admin/unified-record",
+            })
+        }
+    }
 
     revalidatePath('/admin/unified-record')
     return { success: true }
