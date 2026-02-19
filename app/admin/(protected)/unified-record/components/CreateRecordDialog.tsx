@@ -206,7 +206,21 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
     }
 
     const onAiScan = () => {
-        fileInputRef.current?.click()
+        const input = fileInputRef.current
+        if (!input) return
+        try {
+            if (typeof input.showPicker === "function") {
+                input.showPicker()
+                return
+            }
+            input.click()
+        } catch {
+            try {
+                input.click()
+            } catch {
+                toast.error("Не вдалося відкрити камеру. Перевірте дозволи браузера.")
+            }
+        }
     }
 
     const resizeImage = (base64Str: string): Promise<string> => {
@@ -658,6 +672,7 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                                 ref={fileInputRef}
                                 className="hidden"
                                 accept="image/*"
+                                capture="environment"
                                 onChange={handleFileSelect}
                             />
                             <Button
