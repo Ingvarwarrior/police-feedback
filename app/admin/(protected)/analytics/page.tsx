@@ -103,6 +103,7 @@ function getTypeLabel(type: string) {
 
 function getStatusLabel(status: string) {
   if (status === "PROCESSED") return "Опрацьовано"
+  if (status === "APPROVAL") return "На погодженні"
   if (status === "REVIEW") return "На перевірці"
   if (status === "IN_PROGRESS") return "В роботі"
   if (status === "PENDING") return "Очікує"

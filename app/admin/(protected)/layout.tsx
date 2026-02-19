@@ -37,6 +37,7 @@ export default async function AdminLayout({
             role: true,
             permViewReports: true,
             permViewUnifiedRecords: true,
+            permReturnUnifiedRecords: true,
             permViewAnalytics: true,
             permViewMap: true,
             permViewOfficerStats: true,
@@ -65,6 +66,7 @@ export default async function AdminLayout({
     const canViewAnalytics = isAdmin || !!user.permViewAnalytics
     const canViewReports = isAdmin || !!user.permViewReports
     const canViewUnifiedRecords = isAdmin || !!user.permViewUnifiedRecords
+    const canApproveUnifiedRecords = isAdmin || !!user.permReturnUnifiedRecords
     const canViewMap = isAdmin || !!user.permViewMap
     const canViewCitizens = canViewReports
     const canViewOfficers =
@@ -148,6 +150,15 @@ export default async function AdminLayout({
                                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                                         Службові розслідування
                                     </Link>
+                                    {canApproveUnifiedRecords ? (
+                                        <Link
+                                            href="/admin/unified-record?activeTab=ALL&status=APPROVAL"
+                                            className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                                        >
+                                            <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+                                            Керівнику на погодження
+                                        </Link>
+                                    ) : null}
                                 </div>
                             </div>
                         ) : null}

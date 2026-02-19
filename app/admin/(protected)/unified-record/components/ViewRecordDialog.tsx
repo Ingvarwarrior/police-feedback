@@ -70,6 +70,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
     const statusMap: Record<string, { label: string, color: string, icon: any }> = {
         "PENDING": { label: "Очікує", color: "text-amber-600 bg-amber-50 border-amber-100", icon: Clock },
         "IN_PROGRESS": { label: "В роботі", color: "text-blue-600 bg-blue-50 border-blue-100", icon: Clock },
+        "APPROVAL": { label: "На погодженні", color: "text-violet-600 bg-violet-50 border-violet-100", icon: Clock },
         "PROCESSED": { label: "Виконано", color: "text-emerald-600 bg-emerald-50 border-emerald-100", icon: CheckCircle2 },
     }
 
@@ -312,7 +313,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                     </div>
 
                     {/* Linked Officers Section for Processed Records */}
-                    {(record.status === 'PROCESSED' || isServiceInvestigation) && (
+                    {(['PROCESSED', 'APPROVAL'].includes(String(record.status)) || isServiceInvestigation) && (
                         <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 space-y-4 shadow-sm">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
@@ -440,11 +441,18 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                     )}
 
                     {/* Resolution Section */}
-                    {record.status === 'PROCESSED' && (
-                        <div className="p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100 space-y-3">
+                    {['PROCESSED', 'APPROVAL'].includes(String(record.status)) && (
+                        <div className={cn(
+                            "p-6 rounded-[2rem] border space-y-3",
+                            record.status === "APPROVAL"
+                                ? "bg-violet-50 border-violet-100"
+                                : "bg-emerald-50 border-emerald-100"
+                        )}>
                             <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                <h3 className="text-sm font-semibold tracking-wide text-emerald-900">Результат розгляду (Рішення)</h3>
+                                <CheckCircle2 className={cn("w-4 h-4", record.status === "APPROVAL" ? "text-violet-600" : "text-emerald-600")} />
+                                <h3 className={cn("text-sm font-semibold tracking-wide", record.status === "APPROVAL" ? "text-violet-900" : "text-emerald-900")}>
+                                    {record.status === "APPROVAL" ? "Результат розгляду (на погодженні)" : "Результат розгляду (Рішення)"}
+                                </h3>
                             </div>
                             {isServiceInvestigation ? (
                                 <ol className="list-decimal space-y-1.5 pl-5 text-sm font-bold text-emerald-800">
@@ -493,10 +501,14 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                                 </p>
                             )}
                             <div className="flex justify-between items-center pt-2">
-                                <p className="text-xs font-semibold tracking-wide text-emerald-700">Списано в справу</p>
+                                <p className={cn("text-xs font-semibold tracking-wide", record.status === "APPROVAL" ? "text-violet-700" : "text-emerald-700")}>
+                                    {record.status === "APPROVAL" ? "Очікує погодження керівника" : "Списано в справу"}
+                                </p>
                                 {record.resolutionDate && (
-                                    <p className="text-[10px] font-bold text-emerald-600">
-                                        {safeFormat(record.resolutionDate, "dd.MM.yyyy HH:mm")}
+                                    <p className={cn("text-[10px] font-bold", record.status === "APPROVAL" ? "text-violet-600" : "text-emerald-600")}>
+                                        {record.status === "APPROVAL"
+                                            ? `Подано: ${safeFormat(record.resolutionDate, "dd.MM.yyyy HH:mm")}`
+                                            : safeFormat(record.resolutionDate, "dd.MM.yyyy HH:mm")}
                                     </p>
                                 )}
                             </div>
@@ -512,7 +524,7 @@ export default function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewR
                             </div>
                             <div className="flex items-end justify-between">
                                 <p className={cn("text-xl font-black italic",
-                                    record.status !== 'PROCESSED' && record.deadline && new Date(record.deadline) < new Date() ? "text-red-500" : "text-slate-900"
+                                    !['PROCESSED', 'APPROVAL'].includes(String(record.status)) && record.deadline && new Date(record.deadline) < new Date() ? "text-red-500" : "text-slate-900"
                                 )}>
                                     {safeFormat(record.deadline, "dd MMMM yyyy")}
                                 </p>

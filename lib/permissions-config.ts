@@ -20,7 +20,7 @@ export const PERMISSIONS_CONFIG = [
     // --- UNIFIED RECORDS (EO) ---
     { id: 'permViewUnifiedRecords', label: 'Перегляд реєстру ЄО', desc: 'Доступ до сторінки Єдиного обліку та звернень.' },
     { id: 'permManageUnifiedRecords', label: 'Адміністрування ЄО', desc: 'Створення, ручне редагування та видалення записів ЄО.' },
-    { id: 'permProcessUnifiedRecords', label: 'Виконання завдань ЄО', desc: 'Можливість закривати завдання та писати резолюції.' },
+    { id: 'permProcessUnifiedRecords', label: 'Виконання завдань ЄО', desc: 'Можливість заповнювати резолюцію та передавати документ на погодження керівнику.' },
     { id: 'permAssignUnifiedRecords', label: 'Розподіл завдань ЄО', desc: 'Призначення виконавців на записи Єдиного обліку.' },
     { id: 'permManageExtensions', label: 'Контроль термінів', desc: 'Подовження дедлайнів та затвердження рапортів на відстрочку.' },
 
@@ -43,7 +43,7 @@ export const PERMISSIONS_CONFIG = [
     { id: 'permManageMailAlerts', label: 'Керування еmail-розсилками', desc: 'Налаштування отримувачів автоматичних сповіщень.' },
     { id: 'permImportUnifiedRecords', label: 'Імпорт записів ЄО', desc: 'Завантаження реєстрів ЄО/звернень із Excel.' },
     { id: 'permDeleteUnifiedRecords', label: 'Видалення записів ЄО', desc: 'Видалення карток ЄО/звернень/рапортів/протоколів.' },
-    { id: 'permReturnUnifiedRecords', label: 'Повернення на доопрацювання', desc: 'Повернення запису виконавцю з коментарем керівника.' },
+    { id: 'permReturnUnifiedRecords', label: 'Погодження/повернення', desc: 'Погодження списання або повернення запису виконавцю з коментарем керівника.' },
     { id: 'permUseAiExtraction', label: 'AI-розбір документів', desc: 'Автозаповнення полів з фото рапорту/заяви через AI.' },
 ] as const
 

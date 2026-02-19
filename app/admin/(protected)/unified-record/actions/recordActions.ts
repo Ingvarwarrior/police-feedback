@@ -87,7 +87,7 @@ function calculateInclusiveDeadline(startDate: Date, termDays: number = DEFAULT_
     return new Date(startDate.getTime() + offsetDays * DAY_MS)
 }
 
-export async function processUnifiedRecordAction(id: string, resolution: string, officerIds?: string[], concernsBpp: boolean = true): Promise<{ success?: boolean, error?: string }> {
+export async function processUnifiedRecordAction(id: string, resolution: string, officerIds?: string[], concernsBpp: boolean = true): Promise<{ success?: boolean, error?: string, status?: string }> {
     const session = await auth()
     if (!session?.user?.email) return { error: "Unauthorized" }
 
@@ -96,7 +96,7 @@ export async function processUnifiedRecordAction(id: string, resolution: string,
     try {
         const currentRecord = await prisma.unifiedRecord.findUnique({
             where: { id },
-            select: { recordType: true }
+            select: { recordType: true, status: true }
         })
 
         if (!currentRecord) {
@@ -107,13 +107,16 @@ export async function processUnifiedRecordAction(id: string, resolution: string,
             return { error: "Для службових розслідувань використовуйте окремий workflow опрацювання" }
         }
 
+        const nextStatus = currentRecord.status === "PROCESSED" ? "PROCESSED" : "APPROVAL"
+        const nextProcessedAt = nextStatus === "PROCESSED" ? new Date() : null
+
         await prisma.unifiedRecord.update({
             where: { id },
             data: {
                 resolution,
                 resolutionDate: new Date(),
-                status: "PROCESSED",
-                processedAt: new Date(),
+                status: nextStatus,
+                processedAt: nextProcessedAt,
                 concernsBpp,
                 officers: officerIds && officerIds.length > 0 ? {
                     set: officerIds.map(oid => ({ id: oid }))
@@ -122,10 +125,53 @@ export async function processUnifiedRecordAction(id: string, resolution: string,
         })
 
         revalidatePath('/admin/unified-record')
-        return { success: true }
+        return { success: true, status: nextStatus }
     } catch (error: any) {
         console.error("Error processing unified record:", error)
         return { error: error.message || "Failed to process record" }
+    }
+}
+
+export async function approveUnifiedRecordAction(id: string): Promise<{ success?: boolean; error?: string }> {
+    const session = await auth()
+    if (!session?.user?.email) return { error: "Unauthorized" }
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { username: session.user.email },
+            select: { role: true, permReturnUnifiedRecords: true }
+        })
+
+        if (user?.role !== "ADMIN" && !user?.permReturnUnifiedRecords) {
+            return { error: "У вас немає прав для погодження списання" }
+        }
+
+        const record = await prisma.unifiedRecord.findUnique({
+            where: { id },
+            select: { id: true, status: true, recordType: true }
+        })
+
+        if (!record) return { error: "Запис не знайдено" }
+        if (record.recordType === "SERVICE_INVESTIGATION") {
+            return { error: "Службові розслідування мають окремий workflow опрацювання" }
+        }
+        if (record.status !== "APPROVAL") {
+            return { error: "Запис не перебуває на погодженні" }
+        }
+
+        await prisma.unifiedRecord.update({
+            where: { id },
+            data: {
+                status: "PROCESSED",
+                processedAt: new Date(),
+            }
+        })
+
+        revalidatePath('/admin/unified-record')
+        return { success: true }
+    } catch (error: any) {
+        console.error("Error approving unified record:", error)
+        return { error: error.message || "Не вдалося погодити списання" }
     }
 }
 
@@ -616,7 +662,7 @@ export async function triggerUnifiedRecordRemindersAction() {
 
     const recordsToRemind = await prisma.unifiedRecord.findMany({
         where: {
-            status: { not: 'PROCESSED' },
+            status: { notIn: ['PROCESSED', 'APPROVAL'] },
             assignedUserId: { not: null },
             deadline: {
                 gte: today,
@@ -664,7 +710,7 @@ export async function getUnifiedRecords(params?: {
 
     const currentUser = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { id: true, role: true }
+        select: { id: true, role: true, permReturnUnifiedRecords: true }
     })
 
     if (!currentUser) throw new Error("User not found")
@@ -674,7 +720,7 @@ export async function getUnifiedRecords(params?: {
     }
 
     // If not Admin, restrict to assigned records
-    if (currentUser.role !== 'ADMIN') {
+    if (currentUser.role !== 'ADMIN' && !currentUser.permReturnUnifiedRecords) {
         where.assignedUserId = currentUser.id
     }
 
@@ -1114,8 +1160,8 @@ export async function bulkUpdateResolutionAction(ids: string[], resolution: stri
         data: {
             resolution,
             resolutionDate: date,
-            status: "PROCESSED",
-            processedAt: date
+            status: "APPROVAL",
+            processedAt: null
         }
     })
 

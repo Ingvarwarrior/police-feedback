@@ -66,7 +66,9 @@ export function filterUnifiedRecords(records: any[], filters: RecordFilters): an
     }
 
     if (filterStatus === "PENDING") {
-        result = result.filter((r) => r.status !== "PROCESSED")
+        result = result.filter((r) => !["PROCESSED", "APPROVAL"].includes(String(r.status || "")))
+    } else if (filterStatus === "APPROVAL") {
+        result = result.filter((r) => r.status === "APPROVAL")
     } else if (filterStatus === "PROCESSED") {
         result = result.filter((r) => r.status === "PROCESSED")
     }
@@ -96,7 +98,7 @@ export function filterUnifiedRecords(records: any[], filters: RecordFilters): an
 
     if (quickPreset === "OVERDUE") {
         const now = new Date()
-        result = result.filter((r) => r.status !== "PROCESSED" && r.deadline && new Date(r.deadline) < now)
+        result = result.filter((r) => !["PROCESSED", "APPROVAL"].includes(String(r.status || "")) && r.deadline && new Date(r.deadline) < now)
     }
 
     if (periodFrom) {
@@ -143,7 +145,7 @@ export function getRecordCategories(records: any[]): string[] {
 export function getOverdueRecords(records: any[], nowTs: number): any[] {
     const now = new Date(nowTs)
     return records
-        .filter((r) => r.status !== "PROCESSED" && r.deadline && new Date(r.deadline) < now)
+        .filter((r) => !["PROCESSED", "APPROVAL"].includes(String(r.status || "")) && r.deadline && new Date(r.deadline) < now)
         .sort((a, b) => new Date(a.deadline || 0).getTime() - new Date(b.deadline || 0).getTime())
 }
 
@@ -151,7 +153,7 @@ export function getDueSoonRecords(records: any[], nowTs: number): any[] {
     const in24h = nowTs + 24 * 60 * 60 * 1000
     return records
         .filter((r) => {
-            if (r.status === "PROCESSED" || !r.deadline) return false
+            if (["PROCESSED", "APPROVAL"].includes(String(r.status || "")) || !r.deadline) return false
             const deadlineTs = new Date(r.deadline).getTime()
             return deadlineTs >= nowTs && deadlineTs <= in24h
         })
@@ -170,7 +172,12 @@ export function buildRecordExportData(records: any[]): any[] {
                 : "—",
         "Тип": r.recordType || "-",
         "Категорія": r.category || "-",
-        "Статус": r.status === "PROCESSED" ? "Опрацьовано" : "В роботі",
+        "Статус":
+            r.status === "PROCESSED"
+                ? "Опрацьовано"
+                : r.status === "APPROVAL"
+                    ? "На погодженні"
+                    : "В роботі",
         "Рішення": r.resolution || "-",
     }))
 }

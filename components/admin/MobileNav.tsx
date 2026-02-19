@@ -16,6 +16,7 @@ interface MobileNavProps {
         role: string
         permViewReports: boolean
         permViewUnifiedRecords: boolean
+        permReturnUnifiedRecords: boolean
         permViewAnalytics: boolean
         permViewMap: boolean
         permViewOfficerStats: boolean
@@ -45,6 +46,7 @@ export default function MobileNav({ user }: MobileNavProps) {
     const canViewAnalytics = isAdmin || user.permViewAnalytics
     const canViewReports = isAdmin || user.permViewReports
     const canViewUnifiedRecords = isAdmin || user.permViewUnifiedRecords
+    const canApproveUnifiedRecords = isAdmin || user.permReturnUnifiedRecords
     const canViewMap = isAdmin || user.permViewMap
     const canViewCitizens = canViewReports
     const canViewOfficers =
@@ -101,6 +103,9 @@ export default function MobileNav({ user }: MobileNavProps) {
                 { href: "/admin/unified-record?activeTab=APPLICATION&status=ALL", label: "Застосування сили/спецзасобів", tab: "APPLICATION", status: "ALL" },
                 { href: "/admin/unified-record?activeTab=DETENTION_PROTOCOL&status=ALL", label: "Протоколи затримання", tab: "DETENTION_PROTOCOL", status: "ALL" },
                 { href: "/admin/unified-record?activeTab=SERVICE_INVESTIGATION&status=ALL", label: "Службові розслідування", tab: "SERVICE_INVESTIGATION", status: "ALL" },
+                ...(canApproveUnifiedRecords
+                    ? [{ href: "/admin/unified-record?activeTab=ALL&status=APPROVAL", label: "Керівнику на погодження", tab: "ALL", status: "APPROVAL" }]
+                    : []),
             ],
         },
         {

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
         // Find records with deadline today or tomorrow
         const recordsToRemind = await prisma.unifiedRecord.findMany({
             where: {
-                status: { not: 'PROCESSED' },
+                status: { notIn: ['PROCESSED', 'APPROVAL'] },
                 assignedUserId: { not: null },
                 deadline: {
                     gte: today,

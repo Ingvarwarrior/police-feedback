@@ -59,6 +59,7 @@ import {
     bulkAssignUnifiedRecordsAction,
     bulkUpdateResolutionAction,
     processUnifiedRecordAction,
+    approveUnifiedRecordAction,
     processServiceInvestigationAction,
     requestExtensionAction,
     reviewExtensionAction,
@@ -125,10 +126,10 @@ interface RecordListProps {
 const FILTERS_STORAGE_KEY = "pf:filters:unified-record"
 type ServiceStageColumnKey = "REPORT_REVIEW" | "SR_INITIATED" | "SR_ORDER_ASSIGNED" | "FINAL"
 type UnifiedRecordTab = "ALL" | "EO" | "ZVERN" | "APPLICATION" | "DETENTION_PROTOCOL" | "SERVICE_INVESTIGATION"
-type UnifiedRecordStatus = "ALL" | "PENDING" | "PROCESSED"
+type UnifiedRecordStatus = "ALL" | "PENDING" | "APPROVAL" | "PROCESSED"
 
 const ALLOWED_TABS: UnifiedRecordTab[] = ["ALL", "EO", "ZVERN", "APPLICATION", "DETENTION_PROTOCOL", "SERVICE_INVESTIGATION"]
-const ALLOWED_STATUS: UnifiedRecordStatus[] = ["ALL", "PENDING", "PROCESSED"]
+const ALLOWED_STATUS: UnifiedRecordStatus[] = ["ALL", "PENDING", "APPROVAL", "PROCESSED"]
 const TAB_LABELS: Record<UnifiedRecordTab, string> = {
     ALL: "Всі документи",
     EO: "Єдиний облік",
@@ -403,7 +404,10 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         () => ({ recordType: activeTab === "ALL" ? "EO" : activeTab }),
         [activeTab]
     )
-    const activeTabLabel = TAB_LABELS[activeTab as UnifiedRecordTab] || "Всі документи"
+    const activeTabLabel =
+        hasStructuredMenuParams && filterStatus === "APPROVAL"
+            ? "Керівнику на погодження"
+            : (TAB_LABELS[activeTab as UnifiedRecordTab] || "Всі документи")
     const isAdmin = currentUser.role === "ADMIN"
     const canCreateRecords = isAdmin || !!currentUser.permManageUnifiedRecords
     const canAssignRecords = isAdmin || !!currentUser.permAssignUnifiedRecords
@@ -412,6 +416,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const canDeleteRecords = isAdmin || !!currentUser.permDeleteUnifiedRecords
     const canManageExtensions = isAdmin || !!currentUser.permManageExtensions
     const canReturnForRevision = isAdmin || !!currentUser.permReturnUnifiedRecords
+    const canApproveWriteOff = canReturnForRevision
     const canTriggerReminders = isAdmin || !!currentUser.permManageUnifiedRecords || !!currentUser.permManageSettings
 
     const toggleSelectAll = () => {
@@ -472,8 +477,8 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const handleUpdateResolution = async (ids: string[], resolution: string, resolutionDate?: Date) => {
         try {
             await bulkUpdateResolutionAction(ids, resolution, resolutionDate)
-            toast.success("Рішення оновлено")
-            setRecords(prev => prev.map(r => ids.includes(r.id) ? { ...r, resolution, resolutionDate: resolutionDate?.toISOString() || null, status: "PROCESSED", processedAt: new Date().toISOString() } : r))
+            toast.success("Передано на погодження керівнику")
+            setRecords(prev => prev.map(r => ids.includes(r.id) ? { ...r, resolution, resolutionDate: resolutionDate?.toISOString() || null, status: "APPROVAL", processedAt: null } : r))
             setSelectedIds([])
         } catch (error) {
             toast.error("Помилка оновлення рішення")
@@ -491,15 +496,16 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
             }
 
             if (result?.success) {
-                toast.success("Запис опрацьовано")
+                const nextStatus = result?.status === "PROCESSED" ? "PROCESSED" : "APPROVAL"
+                toast.success(nextStatus === "PROCESSED" ? "Запис опрацьовано" : "Запис передано на погодження керівнику")
 
                 setRecords(records.map(r =>
                     r.id === id
                         ? {
                             ...r,
-                            status: 'PROCESSED',
+                            status: nextStatus,
                             resolution,
-                            processedAt: new Date().toISOString(),
+                            processedAt: nextStatus === "PROCESSED" ? new Date().toISOString() : null,
                             concernsBpp,
                             officers: officers
                         }
@@ -511,6 +517,27 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         } catch (error: any) {
             console.error("handleProcess error:", error)
             toast.error("Помилка при опрацюванні запису")
+        }
+    }
+
+    const handleApproveWriteOff = async (id: string) => {
+        try {
+            const result = await approveUnifiedRecordAction(id)
+            if (result?.error) {
+                toast.error(result.error)
+                return
+            }
+
+            toast.success("Списання погоджено")
+            setRecords((prev) =>
+                prev.map((r) =>
+                    r.id === id
+                        ? { ...r, status: "PROCESSED", processedAt: new Date().toISOString() }
+                        : r
+                )
+            )
+        } catch (error: any) {
+            toast.error(error?.message || "Помилка погодження списання")
         }
     }
 
@@ -752,6 +779,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         <SelectContent>
                             <SelectItem value="ALL">Всі статуси</SelectItem>
                             <SelectItem value="PENDING">В роботі</SelectItem>
+                            <SelectItem value="APPROVAL">На погодженні</SelectItem>
                             <SelectItem value="PROCESSED">Опрацьовано</SelectItem>
                         </SelectContent>
                     </Select>
@@ -1035,7 +1063,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                         </button>
 
                                         {/* Status Sidebar */}
-                                        <div className={`w-full lg:w-2 ${serviceStageTheme ? serviceStageTheme.sidebar : (record.status === 'PROCESSED' ? 'bg-emerald-500' : (record.assignedUser || record.officerName ? 'bg-blue-500' : 'bg-amber-500'))}`} />
+                                        <div className={`w-full lg:w-2 ${serviceStageTheme ? serviceStageTheme.sidebar : (record.status === 'PROCESSED' ? 'bg-emerald-500' : (record.status === 'APPROVAL' ? 'bg-violet-500' : (record.assignedUser || record.officerName ? 'bg-blue-500' : 'bg-amber-500')))} `} />
 
                                         <div className="flex-1 p-5 md:p-8">
                                             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
@@ -1148,7 +1176,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         </AlertDialog>
                                                     ) : null}
 
-                                                    {record.deadline && record.status !== 'PROCESSED' && (
+                                                    {record.deadline && !['PROCESSED', 'APPROVAL'].includes(String(record.status)) && (
                                                         <div className={cn(
                                                             "px-2 md:px-3 py-1 flex items-center gap-1.5 rounded-lg border text-[8px] md:text-[9px] font-black uppercase tracking-wider transition-colors duration-300",
                                                             new Date(record.deadline).getTime() < clockTick ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900" : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-700"
@@ -1203,10 +1231,14 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                     "text-sm font-bold italic transition-colors duration-300",
                                                                     record.status === 'PROCESSED'
                                                                         ? "text-emerald-700 dark:text-emerald-400"
+                                                                        : record.status === 'APPROVAL'
+                                                                            ? "text-violet-700 dark:text-violet-400"
                                                                         : (record.assignedUserId ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")
                                                                 )}>
                                                                     {record.status === 'PROCESSED'
                                                                         ? (record.resolution || 'Виконано')
+                                                                        : record.status === 'APPROVAL'
+                                                                            ? 'На погодженні керівником'
                                                                         : (record.assignedUserId ? (record.resolution ? 'Потребує доопрацювання/В процесі...' : 'В процесі розгляду...') : 'Не призначено')}
                                                                 </div>
                                                             </>
@@ -1278,10 +1310,16 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         ) : (
                                                             <div className={cn(
                                                                 "text-sm font-bold italic transition-colors duration-300",
-                                                                record.status === 'PROCESSED' ? "text-emerald-700 dark:text-emerald-400" : (record.assignedUserId ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")
+                                                                record.status === 'PROCESSED'
+                                                                    ? "text-emerald-700 dark:text-emerald-400"
+                                                                    : record.status === 'APPROVAL'
+                                                                        ? "text-violet-700 dark:text-violet-400"
+                                                                        : (record.assignedUserId ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")
                                                             )}>
                                                                 {record.status === 'PROCESSED'
                                                                     ? (record.resolution || 'Виконано')
+                                                                    : record.status === 'APPROVAL'
+                                                                        ? 'На погодженні керівником'
                                                                     : (record.assignedUserId ? (record.resolution ? 'Потребує доопрацювання/В процесі...' : 'В процесі розгляду...') : 'Не призначено')}
                                                             </div>
                                                         )}
@@ -1363,7 +1401,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             </Select>
                                                         )}
 
-                                                        {record.status === 'PROCESSED' && !isServiceInvestigationRecord(record) && (
+                                                        {['PROCESSED', 'APPROVAL'].includes(String(record.status)) && !isServiceInvestigationRecord(record) && (
                                                             <div className="mt-4">
                                                                 <RecordProcessPopover
                                                                     recordId={record.id}
@@ -1383,7 +1421,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         )}
 
                                                         {/* Single "DONE" Button for assigned user */}
-                                                        {record.assignedUserId === currentUser.id && canProcessRecords && record.status !== 'PROCESSED' && (
+                                                        {record.assignedUserId === currentUser.id && canProcessRecords && !['PROCESSED', 'APPROVAL'].includes(String(record.status)) && (
                                                             <div className="flex flex-col gap-2 mt-4">
                                                                 {isServiceInvestigationRecord(record) ? (
                                                                     <ServiceInvestigationProcessPopover
@@ -1459,7 +1497,18 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                     </div>
                                                                 )}
 
-                                                                {canReturnForRevision && record.status === 'PROCESSED' && (
+                                                                {canApproveWriteOff && record.status === 'APPROVAL' && (
+                                                                    <Button
+                                                                        variant="default"
+                                                                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold h-9 gap-2"
+                                                                        onClick={() => handleApproveWriteOff(record.id)}
+                                                                    >
+                                                                        <CheckCircle2 className="w-4 h-4" />
+                                                                        Погодити списання
+                                                                    </Button>
+                                                                )}
+
+                                                                {canReturnForRevision && ['PROCESSED', 'APPROVAL'].includes(String(record.status)) && (
                                                                     <Popover>
                                                                         <PopoverTrigger asChild>
                                                                             <Button
