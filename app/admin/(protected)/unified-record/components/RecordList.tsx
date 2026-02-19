@@ -114,6 +114,11 @@ interface RecordListProps {
         permProcessUnifiedRecords?: boolean
         permAssignUnifiedRecords?: boolean
         permManageUnifiedRecords?: boolean
+        permImportUnifiedRecords?: boolean
+        permDeleteUnifiedRecords?: boolean
+        permManageExtensions?: boolean
+        permReturnUnifiedRecords?: boolean
+        permManageSettings?: boolean
     }
 }
 
@@ -399,6 +404,15 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
         [activeTab]
     )
     const activeTabLabel = TAB_LABELS[activeTab as UnifiedRecordTab] || "Всі документи"
+    const isAdmin = currentUser.role === "ADMIN"
+    const canCreateRecords = isAdmin || !!currentUser.permManageUnifiedRecords
+    const canAssignRecords = isAdmin || !!currentUser.permAssignUnifiedRecords
+    const canProcessRecords = isAdmin || !!currentUser.permProcessUnifiedRecords
+    const canImportRecords = isAdmin || !!currentUser.permImportUnifiedRecords || !!currentUser.permManageUnifiedRecords
+    const canDeleteRecords = isAdmin || !!currentUser.permDeleteUnifiedRecords
+    const canManageExtensions = isAdmin || !!currentUser.permManageExtensions
+    const canReturnForRevision = isAdmin || !!currentUser.permReturnUnifiedRecords
+    const canTriggerReminders = isAdmin || !!currentUser.permManageUnifiedRecords || !!currentUser.permManageSettings
 
     const toggleSelectAll = () => {
         if (selectedIds.length === filteredRecords.length) {
@@ -703,15 +717,17 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                     </Tabs>
                 )}
 
-                {currentUser.role === 'ADMIN' && (
+                {(canCreateRecords || canImportRecords) && (
                     <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 p-2 bg-white/90 backdrop-blur-md rounded-[2rem] border border-slate-200 shadow-xl w-full justify-start min-h-16 transition-all hover:shadow-2xl">
-                        <CreateRecordDialog
-                            users={users}
-                            initialData={createDialogInitialData}
-                            lockRecordType={activeTab !== 'ALL'}
-                        />
-                        {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}
-                        {(activeTab === 'ZVERN') && <ImportDialog defaultRecordType="ZVERN" />}
+                        {canCreateRecords ? (
+                            <CreateRecordDialog
+                                users={users}
+                                initialData={createDialogInitialData}
+                                lockRecordType={activeTab !== 'ALL'}
+                            />
+                        ) : null}
+                        {canImportRecords && (activeTab === 'ALL' || activeTab === 'EO') ? <ImportDialog defaultRecordType="EO" /> : null}
+                        {canImportRecords && activeTab === 'ZVERN' ? <ImportDialog defaultRecordType="ZVERN" /> : null}
                     </div>
                 )}
             </div>
@@ -740,7 +756,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                         </SelectContent>
                     </Select>
 
-                    {currentUser.role === 'ADMIN' ? (
+                    {canAssignRecords ? (
                         <Select value={filterInspector} onValueChange={setFilterInspector}>
                             <SelectTrigger className="h-11 rounded-xl">
                                 <SelectValue placeholder="Виконавець" />
@@ -914,7 +930,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                 <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1">Критичні (24 год)</p>
                                 <h3 className="text-3xl font-black text-slate-900">{dueSoonRecords.length}</h3>
                             </div>
-                            {currentUser.role === "ADMIN" ? (
+                            {canTriggerReminders ? (
                                 <Button
                                     variant="outline"
                                     className="h-9 rounded-xl text-xs"
@@ -978,14 +994,16 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             <Button variant="outline" className="rounded-xl" onClick={resetFilters}>
                                 Скинути фільтри
                             </Button>
-                            {currentUser.role === "ADMIN" ? (
+                            {(canCreateRecords || canImportRecords) ? (
                                 <>
-                                    <CreateRecordDialog
-                                        users={users}
-                                        initialData={createDialogInitialData}
-                                        lockRecordType={activeTab !== 'ALL'}
-                                    />
-                                    {(activeTab === 'ALL' || activeTab === 'EO') && <ImportDialog defaultRecordType="EO" />}
+                                    {canCreateRecords ? (
+                                        <CreateRecordDialog
+                                            users={users}
+                                            initialData={createDialogInitialData}
+                                            lockRecordType={activeTab !== 'ALL'}
+                                        />
+                                    ) : null}
+                                    {canImportRecords && (activeTab === 'ALL' || activeTab === 'EO') ? <ImportDialog defaultRecordType="EO" /> : null}
                                 </>
                             ) : null}
                         </div>
@@ -1088,47 +1106,47 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         <span className="hidden md:inline">Переглянути</span>
                                                     </Button>
 
-                                                    {currentUser.role === 'ADMIN' && (
-                                                        <>
-                                                            <CreateRecordDialog
-                                                                initialData={record}
-                                                                users={users}
-                                                                trigger={
-                                                                    <Button variant="ghost" size="sm" className="h-9 md:h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex-1 md:flex-none">
-                                                                        <Edit2 className="w-3.5 h-3.5 md:mr-1.5" />
-                                                                        <span className="hidden md:inline">Змінити</span>
-                                                                    </Button>
-                                                                }
-                                                            />
+                                                    {canCreateRecords ? (
+                                                        <CreateRecordDialog
+                                                            initialData={record}
+                                                            users={users}
+                                                            trigger={
+                                                                <Button variant="ghost" size="sm" className="h-9 md:h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex-1 md:flex-none">
+                                                                    <Edit2 className="w-3.5 h-3.5 md:mr-1.5" />
+                                                                    <span className="hidden md:inline">Змінити</span>
+                                                                </Button>
+                                                            }
+                                                        />
+                                                    ) : null}
 
-                                                            <AlertDialog>
-                                                                <AlertDialogTrigger asChild>
-                                                                    <Button variant="ghost" size="sm" className="h-9 md:h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all flex-1 md:flex-none">
-                                                                        <Trash2 className="w-3.5 h-3.5 md:mr-1.5" />
-                                                                        <span className="hidden md:inline">Видалити</span>
-                                                                    </Button>
-                                                                </AlertDialogTrigger>
-                                                                <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
-                                                                    <AlertDialogHeader>
-                                                                        <AlertDialogTitle className="text-xl font-black uppercase italic tracking-tight">Будьте обережні!</AlertDialogTitle>
-                                                                        <AlertDialogDescription className="text-slate-500 font-medium">
-                                                                            Ви впевнені, що хочете видалити цей запис ({record.eoNumber})? <br />
-                                                                            Цю дію неможливо буде скасувати.
-                                                                        </AlertDialogDescription>
-                                                                    </AlertDialogHeader>
-                                                                    <AlertDialogFooter className="bg-slate-50 p-6 -m-6 mt-6 rounded-b-[2rem]">
-                                                                        <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500">Скасувати</AlertDialogCancel>
-                                                                        <AlertDialogAction
-                                                                            onClick={() => handleDelete(record.id)}
-                                                                            className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
-                                                                        >
-                                                                            Так, видалити
-                                                                        </AlertDialogAction>
-                                                                    </AlertDialogFooter>
-                                                                </AlertDialogContent>
-                                                            </AlertDialog>
-                                                        </>
-                                                    )}
+                                                    {canDeleteRecords ? (
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button variant="ghost" size="sm" className="h-9 md:h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all flex-1 md:flex-none">
+                                                                    <Trash2 className="w-3.5 h-3.5 md:mr-1.5" />
+                                                                    <span className="hidden md:inline">Видалити</span>
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle className="text-xl font-black uppercase italic tracking-tight">Будьте обережні!</AlertDialogTitle>
+                                                                    <AlertDialogDescription className="text-slate-500 font-medium">
+                                                                        Ви впевнені, що хочете видалити цей запис ({record.eoNumber})? <br />
+                                                                        Цю дію неможливо буде скасувати.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter className="bg-slate-50 p-6 -m-6 mt-6 rounded-b-[2rem]">
+                                                                    <AlertDialogCancel className="rounded-xl border-none font-bold text-slate-500">Скасувати</AlertDialogCancel>
+                                                                    <AlertDialogAction
+                                                                        onClick={() => handleDelete(record.id)}
+                                                                        className="bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold"
+                                                                    >
+                                                                        Так, видалити
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    ) : null}
 
                                                     {record.deadline && record.status !== 'PROCESSED' && (
                                                         <div className={cn(
@@ -1311,7 +1329,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         <span className="text-xs font-black uppercase tracking-widest">{(isApplicationLike(record) || isServiceInvestigationRecord(record)) ? 'Виконавець' : 'Відповідальний'}</span>
                                                     </div>
                                                     <div className="space-y-1">
-                                                        {isApplicationLike(record) && currentUser.role !== 'ADMIN' ? (
+                                                        {isApplicationLike(record) && !canAssignRecords ? (
                                                             <p className="text-sm font-bold text-slate-900">{getAssignedInspectorName(record)}</p>
                                                         ) : (
                                                             <Select
@@ -1330,7 +1348,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                         setIsAssigning(false)
                                                                     }
                                                                 }}
-                                                                disabled={isAssigning || currentUser.role !== 'ADMIN'}
+                                                                disabled={isAssigning || !canAssignRecords}
                                                             >
                                                                 <SelectTrigger className="h-10 rounded-xl border-slate-300 bg-white hover:bg-slate-50 transition-all text-sm font-black text-slate-900 w-full shadow-sm">
                                                                     <SelectValue placeholder="Оберіть інспектора..." />
@@ -1365,7 +1383,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                         )}
 
                                                         {/* Single "DONE" Button for assigned user */}
-                                                        {record.assignedUserId === currentUser.id && record.status !== 'PROCESSED' && (
+                                                        {record.assignedUserId === currentUser.id && canProcessRecords && record.status !== 'PROCESSED' && (
                                                             <div className="flex flex-col gap-2 mt-4">
                                                                 {isServiceInvestigationRecord(record) ? (
                                                                     <ServiceInvestigationProcessPopover
@@ -1413,10 +1431,9 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                             </div>
                                                         )}
 
-                                                        {/* Admin Review for extensions or Return for Revision */}
-                                                        {currentUser.role === 'ADMIN' && (
+                                                        {(canManageExtensions || canReturnForRevision) && (
                                                             <div className="mt-3 space-y-2">
-                                                                {!isApplicationLike(record) && !isServiceInvestigationRecord(record) && record.extensionStatus === 'PENDING' && (
+                                                                {canManageExtensions && !isApplicationLike(record) && !isServiceInvestigationRecord(record) && record.extensionStatus === 'PENDING' && (
                                                                     <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100 space-y-2">
                                                                         <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest flex items-center gap-1">
                                                                             <Clock className="w-3 h-3" /> Запит на продовження
@@ -1442,7 +1459,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                                                     </div>
                                                                 )}
 
-                                                                {record.status === 'PROCESSED' && (
+                                                                {canReturnForRevision && record.status === 'PROCESSED' && (
                                                                     <Popover>
                                                                         <PopoverTrigger asChild>
                                                                             <Button
@@ -1526,7 +1543,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                             <div className="h-px md:h-11 w-full md:w-px bg-white/10" />
 
                             <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
-                                {currentUser.role === 'ADMIN' && (
+                                {canAssignRecords && (
                                     <Select onValueChange={(val) => handleBulkAssign(val)}>
                                         <SelectTrigger className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-white/10 border-white/20 hover:bg-white/20 transition-all min-w-[140px] md:min-w-[200px] text-[10px] md:text-sm font-bold text-white shadow-lg">
                                             <UserPlus className="w-3 md:w-4 h-3 md:h-4 mr-1 md:mr-2 text-blue-300" />
@@ -1542,32 +1559,34 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
                                     </Select>
                                 )}
 
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm shadow-lg">
-                                            <CheckCircle2 className="w-3 md:w-4 h-3 md:h-4" />
-                                            Рішення
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-72 md:w-80 p-6 rounded-[2rem] border-none shadow-2xl space-y-4 mb-4">
-                                        <div className="space-y-2">
-                                            <h4 className="text-sm font-black uppercase tracking-tight italic">Рішення для {selectedIds.length} записів:</h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                {resolutionPresets.map(preset => (
-                                                    <button
-                                                        key={preset}
-                                                        onClick={() => handleUpdateResolution(selectedIds, preset)}
-                                                        className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-600 hover:text-white rounded-xl text-[10px] font-bold transition-all w-full text-left"
-                                                    >
-                                                        {preset}
-                                                    </button>
-                                                ))}
+                                {canProcessRecords ? (
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm shadow-lg">
+                                                <CheckCircle2 className="w-3 md:w-4 h-3 md:h-4" />
+                                                Рішення
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-72 md:w-80 p-6 rounded-[2rem] border-none shadow-2xl space-y-4 mb-4">
+                                            <div className="space-y-2">
+                                                <h4 className="text-sm font-black uppercase tracking-tight italic">Рішення для {selectedIds.length} записів:</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {resolutionPresets.map(preset => (
+                                                        <button
+                                                            key={preset}
+                                                            onClick={() => handleUpdateResolution(selectedIds, preset)}
+                                                            className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-600 hover:text-white rounded-xl text-[10px] font-bold transition-all w-full text-left"
+                                                        >
+                                                            {preset}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
+                                        </PopoverContent>
+                                    </Popover>
+                                ) : null}
 
-                                {currentUser.role === 'ADMIN' && (
+                                {canDeleteRecords && (
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button className="h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold px-3 md:px-6 transition-all gap-1 md:gap-2 text-[10px] md:text-sm">
