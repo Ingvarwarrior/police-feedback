@@ -5,6 +5,7 @@ import { normalizeEoNumber, normalizePersonName, normalizePhoneNumber } from "@/
 import { prisma } from "@/lib/prisma"
 import { refreshOfficerStats } from "@/lib/officer-stats"
 import { createAdminNotification } from "@/lib/admin-notification-service"
+import { getManagerUserIds } from "@/lib/manager-permissions"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
@@ -65,6 +66,32 @@ function hasAnyAnswer(data: z.infer<typeof callbackSchema>) {
       data.qOverall ||
       (data.surveyNotes && data.surveyNotes.trim())
   )
+}
+
+async function notifyManagersAboutCompletedCallback(params: {
+  callbackId: string
+  eoNumber: string
+  actorUserId: string
+  checkResult: "UNSET" | "CONFIRMED" | "NOT_CONFIRMED"
+}) {
+  const managerUserIds = await getManagerUserIds({ excludeUserIds: [params.actorUserId] })
+  if (!managerUserIds.length) return
+
+  const checkResultText =
+    params.checkResult === "CONFIRMED"
+      ? "підтверджується"
+      : params.checkResult === "NOT_CONFIRMED"
+        ? "не підтверджується"
+        : "не вказано"
+
+  await createAdminNotification({
+    userIds: managerUserIds,
+    title: "Callback опрацьовано",
+    message: `Callback по ЄО №${params.eoNumber} завершено. Результат перевірки: ${checkResultText}.`,
+    type: "ALERT",
+    priority: "NORMAL",
+    link: `/admin/callbacks?callbackId=${params.callbackId}`,
+  })
 }
 
 async function getCurrentUser() {
@@ -296,6 +323,15 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
     },
   })
 
+  if (created.status === "COMPLETED") {
+    await notifyManagersAboutCompletedCallback({
+      callbackId: created.id,
+      eoNumber: created.eoNumber,
+      actorUserId: user.id,
+      checkResult: created.checkResult || "UNSET",
+    })
+  }
+
   await prisma.auditLog.create({
     data: {
       actorUserId: user.id,
@@ -415,6 +451,16 @@ export async function updateCallbackProcessing(input: z.input<typeof callbackPro
       status: true,
     },
   })
+
+  const becameCompleted = callback.status !== "COMPLETED" && updated.status === "COMPLETED"
+  if (becameCompleted) {
+    await notifyManagersAboutCompletedCallback({
+      callbackId: callback.id,
+      eoNumber: callback.eoNumber,
+      actorUserId: user.id,
+      checkResult: updated.checkResult || "UNSET",
+    })
+  }
 
   await prisma.auditLog.create({
     data: {

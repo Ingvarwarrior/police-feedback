@@ -38,6 +38,7 @@ export default async function AdminLayout({
             permViewReports: true,
             permViewUnifiedRecords: true,
             permReturnUnifiedRecords: true,
+            permManager: true,
             permViewAnalytics: true,
             permViewMap: true,
             permViewOfficerStats: true,
@@ -66,7 +67,7 @@ export default async function AdminLayout({
     const canViewAnalytics = isAdmin || !!user.permViewAnalytics
     const canViewReports = isAdmin || !!user.permViewReports
     const canViewUnifiedRecords = isAdmin || !!user.permViewUnifiedRecords
-    const canApproveUnifiedRecords = isAdmin || !!user.permReturnUnifiedRecords
+    const canApproveUnifiedRecords = isAdmin || !!user.permReturnUnifiedRecords || !!user.permManager
     const canViewMap = isAdmin || !!user.permViewMap
     const canViewCitizens = canViewReports
     const canViewOfficers =

@@ -17,6 +17,7 @@ interface MobileNavProps {
         permViewReports: boolean
         permViewUnifiedRecords: boolean
         permReturnUnifiedRecords: boolean
+        permManager: boolean
         permViewAnalytics: boolean
         permViewMap: boolean
         permViewOfficerStats: boolean
@@ -46,7 +47,7 @@ export default function MobileNav({ user }: MobileNavProps) {
     const canViewAnalytics = isAdmin || user.permViewAnalytics
     const canViewReports = isAdmin || user.permViewReports
     const canViewUnifiedRecords = isAdmin || user.permViewUnifiedRecords
-    const canApproveUnifiedRecords = isAdmin || user.permReturnUnifiedRecords
+    const canApproveUnifiedRecords = isAdmin || user.permReturnUnifiedRecords || user.permManager
     const canViewMap = isAdmin || user.permViewMap
     const canViewCitizens = canViewReports
     const canViewOfficers =

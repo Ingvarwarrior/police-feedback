@@ -119,6 +119,7 @@ interface RecordListProps {
         permDeleteUnifiedRecords?: boolean
         permManageExtensions?: boolean
         permReturnUnifiedRecords?: boolean
+        permManager?: boolean
         permManageSettings?: boolean
     }
 }
@@ -415,7 +416,7 @@ export default function RecordList({ initialRecords, users = [], currentUser }: 
     const canImportRecords = isAdmin || !!currentUser.permImportUnifiedRecords || !!currentUser.permManageUnifiedRecords
     const canDeleteRecords = isAdmin || !!currentUser.permDeleteUnifiedRecords
     const canManageExtensions = isAdmin || !!currentUser.permManageExtensions
-    const canReturnForRevision = isAdmin || !!currentUser.permReturnUnifiedRecords
+    const canReturnForRevision = isAdmin || !!currentUser.permReturnUnifiedRecords || !!currentUser.permManager
     const canApproveWriteOff = canReturnForRevision
     const canTriggerReminders = isAdmin || !!currentUser.permManageUnifiedRecords || !!currentUser.permManageSettings
 

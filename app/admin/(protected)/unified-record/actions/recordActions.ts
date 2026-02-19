@@ -8,6 +8,7 @@ import { z } from "zod"
 import { sendUnifiedAssignmentEmail, sendUnifiedRecordReminderEmail } from "@/lib/mail"
 import { normalizeEoNumber, normalizePersonName } from "@/lib/normalization"
 import { createAdminNotification } from "@/lib/admin-notification-service"
+import { canActAsManager, getManagerUserIds } from "@/lib/manager-permissions"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "")
@@ -87,6 +88,39 @@ function calculateInclusiveDeadline(startDate: Date, termDays: number = DEFAULT_
     return new Date(startDate.getTime() + offsetDays * DAY_MS)
 }
 
+function getRecordTypeLabel(recordType?: string | null) {
+    if (recordType === "EO") return "ЄО"
+    if (recordType === "ZVERN") return "Звернення"
+    if (recordType === "APPLICATION") return "Застосування сили/спецзасобів"
+    if (recordType === "DETENTION_PROTOCOL") return "Протокол затримання"
+    if (recordType === "SERVICE_INVESTIGATION") return "Службове розслідування"
+    return "Документ"
+}
+
+async function notifyManagers(params: {
+    title: string
+    message: string
+    link?: string
+    excludeUserId?: string | null
+    priority?: "LOW" | "NORMAL" | "HIGH" | "URGENT"
+    type?: string
+}) {
+    const userIds = await getManagerUserIds({
+        excludeUserIds: params.excludeUserId ? [params.excludeUserId] : [],
+    })
+
+    if (!userIds.length) return
+
+    await createAdminNotification({
+        userIds,
+        title: params.title,
+        message: params.message,
+        link: params.link || "/admin/unified-record",
+        priority: params.priority || "NORMAL",
+        type: params.type || "SYSTEM",
+    })
+}
+
 export async function processUnifiedRecordAction(id: string, resolution: string, officerIds?: string[], concernsBpp: boolean = true): Promise<{ success?: boolean, error?: string, status?: string }> {
     const session = await auth()
     if (!session?.user?.email) return { error: "Unauthorized" }
@@ -96,7 +130,7 @@ export async function processUnifiedRecordAction(id: string, resolution: string,
     try {
         const currentRecord = await prisma.unifiedRecord.findUnique({
             where: { id },
-            select: { recordType: true, status: true }
+            select: { eoNumber: true, recordType: true, status: true }
         })
 
         if (!currentRecord) {
@@ -124,6 +158,18 @@ export async function processUnifiedRecordAction(id: string, resolution: string,
             }
         })
 
+        if (nextStatus === "APPROVAL") {
+            const recordLabel = getRecordTypeLabel(currentRecord.recordType)
+            const recordNumber = currentRecord.eoNumber || "без номера"
+            await notifyManagers({
+                excludeUserId: (session.user as any)?.id || null,
+                title: "Завдання виконано і передано на погодження",
+                message: `${recordLabel} №${recordNumber} опрацьовано виконавцем та передано керівнику на погодження.`,
+                link: `/admin/unified-record?search=${encodeURIComponent(recordNumber)}&status=APPROVAL`,
+                type: "ALERT",
+            })
+        }
+
         revalidatePath('/admin/unified-record')
         return { success: true, status: nextStatus }
     } catch (error: any) {
@@ -139,10 +185,10 @@ export async function approveUnifiedRecordAction(id: string): Promise<{ success?
     try {
         const user = await prisma.user.findUnique({
             where: { username: session.user.email },
-            select: { role: true, permReturnUnifiedRecords: true }
+            select: { role: true, permReturnUnifiedRecords: true, permManager: true }
         })
 
-        if (user?.role !== "ADMIN" && !user?.permReturnUnifiedRecords) {
+        if (!canActAsManager(user)) {
             return { error: "У вас немає прав для погодження списання" }
         }
 
@@ -574,6 +620,24 @@ export async function processServiceInvestigationAction(input: z.infer<typeof Se
         }
     })
 
+    if (updatedRecord?.status === "PROCESSED") {
+        const recordNumber = updatedRecord.eoNumber || "без номера"
+        const outcomeLabel =
+            parsed.action === "CLOSE_NO_VIOLATION"
+                ? "порушень дисципліни не виявлено"
+                : parsed.action === "COMPLETE_LAWFUL"
+                    ? "дії правомірні"
+                    : "дії неправомірні"
+
+        await notifyManagers({
+            excludeUserId: user?.id || null,
+            title: "Завдання СР завершено",
+            message: `Службове розслідування №${recordNumber} завершено. Результат: ${outcomeLabel}.`,
+            link: `/admin/unified-record?search=${encodeURIComponent(recordNumber)}&activeTab=SERVICE_INVESTIGATION`,
+            type: "ALERT",
+        })
+    }
+
     revalidatePath('/admin/unified-record')
     return { success: true, record: updatedRecord }
 }
@@ -710,7 +774,7 @@ export async function getUnifiedRecords(params?: {
 
     const currentUser = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { id: true, role: true, permReturnUnifiedRecords: true }
+        select: { id: true, role: true, permReturnUnifiedRecords: true, permManager: true }
     })
 
     if (!currentUser) throw new Error("User not found")
@@ -720,7 +784,7 @@ export async function getUnifiedRecords(params?: {
     }
 
     // If not Admin, restrict to assigned records
-    if (currentUser.role !== 'ADMIN' && !currentUser.permReturnUnifiedRecords) {
+    if (!canActAsManager(currentUser)) {
         where.assignedUserId = currentUser.id
     }
 
@@ -1165,6 +1229,16 @@ export async function bulkUpdateResolutionAction(ids: string[], resolution: stri
         }
     })
 
+    if (ids.length > 0) {
+        await notifyManagers({
+            excludeUserId: (session.user as any)?.id || null,
+            title: "На погодження передано пакет завдань",
+            message: `Виконавець передав на погодження ${ids.length} запис(ів) ЄО/виконавчої дисципліни.`,
+            link: "/admin/unified-record?activeTab=ALL&status=APPROVAL",
+            type: "ALERT",
+        })
+    }
+
     revalidatePath('/admin/unified-record')
     return { success: true }
 }
@@ -1175,9 +1249,9 @@ export async function returnForRevisionAction(id: string, comment: string) {
 
     const user = await prisma.user.findUnique({
         where: { username: session.user.email },
-        select: { role: true, permReturnUnifiedRecords: true }
+        select: { role: true, permReturnUnifiedRecords: true, permManager: true }
     })
-    if (user?.role !== 'ADMIN' && !user?.permReturnUnifiedRecords) throw new Error("У вас немає прав повертати записи на доопрацювання")
+    if (!canActAsManager(user)) throw new Error("У вас немає прав повертати записи на доопрацювання")
 
     const record = await prisma.unifiedRecord.findUnique({
         where: { id },
@@ -1265,18 +1339,7 @@ export async function returnForRevisionAction(id: string, comment: string) {
     })
 
     if (record.assignedUserId) {
-        const recordTypeLabel =
-            record.recordType === "EO"
-                ? "ЄО"
-                : record.recordType === "ZVERN"
-                    ? "Звернення"
-                    : record.recordType === "APPLICATION"
-                        ? "Застосування сили/спецзасобів"
-                        : record.recordType === "DETENTION_PROTOCOL"
-                            ? "Протокол затримання"
-                            : record.recordType === "SERVICE_INVESTIGATION"
-                                ? "Службове розслідування"
-                                : "Документ"
+        const recordTypeLabel = getRecordTypeLabel(record.recordType)
         const recordNumber = record.eoNumber || "без номера"
 
         await createAdminNotification({

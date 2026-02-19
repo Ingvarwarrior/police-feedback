@@ -41,6 +41,7 @@ export default async function UnifiedRecordPage() {
                 permDeleteUnifiedRecords: true,
                 permManageExtensions: true,
                 permReturnUnifiedRecords: true,
+                permManager: true,
                 permManageSettings: true,
             }
         })

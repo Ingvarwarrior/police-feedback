@@ -44,6 +44,7 @@ model User {
   permImportUnifiedRecords  Boolean             @default(false)
   permDeleteUnifiedRecords  Boolean             @default(false)
   permReturnUnifiedRecords  Boolean             @default(false)
+  permManager               Boolean             @default(false)
   permUseAiExtraction       Boolean             @default(false)
   permViewUnifiedRecords    Boolean             @default(true)
   permProcessUnifiedRecords Boolean             @default(false)

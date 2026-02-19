@@ -44,6 +44,7 @@ export const PERMISSIONS_CONFIG = [
     { id: 'permImportUnifiedRecords', label: 'Імпорт записів ЄО', desc: 'Завантаження реєстрів ЄО/звернень із Excel.' },
     { id: 'permDeleteUnifiedRecords', label: 'Видалення записів ЄО', desc: 'Видалення карток ЄО/звернень/рапортів/протоколів.' },
     { id: 'permReturnUnifiedRecords', label: 'Погодження/повернення', desc: 'Погодження списання або повернення запису виконавцю з коментарем керівника.' },
+    { id: 'permManager', label: 'Керівник', desc: 'Керівницький доступ: бачить документи на погодженні та отримує сповіщення про виконані завдання.' },
     { id: 'permUseAiExtraction', label: 'AI-розбір документів', desc: 'Автозаповнення полів з фото рапорту/заяви через AI.' },
 ] as const
 
