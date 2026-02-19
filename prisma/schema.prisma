@@ -232,6 +232,7 @@ model Callback {
   assignedUserId     String?
   createdById        String?
   status             String    @default("PENDING") // PENDING, COMPLETED
+  checkResult        String    @default("UNSET") // UNSET, CONFIRMED, NOT_CONFIRMED
   qPoliteness        Int?
   qProfessionalism   Int?
   qLawfulness        Int?

@@ -14,6 +14,7 @@ const callbackSchema = z.object({
   applicantName: z.string().trim().min(1, "Вкажіть ПІБ заявника"),
   applicantPhone: z.string().trim().min(1, "Вкажіть номер телефону"),
   officerIds: z.array(z.string()).min(1, "Оберіть хоча б одного поліцейського"),
+  checkResult: z.enum(["CONFIRMED", "NOT_CONFIRMED"]).optional(),
   qPoliteness: z.number().int().min(1).max(5).optional(),
   qProfessionalism: z.number().int().min(1).max(5).optional(),
   qLawfulness: z.number().int().min(1).max(5).optional(),
@@ -45,6 +46,7 @@ function getYearRange(date: Date) {
 
 function hasAnyAnswer(data: z.infer<typeof callbackSchema>) {
   return Boolean(
+    data.checkResult ||
     data.qPoliteness ||
       data.qProfessionalism ||
       data.qLawfulness ||
@@ -259,6 +261,7 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
       createdById: user.id,
       assignedUserId: user.id,
       status: hasAnyAnswer(parsed) ? "COMPLETED" : "PENDING",
+      checkResult: parsed.checkResult || "UNSET",
       qPoliteness: parsed.qPoliteness,
       qProfessionalism: parsed.qProfessionalism,
       qLawfulness: parsed.qLawfulness,
@@ -278,7 +281,11 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
       action: "CREATE_CALLBACK",
       entityType: "CALLBACK",
       entityId: created.id,
-      metadata: JSON.stringify({ eoNumber: created.eoNumber, qOverall: parsed.qOverall || null }),
+      metadata: JSON.stringify({
+        eoNumber: created.eoNumber,
+        qOverall: parsed.qOverall || null,
+        checkResult: parsed.checkResult || "UNSET",
+      }),
     },
   })
 

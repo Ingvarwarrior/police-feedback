@@ -53,6 +53,7 @@ interface CallbackRow {
   applicantName: string
   applicantPhone: string
   status: string
+  checkResult: string | null
   qOverall: number | null
   surveyNotes: string | null
   officers: OfficerRow[]
@@ -82,6 +83,18 @@ function officerLabel(officer: OfficerRow) {
   return `${officer.lastName || ""} ${officer.firstName || ""}`.trim() || officer.badgeNumber
 }
 
+function checkResultLabel(value: string | null | undefined) {
+  if (value === "CONFIRMED") return "Підтверджується"
+  if (value === "NOT_CONFIRMED") return "Не підтверджується"
+  return "Не вказано"
+}
+
+function checkResultChipClass(value: string | null | undefined) {
+  if (value === "CONFIRMED") return "status-chip-processed"
+  if (value === "NOT_CONFIRMED") return "status-chip-waiting"
+  return "status-chip-waiting"
+}
+
 function RatingStars({ value }: { value: number }) {
   return (
     <span className="inline-flex items-center gap-0.5">
@@ -100,6 +113,7 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
   const [callbacks, setCallbacks] = useState(initialCallbacks)
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState<"ALL" | "PENDING" | "COMPLETED">("ALL")
+  const [checkResult, setCheckResult] = useState<"ALL" | "UNSET" | "CONFIRMED" | "NOT_CONFIRMED">("ALL")
   const [executor, setExecutor] = useState<string>("ALL")
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "rating_desc" | "rating_asc">("newest")
   const [periodFrom, setPeriodFrom] = useState("")
@@ -119,6 +133,9 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
       const parsed = JSON.parse(raw)
       if (typeof parsed.search === "string") setSearch(parsed.search)
       if (["ALL", "PENDING", "COMPLETED"].includes(parsed.status)) setStatus(parsed.status)
+      if (["ALL", "UNSET", "CONFIRMED", "NOT_CONFIRMED"].includes(parsed.checkResult)) {
+        setCheckResult(parsed.checkResult)
+      }
       if (typeof parsed.executor === "string") setExecutor(parsed.executor)
       if (["newest", "oldest", "rating_desc", "rating_asc"].includes(parsed.sortBy)) setSortBy(parsed.sortBy)
       if (typeof parsed.periodFrom === "string") setPeriodFrom(parsed.periodFrom)
@@ -131,9 +148,9 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
   useEffect(() => {
     localStorage.setItem(
       FILTERS_STORAGE_KEY,
-      JSON.stringify({ search, status, executor, sortBy, periodFrom, periodTo })
+      JSON.stringify({ search, status, checkResult, executor, sortBy, periodFrom, periodTo })
     )
-  }, [search, status, executor, sortBy, periodFrom, periodTo])
+  }, [search, status, checkResult, executor, sortBy, periodFrom, periodTo])
 
   useEffect(() => {
     const callbackId = searchParams.get("callbackId")
@@ -161,6 +178,14 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
 
     if (status !== "ALL") {
       data = data.filter((cb) => cb.status === status)
+    }
+
+    if (checkResult !== "ALL") {
+      if (checkResult === "UNSET") {
+        data = data.filter((cb) => !cb.checkResult || cb.checkResult === "UNSET")
+      } else {
+        data = data.filter((cb) => cb.checkResult === checkResult)
+      }
     }
 
     if (executor === "UNASSIGNED") {
@@ -210,11 +235,12 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
       }
       return new Date(b.callDate).getTime() - new Date(a.callDate).getTime()
     })
-  }, [callbacks, search, status, executor, sortBy, periodFrom, periodTo])
+  }, [callbacks, search, status, checkResult, executor, sortBy, periodFrom, periodTo])
 
   const resetFilters = () => {
     setSearch("")
     setStatus("ALL")
+    setCheckResult("ALL")
     setExecutor("ALL")
     setSortBy("newest")
     setPeriodFrom("")
@@ -262,7 +288,7 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
           <Select value={status} onValueChange={(value) => setStatus(value as "ALL" | "PENDING" | "COMPLETED")}>
             <SelectTrigger className="h-11 rounded-xl">
               <SelectValue placeholder="Статус" />
@@ -271,6 +297,18 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
               <SelectItem value="ALL">Всі статуси</SelectItem>
               <SelectItem value="PENDING">Очікує</SelectItem>
               <SelectItem value="COMPLETED">Опрацьовано</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={checkResult} onValueChange={(value) => setCheckResult(value as "ALL" | "UNSET" | "CONFIRMED" | "NOT_CONFIRMED")}>
+            <SelectTrigger className="h-11 rounded-xl">
+              <SelectValue placeholder="Результат перевірки" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Всі результати</SelectItem>
+              <SelectItem value="CONFIRMED">Підтверджується</SelectItem>
+              <SelectItem value="NOT_CONFIRMED">Не підтверджується</SelectItem>
+              <SelectItem value="UNSET">Не вказано</SelectItem>
             </SelectContent>
           </Select>
 
@@ -369,6 +407,9 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
                         {cb.qOverall}/5
                       </span>
                     ) : null}
+                    <span className={cn(checkResultChipClass(cb.checkResult))}>
+                      {checkResultLabel(cb.checkResult)}
+                    </span>
                     <span className={cn(cb.status === "COMPLETED" ? "status-chip-processed" : "status-chip-waiting")}>
                       {cb.status === "COMPLETED" ? "Опрацьовано" : "Очікує"}
                     </span>
@@ -450,6 +491,9 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
                         {selectedCallback.qOverall}/5
                       </span>
                     ) : null}
+                    <span className={cn(checkResultChipClass(selectedCallback.checkResult))}>
+                      {checkResultLabel(selectedCallback.checkResult)}
+                    </span>
                   </div>
                   {canDelete ? (
                     <AlertDialog>
@@ -516,6 +560,10 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Номер callback</p>
                     <p className="ds-detail-value">№{formatCallbackNumber(selectedCallback.callbackNumber)}</p>
+                  </div>
+                  <div className="ds-detail-item">
+                    <p className="ds-detail-label">Результат перевірки</p>
+                    <p className="ds-detail-value">{checkResultLabel(selectedCallback.checkResult)}</p>
                   </div>
                 </div>
 

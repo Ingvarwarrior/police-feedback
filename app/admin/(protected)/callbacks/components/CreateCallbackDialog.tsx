@@ -71,6 +71,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
   const [wasEffective, setWasEffective] = useState<string>("UNSET")
   const [improvements, setImprovements] = useState("")
   const [teamRating, setTeamRating] = useState(0)
+  const [checkResult, setCheckResult] = useState<"UNSET" | "CONFIRMED" | "NOT_CONFIRMED">("UNSET")
   const [isCheckingEo, setIsCheckingEo] = useState(false)
   const [eoDuplicateInfo, setEoDuplicateInfo] = useState<{
     exists: boolean
@@ -109,6 +110,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
     setWasEffective("UNSET")
     setImprovements("")
     setTeamRating(0)
+    setCheckResult("UNSET")
     setEoDuplicateInfo({ exists: false, count: 0, year: null })
     setIsCheckingEo(false)
     setOfficerQuery("")
@@ -233,6 +235,14 @@ export default function CreateCallbackDialog({ officers }: Props) {
         improvements || "—",
         "",
         `Оцінка роботи наряду (1-5): ${teamRating > 0 ? teamRating : "не вказано"}`,
+        "",
+        `Результат перевірки callback: ${
+          checkResult === "CONFIRMED"
+            ? "підтверджується"
+            : checkResult === "NOT_CONFIRMED"
+              ? "не підтверджується"
+              : "не вказано"
+        }`,
       ].join("\n")
 
       await createCallback({
@@ -241,6 +251,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
         applicantName,
         applicantPhone,
         officerIds: selectedOfficerIds,
+        checkResult: checkResult !== "UNSET" ? checkResult : undefined,
         qOverall: teamRating > 0 ? teamRating : undefined,
         surveyNotes: renderedSurvey,
       })
@@ -512,6 +523,17 @@ export default function CreateCallbackDialog({ officers }: Props) {
                     Очистити
                   </button>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold text-slate-700">Результат перевірки (опрацювання)</Label>
+                <Select value={checkResult} onValueChange={(value) => setCheckResult(value as "UNSET" | "CONFIRMED" | "NOT_CONFIRMED")}>
+                  <SelectTrigger><SelectValue placeholder="Оберіть результат" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNSET">Не вказано</SelectItem>
+                    <SelectItem value="CONFIRMED">Підтверджується</SelectItem>
+                    <SelectItem value="NOT_CONFIRMED">Не підтверджується</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </fieldset>
           </details>

@@ -1,0 +1,2 @@
+ALTER TABLE "Callback"
+ADD COLUMN "checkResult" TEXT NOT NULL DEFAULT 'UNSET';
