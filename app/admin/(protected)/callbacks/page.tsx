@@ -78,8 +78,10 @@ export default async function CallbacksPage() {
       <CallbackList
         initialCallbacks={callbacks as any[]}
         officers={refs.officers}
+        users={refs.users}
         canDelete={currentUser.role === "ADMIN"}
         canProcess={currentUser.role === "ADMIN" || !!currentUser.permAssignReports || !!currentUser.permChangeStatus}
+        canAssign={currentUser.role === "ADMIN" || !!currentUser.permAssignReports}
       />
     </div>
   )

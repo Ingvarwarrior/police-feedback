@@ -26,7 +26,7 @@ import { format } from "date-fns"
 import { uk } from "date-fns/locale"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { deleteCallback, updateCallbackProcessing } from "../actions/callbackActions"
+import { assignCallbackExecutor, deleteCallback, updateCallbackProcessing } from "../actions/callbackActions"
 import CreateCallbackDialog from "./CreateCallbackDialog"
 
 interface OfficerRow {
@@ -52,6 +52,7 @@ interface CallbackRow {
   eoNumber: string
   applicantName: string
   applicantPhone: string
+  assignedUserId?: string | null
   status: string
   checkResult: string | null
   qOverall: number | null
@@ -64,8 +65,10 @@ interface CallbackRow {
 interface Props {
   initialCallbacks: CallbackRow[]
   officers: OfficerRow[]
+  users: UserRow[]
   canDelete: boolean
   canProcess: boolean
+  canAssign: boolean
 }
 
 const FILTERS_STORAGE_KEY = "pf:filters:callbacks"
@@ -109,7 +112,7 @@ function RatingStars({ value }: { value: number }) {
   )
 }
 
-export default function CallbackList({ initialCallbacks, officers, canDelete, canProcess }: Props) {
+export default function CallbackList({ initialCallbacks, officers, users, canDelete, canProcess, canAssign }: Props) {
   const searchParams = useSearchParams()
   const [callbacks, setCallbacks] = useState(initialCallbacks)
   const [search, setSearch] = useState("")
@@ -123,6 +126,8 @@ export default function CallbackList({ initialCallbacks, officers, canDelete, ca
   const [deleteTarget, setDeleteTarget] = useState<CallbackRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [processingResult, setProcessingResult] = useState<"UNSET" | "CONFIRMED" | "NOT_CONFIRMED">("UNSET")
+  const [processingExecutorId, setProcessingExecutorId] = useState<string>("UNASSIGNED")
+  const [isAssigningExecutor, setIsAssigningExecutor] = useState(false)
   const [isSavingProcessing, setIsSavingProcessing] = useState(false)
 
   useEffect(() => {
@@ -167,8 +172,10 @@ export default function CallbackList({ initialCallbacks, officers, canDelete, ca
   useEffect(() => {
     if (!selectedCallback) {
       setProcessingResult("UNSET")
+      setProcessingExecutorId("UNASSIGNED")
       return
     }
+    setProcessingExecutorId(selectedCallback.assignedUser?.id || "UNASSIGNED")
     const value = selectedCallback.checkResult
     if (value === "CONFIRMED" || value === "NOT_CONFIRMED") {
       setProcessingResult(value)
@@ -177,17 +184,19 @@ export default function CallbackList({ initialCallbacks, officers, canDelete, ca
     setProcessingResult("UNSET")
   }, [selectedCallback])
 
+  const assignableUsers = useMemo(() => {
+    return [...users].sort((a, b) => userLabel(a).localeCompare(userLabel(b), "uk"))
+  }, [users])
+
+  const usersById = useMemo(() => {
+    const map = new Map<string, UserRow>()
+    assignableUsers.forEach((item) => map.set(item.id, item))
+    return map
+  }, [assignableUsers])
+
   const executorOptions = useMemo(() => {
-    const map = new Map<string, string>()
-    callbacks.forEach((cb) => {
-      if (cb.assignedUser) {
-        map.set(cb.assignedUser.id, userLabel(cb.assignedUser))
-      }
-    })
-    return Array.from(map.entries())
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) => a.label.localeCompare(b.label, "uk"))
-  }, [callbacks])
+    return assignableUsers.map((item) => ({ id: item.id, label: userLabel(item) }))
+  }, [assignableUsers])
 
   const filtered = useMemo(() => {
     let data = [...callbacks]
@@ -285,21 +294,40 @@ export default function CallbackList({ initialCallbacks, officers, canDelete, ca
     if (!selectedCallback) return
     setIsSavingProcessing(true)
     try {
-      const result = await updateCallbackProcessing({
-        callbackId: selectedCallback.id,
-        checkResult: processingResult,
-      })
-      const updated = result.callback
+      let nextCallback = selectedCallback
+      const currentAssigned = selectedCallback.assignedUser?.id || "UNASSIGNED"
+      if (canAssign && processingExecutorId !== currentAssigned) {
+        setIsAssigningExecutor(true)
+        const assignResult = await assignCallbackExecutor({
+          callbackId: selectedCallback.id,
+          assignedUserId: processingExecutorId === "UNASSIGNED" ? null : processingExecutorId,
+        })
+        nextCallback = {
+          ...nextCallback,
+          assignedUserId: assignResult.callback?.assignedUserId || null,
+          assignedUser:
+            assignResult.callback?.assignedUser ||
+            (processingExecutorId !== "UNASSIGNED" ? usersById.get(processingExecutorId) || null : null),
+        }
+        setIsAssigningExecutor(false)
+      }
+
+      const result = await updateCallbackProcessing({ callbackId: selectedCallback.id, checkResult: processingResult })
+      const updated = {
+        ...nextCallback,
+        checkResult: result.callback.checkResult,
+        status: result.callback.status,
+      }
+
       setCallbacks((prev) =>
-        prev.map((cb) => (cb.id === selectedCallback.id ? { ...cb, checkResult: updated.checkResult, status: updated.status } : cb))
+        prev.map((cb) => (cb.id === selectedCallback.id ? { ...cb, ...updated } : cb))
       )
-      setSelectedCallback((prev) =>
-        prev ? { ...prev, checkResult: updated.checkResult, status: updated.status } : prev
-      )
+      setSelectedCallback((prev) => (prev ? { ...prev, ...updated } : prev))
       toast.success("Опрацювання callback збережено")
     } catch (error: any) {
       toast.error(error?.message || "Не вдалося зберегти опрацювання")
     } finally {
+      setIsAssigningExecutor(false)
       setIsSavingProcessing(false)
     }
   }
@@ -594,7 +622,27 @@ export default function CallbackList({ initialCallbacks, officers, canDelete, ca
                   </div>
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Виконавець callback</p>
-                    <p className="ds-detail-value">{userLabel(selectedCallback.assignedUser)}</p>
+                    {canAssign ? (
+                      <Select
+                        value={processingExecutorId}
+                        onValueChange={(value) => setProcessingExecutorId(value)}
+                        disabled={isAssigningExecutor || isSavingProcessing}
+                      >
+                        <SelectTrigger className="h-10 rounded-xl bg-white font-semibold text-slate-900">
+                          <SelectValue placeholder="Оберіть виконавця" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="UNASSIGNED">Без виконавця</SelectItem>
+                          {executorOptions.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="ds-detail-value">{userLabel(selectedCallback.assignedUser)}</p>
+                    )}
                   </div>
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Номер callback</p>

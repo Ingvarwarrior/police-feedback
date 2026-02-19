@@ -34,6 +34,11 @@ const callbackProcessingSchema = z.object({
   checkResult: z.enum(["UNSET", "CONFIRMED", "NOT_CONFIRMED"]),
 })
 
+const callbackAssignSchema = z.object({
+  callbackId: z.string().uuid("Некоректний ідентифікатор callback"),
+  assignedUserId: z.string().uuid("Некоректний виконавець").nullable(),
+})
+
 const DEFAULT_LOW_CALLBACK_RATING_THRESHOLD = 2
 const rawLowRatingThreshold = Number.parseInt(process.env.CALLBACK_LOW_RATING_THRESHOLD || "", 10)
 const LOW_CALLBACK_RATING_THRESHOLD = Number.isFinite(rawLowRatingThreshold)
@@ -221,7 +226,18 @@ export async function getCallbackReferenceData() {
     },
   })
 
-  return { officers }
+  const users = await prisma.user.findMany({
+    where: { active: true },
+    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      username: true,
+    },
+  })
+
+  return { officers, users }
 }
 
 export async function createCallback(input: z.input<typeof callbackSchema>) {
@@ -413,6 +429,83 @@ export async function updateCallbackProcessing(input: z.input<typeof callbackPro
       }),
     },
   })
+
+  revalidatePath("/admin/callbacks")
+  revalidatePath("/admin/dashboard")
+
+  return { success: true, callback: updated }
+}
+
+export async function assignCallbackExecutor(input: z.input<typeof callbackAssignSchema>) {
+  const user = await getCurrentUser()
+
+  if (user.role !== "ADMIN" && !user.permAssignReports) {
+    throw new Error("У вас немає прав для призначення виконавця callback")
+  }
+
+  const parsed = callbackAssignSchema.parse(input)
+  const callback = await (prisma as any).callback.findUnique({
+    where: { id: parsed.callbackId },
+    select: {
+      id: true,
+      eoNumber: true,
+      assignedUserId: true,
+    },
+  })
+
+  if (!callback) {
+    throw new Error("Callback-картку не знайдено")
+  }
+
+  if (parsed.assignedUserId) {
+    const assignee = await prisma.user.findUnique({
+      where: { id: parsed.assignedUserId },
+      select: { id: true, active: true, firstName: true, lastName: true, username: true },
+    })
+
+    if (!assignee || !assignee.active) {
+      throw new Error("Обраного виконавця не знайдено або він неактивний")
+    }
+  }
+
+  const updated = await (prisma as any).callback.update({
+    where: { id: callback.id },
+    data: {
+      assignedUserId: parsed.assignedUserId,
+    },
+    select: {
+      id: true,
+      assignedUserId: true,
+      assignedUser: {
+        select: { id: true, firstName: true, lastName: true, username: true },
+      },
+    },
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      actorUserId: user.id,
+      action: "ASSIGN_CALLBACK_EXECUTOR",
+      entityType: "CALLBACK",
+      entityId: callback.id,
+      metadata: JSON.stringify({
+        eoNumber: callback.eoNumber,
+        from: callback.assignedUserId || null,
+        to: parsed.assignedUserId || null,
+      }),
+    },
+  })
+
+  if (parsed.assignedUserId && parsed.assignedUserId !== user.id) {
+    await createAdminNotification({
+      userId: parsed.assignedUserId,
+      title: "Вам призначено callback",
+      message: `Призначено callback по ЄО №${callback.eoNumber}`,
+      type: "ASSIGNMENT",
+      priority: "NORMAL",
+      link: `/admin/callbacks?callbackId=${callback.id}`,
+    })
+  }
 
   revalidatePath("/admin/callbacks")
   revalidatePath("/admin/dashboard")
