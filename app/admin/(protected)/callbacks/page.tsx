@@ -28,7 +28,15 @@ export default async function CallbacksPage() {
     getCallbackReferenceData(),
     prisma.user.findUnique({
       where: { username: session.user.email },
-      select: { id: true, role: true, firstName: true, lastName: true, username: true },
+      select: {
+        id: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        permAssignReports: true,
+        permChangeStatus: true,
+      },
     }),
   ])
 
@@ -71,6 +79,7 @@ export default async function CallbacksPage() {
         initialCallbacks={callbacks as any[]}
         officers={refs.officers}
         canDelete={currentUser.role === "ADMIN"}
+        canProcess={currentUser.role === "ADMIN" || !!currentUser.permAssignReports || !!currentUser.permChangeStatus}
       />
     </div>
   )

@@ -29,6 +29,11 @@ const callbackDuplicateCheckSchema = z.object({
   callDate: z.coerce.date(),
 })
 
+const callbackProcessingSchema = z.object({
+  callbackId: z.string().uuid("Некоректний ідентифікатор callback"),
+  checkResult: z.enum(["UNSET", "CONFIRMED", "NOT_CONFIRMED"]),
+})
+
 const DEFAULT_LOW_CALLBACK_RATING_THRESHOLD = 2
 const rawLowRatingThreshold = Number.parseInt(process.env.CALLBACK_LOW_RATING_THRESHOLD || "", 10)
 const LOW_CALLBACK_RATING_THRESHOLD = Number.isFinite(rawLowRatingThreshold)
@@ -347,6 +352,72 @@ export async function checkCallbackDuplicateByEo(input: z.input<typeof callbackD
     year,
     examples: duplicates,
   }
+}
+
+export async function updateCallbackProcessing(input: z.input<typeof callbackProcessingSchema>) {
+  const user = await getCurrentUser()
+
+  if (user.role !== "ADMIN" && !user.permAssignReports && !user.permChangeStatus) {
+    throw new Error("У вас немає прав для опрацювання callback-карток")
+  }
+
+  const parsed = callbackProcessingSchema.parse(input)
+
+  const accessWhere =
+    user.role === "ADMIN"
+      ? { id: parsed.callbackId }
+      : {
+          id: parsed.callbackId,
+          OR: [{ createdById: user.id }, { assignedUserId: user.id }],
+        }
+
+  const callback = await (prisma as any).callback.findFirst({
+    where: accessWhere,
+    select: {
+      id: true,
+      eoNumber: true,
+      checkResult: true,
+      status: true,
+    },
+  })
+
+  if (!callback) {
+    throw new Error("Callback-картку не знайдено або немає доступу")
+  }
+
+  const nextStatus = parsed.checkResult === "UNSET" ? "PENDING" : "COMPLETED"
+
+  const updated = await (prisma as any).callback.update({
+    where: { id: callback.id },
+    data: {
+      checkResult: parsed.checkResult,
+      status: nextStatus,
+    },
+    select: {
+      id: true,
+      checkResult: true,
+      status: true,
+    },
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      actorUserId: user.id,
+      action: "UPDATE_CALLBACK_PROCESSING",
+      entityType: "CALLBACK",
+      entityId: callback.id,
+      metadata: JSON.stringify({
+        eoNumber: callback.eoNumber,
+        from: { checkResult: callback.checkResult, status: callback.status },
+        to: { checkResult: updated.checkResult, status: updated.status },
+      }),
+    },
+  })
+
+  revalidatePath("/admin/callbacks")
+  revalidatePath("/admin/dashboard")
+
+  return { success: true, callback: updated }
 }
 
 export async function deleteCallback(callbackId: string) {

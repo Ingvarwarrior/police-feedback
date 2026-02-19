@@ -26,7 +26,7 @@ import { format } from "date-fns"
 import { uk } from "date-fns/locale"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { deleteCallback } from "../actions/callbackActions"
+import { deleteCallback, updateCallbackProcessing } from "../actions/callbackActions"
 import CreateCallbackDialog from "./CreateCallbackDialog"
 
 interface OfficerRow {
@@ -65,6 +65,7 @@ interface Props {
   initialCallbacks: CallbackRow[]
   officers: OfficerRow[]
   canDelete: boolean
+  canProcess: boolean
 }
 
 const FILTERS_STORAGE_KEY = "pf:filters:callbacks"
@@ -108,7 +109,7 @@ function RatingStars({ value }: { value: number }) {
   )
 }
 
-export default function CallbackList({ initialCallbacks, officers, canDelete }: Props) {
+export default function CallbackList({ initialCallbacks, officers, canDelete, canProcess }: Props) {
   const searchParams = useSearchParams()
   const [callbacks, setCallbacks] = useState(initialCallbacks)
   const [search, setSearch] = useState("")
@@ -121,6 +122,8 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
   const [selectedCallback, setSelectedCallback] = useState<CallbackRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CallbackRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [processingResult, setProcessingResult] = useState<"UNSET" | "CONFIRMED" | "NOT_CONFIRMED">("UNSET")
+  const [isSavingProcessing, setIsSavingProcessing] = useState(false)
 
   useEffect(() => {
     setCallbacks(initialCallbacks)
@@ -160,6 +163,19 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
       setSelectedCallback(callback)
     }
   }, [searchParams, callbacks])
+
+  useEffect(() => {
+    if (!selectedCallback) {
+      setProcessingResult("UNSET")
+      return
+    }
+    const value = selectedCallback.checkResult
+    if (value === "CONFIRMED" || value === "NOT_CONFIRMED") {
+      setProcessingResult(value)
+      return
+    }
+    setProcessingResult("UNSET")
+  }, [selectedCallback])
 
   const executorOptions = useMemo(() => {
     const map = new Map<string, string>()
@@ -262,6 +278,29 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
       toast.error(error?.message || "Не вдалося видалити callback-картку")
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleSaveProcessing = async () => {
+    if (!selectedCallback) return
+    setIsSavingProcessing(true)
+    try {
+      const result = await updateCallbackProcessing({
+        callbackId: selectedCallback.id,
+        checkResult: processingResult,
+      })
+      const updated = result.callback
+      setCallbacks((prev) =>
+        prev.map((cb) => (cb.id === selectedCallback.id ? { ...cb, checkResult: updated.checkResult, status: updated.status } : cb))
+      )
+      setSelectedCallback((prev) =>
+        prev ? { ...prev, checkResult: updated.checkResult, status: updated.status } : prev
+      )
+      toast.success("Опрацювання callback збережено")
+    } catch (error: any) {
+      toast.error(error?.message || "Не вдалося зберегти опрацювання")
+    } finally {
+      setIsSavingProcessing(false)
     }
   }
 
@@ -566,6 +605,38 @@ export default function CallbackList({ initialCallbacks, officers, canDelete }: 
                     <p className="ds-detail-value">{checkResultLabel(selectedCallback.checkResult)}</p>
                   </div>
                 </div>
+
+                {canProcess ? (
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
+                    <p className="mb-3 ds-field-label text-emerald-700">Опрацювання callback</p>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-end">
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-slate-700">Результат перевірки</p>
+                        <Select
+                          value={processingResult}
+                          onValueChange={(value) => setProcessingResult(value as "UNSET" | "CONFIRMED" | "NOT_CONFIRMED")}
+                        >
+                          <SelectTrigger className="h-11 rounded-xl bg-white">
+                            <SelectValue placeholder="Оберіть результат" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="UNSET">Не вказано</SelectItem>
+                            <SelectItem value="CONFIRMED">Підтверджується</SelectItem>
+                            <SelectItem value="NOT_CONFIRMED">Не підтверджується</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        className="h-11 rounded-xl font-semibold"
+                        onClick={handleSaveProcessing}
+                        disabled={isSavingProcessing}
+                      >
+                        {isSavingProcessing ? "Збереження..." : "Зберегти опрацювання"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="ds-detail-panel">
                   <p className="mb-3 ds-field-label">Поліцейські, яких стосується</p>
