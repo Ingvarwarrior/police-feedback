@@ -27,7 +27,7 @@ export default function NewUserForm() {
     const [lastName, setLastName] = useState('')
     const [badgeNumber, setBadgeNumber] = useState('')
     const [selectedPresetId, setSelectedPresetId] = useState('INSPECTOR')
-    const [role, setRole] = useState<'ADMIN' | 'OFFICER_VIEWER' | 'VIEWER'>(() => getRolePresetById('INSPECTOR')!.roleValue)
+    const [role, setRole] = useState<'ADMIN' | 'VIEWER'>(() => getRolePresetById('INSPECTOR')!.roleValue)
     const [permissions, setPermissions] = useState<Record<string, boolean>>(() => {
         const inspectorPreset = getRolePresetById('INSPECTOR')
         return buildPermissionsMap(inspectorPreset?.enabledPermissions || [])

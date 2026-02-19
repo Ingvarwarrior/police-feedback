@@ -5,7 +5,7 @@ export type RolePreset = {
     title: string
     shortDesc: string
     fullDesc: string
-    roleValue: "ADMIN" | "OFFICER_VIEWER" | "VIEWER"
+    roleValue: "ADMIN" | "VIEWER"
     enabledPermissions: PermissionId[]
 }
 
@@ -39,7 +39,7 @@ export const ROLE_PRESETS: RolePreset[] = [
         title: "Перегляд",
         shortDesc: "Тільки перегляд без редагування",
         fullDesc: "Може переглядати реєстри, карти та базову аналітику без змін даних.",
-        roleValue: "OFFICER_VIEWER",
+        roleValue: "VIEWER",
         enabledPermissions: [
             "permViewReports",
             "permViewUnifiedRecords",
@@ -53,7 +53,7 @@ export const ROLE_PRESETS: RolePreset[] = [
         title: "Кадри",
         shortDesc: "Особовий склад і службові оцінки",
         fullDesc: "Веде облік особового складу: створення, редагування, оцінювання та статуси офіцерів.",
-        roleValue: "OFFICER_VIEWER",
+        roleValue: "VIEWER",
         enabledPermissions: [
             "permCreateOfficers",
             "permEditOfficers",
@@ -120,7 +120,6 @@ export function getRolePresetById(id: string) {
 
 export function detectPresetIdByPermissions(userLike: Partial<Record<PermissionId, boolean>> & { role?: string | null }) {
     if (userLike.role === "ADMIN") return "ADMIN"
-    if (userLike.role === "OFFICER_VIEWER") return "VIEW_ONLY"
 
     const enabled = new Set<PermissionId>()
     PERMISSIONS_CONFIG.forEach((perm) => {
@@ -128,27 +127,25 @@ export function detectPresetIdByPermissions(userLike: Partial<Record<PermissionI
     })
 
     const candidates = ROLE_PRESETS.filter((preset) => preset.id !== "ADMIN")
-    let bestPreset: RolePreset | null = null
-    let bestScore = -1
 
     for (const preset of candidates) {
         const presetSet = new Set<PermissionId>(preset.enabledPermissions)
-        const intersection = preset.enabledPermissions.filter((perm) => enabled.has(perm)).length
-        const union = new Set<PermissionId>([...enabled, ...presetSet]).size || 1
-        const score = intersection / union
-
-        if (score > bestScore) {
-            bestScore = score
-            bestPreset = preset
+        if (enabled.size !== presetSet.size) {
+            continue
+        }
+        const isExactMatch = [...enabled].every((perm) => presetSet.has(perm))
+        if (isExactMatch) {
+            return preset.id
         }
     }
 
-    return bestPreset && bestScore > 0 ? bestPreset.id : "CUSTOM"
+    return "CUSTOM"
 }
 
 export function getRoleTitleByPermissions(userLike: Partial<Record<PermissionId, boolean>> & { role?: string | null }) {
     const presetId = detectPresetIdByPermissions(userLike)
     const preset = getRolePresetById(presetId)
     if (preset) return preset.title
+    if (userLike.role === "OFFICER_VIEWER") return "Перегляд"
     return userLike.role || "Користувач"
 }

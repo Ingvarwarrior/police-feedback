@@ -25,6 +25,10 @@ type UpdateUserInput = Partial<Omit<BaseUserInput, "passwordHash">> & {
 
 const PERMISSION_IDS = PERMISSIONS_CONFIG.map((perm) => perm.id)
 
+function normalizeRole(role?: string) {
+    return role === "ADMIN" ? "ADMIN" : "VIEWER"
+}
+
 function extractPermissionData(data: Record<string, unknown>) {
     const permissions: Partial<PermissionsPayload> = {}
     PERMISSION_IDS.forEach((id) => {
@@ -46,6 +50,7 @@ export async function createUser(data: CreateUserInput) {
 
     const { username, email, passwordHash, firstName, lastName, badgeNumber, role, ...rawPermissions } = data
     const permissions = extractPermissionData(rawPermissions as Record<string, unknown>)
+    const normalizedRole = normalizeRole(role)
     const normalizedUsername = normalizeUsername(username) || username.trim().toLowerCase()
     const normalizedEmail = email?.trim().toLowerCase() || undefined
     const normalizedFirstName = normalizePersonName(firstName) || firstName?.trim() || undefined
@@ -71,7 +76,7 @@ export async function createUser(data: CreateUserInput) {
             firstName: normalizedFirstName,
             lastName: normalizedLastName,
             badgeNumber: normalizedBadgeNumber,
-            role,
+            role: normalizedRole,
             ...permissions,
             active: true
         }
@@ -84,7 +89,7 @@ export async function createUser(data: CreateUserInput) {
                 action: "CREATE_USER",
                 entityType: "USER",
                 entityId: user.id,
-                metadata: JSON.stringify({ username: normalizedUsername, email: normalizedEmail, role: data.role })
+                metadata: JSON.stringify({ username: normalizedUsername, email: normalizedEmail, role: normalizedRole })
             }
         })
     }
@@ -101,6 +106,7 @@ export async function updateUser(id: string, data: UpdateUserInput) {
 
     const { username, email, firstName, lastName, badgeNumber, role, passwordHash } = data
     const permissionData = extractPermissionData(data as Record<string, unknown>)
+    const normalizedRole = typeof role === "string" ? normalizeRole(role) : undefined
     const normalizedUsername = typeof username === "string" ? normalizeUsername(username) || username.trim().toLowerCase() : undefined
     const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() || null : undefined
     const normalizedFirstName = typeof firstName === "string" ? normalizePersonName(firstName) || firstName.trim() || null : undefined
@@ -114,7 +120,7 @@ export async function updateUser(id: string, data: UpdateUserInput) {
         firstName: normalizedFirstName,
         lastName: normalizedLastName,
         badgeNumber: normalizedBadgeNumber,
-        role,
+        role: normalizedRole,
         passwordHash,
     }
     // Remove undefined fields
