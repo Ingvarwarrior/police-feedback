@@ -340,7 +340,7 @@ model CitizenPhone {
 
 model UnifiedRecord {
   id                String    @id @default(uuid())
-  eoNumber          String    @unique
+  eoNumber          String
   eoDate            DateTime
   district          String?
   address           String?
@@ -389,6 +389,7 @@ model UnifiedRecord {
   investigationPenaltyOrderDate DateTime?
 
   @@index([eoNumber])
+  @@index([recordType, eoNumber])
   @@index([eoDate])
   @@index([category])
 }

@@ -97,6 +97,36 @@ function getRecordTypeLabel(recordType?: string | null) {
     return "Документ"
 }
 
+function getYearBoundsByDate(date: Date) {
+    const year = date.getFullYear()
+    const start = new Date(year, 0, 1, 0, 0, 0, 0)
+    const end = new Date(year + 1, 0, 1, 0, 0, 0, 0)
+    return { start, end, year }
+}
+
+function buildDuplicateRecordWhere(params: {
+    eoNumber: string
+    recordType: string
+    eoDate: Date
+    excludeId?: string
+}) {
+    const { start, end, year } = getYearBoundsByDate(params.eoDate)
+    const where: any = {
+        eoNumber: params.eoNumber,
+        recordType: params.recordType,
+        eoDate: {
+            gte: start,
+            lt: end,
+        },
+    }
+
+    if (params.excludeId) {
+        where.NOT = { id: params.excludeId }
+    }
+
+    return { where, year }
+}
+
 async function notifyManagers(params: {
     title: string
     message: string
@@ -953,20 +983,27 @@ export async function saveUnifiedRecordsAction(records: any[]) {
             const formattedRecord = {
                 ...record,
                 eoNumber: normalizeEoNumber(record.eoNumber) || String(record.eoNumber || "").trim(),
+                recordType: record.recordType || "EO",
                 applicant: normalizePersonName(record.applicant) || null,
                 officerName: normalizePersonName(record.officerName) || null,
                 eoDate: new Date(record.eoDate),
                 resolutionDate: record.resolutionDate ? new Date(record.resolutionDate) : null
             }
 
-            const existing = await prisma.unifiedRecord.findUnique({
-                where: { eoNumber: formattedRecord.eoNumber },
+            const duplicateFilter = buildDuplicateRecordWhere({
+                eoNumber: formattedRecord.eoNumber,
+                recordType: formattedRecord.recordType,
+                eoDate: formattedRecord.eoDate,
+            })
+
+            const existing = await prisma.unifiedRecord.findFirst({
+                where: duplicateFilter.where,
                 select: { id: true }
             })
 
             if (existing) {
                 await prisma.unifiedRecord.update({
-                    where: { eoNumber: formattedRecord.eoNumber },
+                    where: { id: existing.id },
                     data: formattedRecord
                 })
                 updatedCount++
@@ -1033,6 +1070,24 @@ export async function upsertUnifiedRecordAction(data: any): Promise<{ success?: 
         const validated = UnifiedRecordSchema.parse(payload)
         const { officerIds, ...recordData } = validated
 
+        const duplicateFilter = buildDuplicateRecordWhere({
+            eoNumber: validated.eoNumber,
+            recordType: validated.recordType,
+            eoDate: validated.eoDate,
+            excludeId: validated.id,
+        })
+
+        const duplicate = await prisma.unifiedRecord.findFirst({
+            where: duplicateFilter.where,
+            select: { id: true, eoNumber: true }
+        })
+
+        if (duplicate) {
+            return {
+                error: `Запис з номером ${duplicate.eoNumber} вже існує для типу "${getRecordTypeLabel(validated.recordType)}" у ${duplicateFilter.year} році.`
+            }
+        }
+
         let oldRecord = null
         if (validated.id) {
             oldRecord = await prisma.unifiedRecord.findUnique({
@@ -1064,14 +1119,6 @@ export async function upsertUnifiedRecordAction(data: any): Promise<{ success?: 
                 }
             })
         } else {
-            const duplicate = await prisma.unifiedRecord.findUnique({
-                where: { eoNumber: validated.eoNumber },
-                select: { id: true, recordType: true, eoNumber: true }
-            })
-            if (duplicate) {
-                return { error: `Запис з номером ${duplicate.eoNumber} вже існує. Створення дубля заблоковано.` }
-            }
-
             record = await prisma.unifiedRecord.create({
                 data: {
                     ...recordData,
