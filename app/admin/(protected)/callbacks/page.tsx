@@ -9,7 +9,8 @@ export default async function CallbacksPage() {
   if (!session?.user?.email) return null
 
   const userPerms = session.user as any
-  if (userPerms.role !== "ADMIN" && !userPerms.permViewReports) {
+  const canManageAsLeader = !!userPerms.permManager || !!userPerms.permReturnUnifiedRecords
+  if (userPerms.role !== "ADMIN" && !userPerms.permViewReports && !canManageAsLeader) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center space-y-4">
         <div className="rounded-full bg-red-50 p-4 text-red-500">
@@ -36,11 +37,17 @@ export default async function CallbacksPage() {
         username: true,
         permAssignReports: true,
         permChangeStatus: true,
+        permReturnUnifiedRecords: true,
+        permManager: true,
       },
     }),
   ])
 
   if (!currentUser) return null
+
+  const canManageGlobally =
+    currentUser.role === "ADMIN" || !!currentUser.permReturnUnifiedRecords || !!currentUser.permManager
+  const canAssign = canManageGlobally
 
   return (
     <div className="space-y-8 pb-10">
@@ -61,7 +68,7 @@ export default async function CallbacksPage() {
             <span className="text-blue-400">оцінювання нарядів</span>
           </h1>
           <p className="max-w-2xl text-sm font-medium text-slate-400">
-            Інспектор фіксує дані виклику, заявника, поліцейських і результати телефонного опитування для оцінки роботи наряду.
+            Інспектор створює картку callback, керівник призначає виконавця на перевірку, після чого виконавець вносить результат опрацювання.
           </p>
         </div>
       </div>
@@ -71,7 +78,7 @@ export default async function CallbacksPage() {
           <Info className="h-5 w-5" />
         </div>
         <p className="text-xs font-medium text-slate-600">
-          У картці callback є список питань для опитування заявника. Натисніть на картку в списку, щоб відкрити повну деталізацію.
+          Після створення картки призначте виконавця на перевірку, а потім внесіть результат: підтверджується або не підтверджується.
         </p>
       </div>
 
@@ -79,9 +86,11 @@ export default async function CallbacksPage() {
         initialCallbacks={callbacks as any[]}
         officers={refs.officers}
         users={refs.users}
+        currentUserId={currentUser.id}
         canDelete={currentUser.role === "ADMIN"}
-        canProcess={currentUser.role === "ADMIN" || !!currentUser.permAssignReports || !!currentUser.permChangeStatus}
-        canAssign={currentUser.role === "ADMIN" || !!currentUser.permAssignReports}
+        canProcess={canManageGlobally}
+        canProcessAssignedOnly={true}
+        canAssign={canAssign}
       />
     </div>
   )

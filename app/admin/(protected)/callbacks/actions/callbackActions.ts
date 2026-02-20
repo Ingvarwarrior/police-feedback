@@ -5,7 +5,7 @@ import { normalizeEoNumber, normalizePersonName, normalizePhoneNumber } from "@/
 import { prisma } from "@/lib/prisma"
 import { refreshOfficerStats } from "@/lib/officer-stats"
 import { createAdminNotification } from "@/lib/admin-notification-service"
-import { getManagerUserIds } from "@/lib/manager-permissions"
+import { canActAsManager, getManagerUserIds } from "@/lib/manager-permissions"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
@@ -55,19 +55,6 @@ function getYearRange(date: Date) {
   }
 }
 
-function hasAnyAnswer(data: z.infer<typeof callbackSchema>) {
-  return Boolean(
-    data.checkResult ||
-    data.qPoliteness ||
-      data.qProfessionalism ||
-      data.qLawfulness ||
-      data.qResponseSpeed ||
-      data.qHelpfulness ||
-      data.qOverall ||
-      (data.surveyNotes && data.surveyNotes.trim())
-  )
-}
-
 async function notifyManagersAboutCompletedCallback(params: {
   callbackId: string
   eoNumber: string
@@ -109,11 +96,29 @@ async function getCurrentUser() {
       permViewReports: true,
       permAssignReports: true,
       permChangeStatus: true,
+      permReturnUnifiedRecords: true,
+      permManager: true,
     },
   })
 
   if (!user) throw new Error("User not found")
   return user
+}
+
+function canViewCallbacks(user: Awaited<ReturnType<typeof getCurrentUser>>) {
+  return user.role === "ADMIN" || !!user.permViewReports || canActAsManager(user)
+}
+
+function canCreateCallbacks(user: Awaited<ReturnType<typeof getCurrentUser>>) {
+  return canViewCallbacks(user)
+}
+
+function canAssignCallbacks(user: Awaited<ReturnType<typeof getCurrentUser>>) {
+  return user.role === "ADMIN" || canActAsManager(user)
+}
+
+function canProcessAnyCallbacks(user: Awaited<ReturnType<typeof getCurrentUser>>) {
+  return user.role === "ADMIN" || canActAsManager(user)
 }
 
 async function applyLowRatingRiskSignal(params: {
@@ -198,11 +203,11 @@ async function applyLowRatingRiskSignal(params: {
 export async function getCallbacks() {
   const user = await getCurrentUser()
 
-  if (user.role !== "ADMIN" && !user.permViewReports) {
+  if (!canViewCallbacks(user)) {
     throw new Error("У вас немає прав для перегляду callback-карток")
   }
 
-  const where = user.role === "ADMIN" ? {} : { OR: [{ createdById: user.id }, { assignedUserId: user.id }] }
+  const where = user.role === "ADMIN" || canActAsManager(user) ? {} : { OR: [{ createdById: user.id }, { assignedUserId: user.id }] }
 
   const callbacks = await (prisma as any).callback.findMany({
     where,
@@ -236,7 +241,7 @@ export async function getCallbacks() {
 export async function getCallbackReferenceData() {
   const user = await getCurrentUser()
 
-  if (user.role !== "ADMIN" && !user.permViewReports) {
+  if (!canViewCallbacks(user)) {
     throw new Error("У вас немає прав для перегляду callback-карток")
   }
 
@@ -270,7 +275,7 @@ export async function getCallbackReferenceData() {
 export async function createCallback(input: z.input<typeof callbackSchema>) {
   const user = await getCurrentUser()
 
-  if (user.role !== "ADMIN" && !user.permAssignReports && !user.permChangeStatus) {
+  if (!canCreateCallbacks(user)) {
     throw new Error("У вас немає прав для створення callback-карток")
   }
 
@@ -307,9 +312,9 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
       applicantName: normalizedApplicantName,
       applicantPhone: normalizedApplicantPhone,
       createdById: user.id,
-      assignedUserId: user.id,
-      status: hasAnyAnswer(parsed) ? "COMPLETED" : "PENDING",
-      checkResult: parsed.checkResult || "UNSET",
+      assignedUserId: null,
+      status: "PENDING",
+      checkResult: "UNSET",
       qPoliteness: parsed.qPoliteness,
       qProfessionalism: parsed.qProfessionalism,
       qLawfulness: parsed.qLawfulness,
@@ -322,15 +327,6 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
       },
     },
   })
-
-  if (created.status === "COMPLETED") {
-    await notifyManagersAboutCompletedCallback({
-      callbackId: created.id,
-      eoNumber: created.eoNumber,
-      actorUserId: user.id,
-      checkResult: created.checkResult || "UNSET",
-    })
-  }
 
   await prisma.auditLog.create({
     data: {
@@ -373,7 +369,7 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
 export async function checkCallbackDuplicateByEo(input: z.input<typeof callbackDuplicateCheckSchema>) {
   const user = await getCurrentUser()
 
-  if (user.role !== "ADMIN" && !user.permAssignReports && !user.permChangeStatus && !user.permViewReports) {
+  if (!canViewCallbacks(user) && !canCreateCallbacks(user)) {
     throw new Error("У вас немає прав для перевірки callback-карток")
   }
 
@@ -408,26 +404,13 @@ export async function checkCallbackDuplicateByEo(input: z.input<typeof callbackD
 
 export async function updateCallbackProcessing(input: z.input<typeof callbackProcessingSchema>) {
   const user = await getCurrentUser()
-
-  if (user.role !== "ADMIN" && !user.permAssignReports && !user.permChangeStatus) {
-    throw new Error("У вас немає прав для опрацювання callback-карток")
-  }
-
   const parsed = callbackProcessingSchema.parse(input)
-
-  const accessWhere =
-    user.role === "ADMIN"
-      ? { id: parsed.callbackId }
-      : {
-          id: parsed.callbackId,
-          OR: [{ createdById: user.id }, { assignedUserId: user.id }],
-        }
-
   const callback = await (prisma as any).callback.findFirst({
-    where: accessWhere,
+    where: { id: parsed.callbackId },
     select: {
       id: true,
       eoNumber: true,
+      assignedUserId: true,
       checkResult: true,
       status: true,
     },
@@ -435,6 +418,15 @@ export async function updateCallbackProcessing(input: z.input<typeof callbackPro
 
   if (!callback) {
     throw new Error("Callback-картку не знайдено або немає доступу")
+  }
+
+  if (!callback.assignedUserId) {
+    throw new Error("Спочатку призначте callback на перевірку")
+  }
+
+  const canProcessAny = canProcessAnyCallbacks(user)
+  if (!canProcessAny && callback.assignedUserId !== user.id) {
+    throw new Error("У вас немає прав для опрацювання цього callback")
   }
 
   const nextStatus = parsed.checkResult === "UNSET" ? "PENDING" : "COMPLETED"
@@ -485,7 +477,7 @@ export async function updateCallbackProcessing(input: z.input<typeof callbackPro
 export async function assignCallbackExecutor(input: z.input<typeof callbackAssignSchema>) {
   const user = await getCurrentUser()
 
-  if (user.role !== "ADMIN" && !user.permAssignReports) {
+  if (!canAssignCallbacks(user)) {
     throw new Error("У вас немає прав для призначення виконавця callback")
   }
 

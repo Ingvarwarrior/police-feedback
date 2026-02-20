@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { ShieldCheck, LayoutDashboard, FileText, Settings, Users, Map as MapIcon, Activity, ClipboardList, PhoneCall } from "lucide-react"
+import { ShieldCheck, LayoutDashboard, FileText, Settings, Users, Map as MapIcon, Activity, ClipboardList, PhoneCall, ChevronDown } from "lucide-react"
 import Image from "next/image"
 import { Toaster } from "sonner"
 import SignOutButton from "@/components/admin/SignOutButton"
@@ -107,15 +107,24 @@ export default async function AdminLayout({
                             </Link>
                         ) : null}
                         {canViewUnifiedRecords ? (
-                            <div className="space-y-1">
-                                <Link
-                                    href="/admin/unified-record?activeTab=ALL&status=PENDING"
-                                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4"
-                                >
-                                    <ClipboardList className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
-                                    ВИКОНАВЧА ДИСЦИПЛІНА
-                                </Link>
+                            <details className="group space-y-1" open>
+                                <summary className="list-none cursor-pointer">
+                                    <div className="flex items-center justify-between px-3 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all group">
+                                        <div className="flex items-center gap-3">
+                                            <ClipboardList className="w-5 h-5 group-hover:text-blue-400 transition-colors" />
+                                            ВИКОНАВЧА ДИСЦИПЛІНА
+                                        </div>
+                                        <ChevronDown className="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180" />
+                                    </div>
+                                </summary>
                                 <div className="ml-8 pl-3 border-l border-slate-800/80 space-y-1">
+                                    <Link
+                                        href="/admin/unified-record?activeTab=ALL&status=PENDING"
+                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                                    >
+                                        <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                                        Всі документи в роботі
+                                    </Link>
                                     <Link
                                         href="/admin/unified-record?activeTab=EO&status=ALL"
                                         className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
@@ -161,7 +170,7 @@ export default async function AdminLayout({
                                         </Link>
                                     ) : null}
                                 </div>
-                            </div>
+                            </details>
                         ) : null}
                         {canViewReports ? (
                             <Link href="/admin/callbacks" className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group hover:pl-4">

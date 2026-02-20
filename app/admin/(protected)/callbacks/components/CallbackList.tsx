@@ -66,8 +66,10 @@ interface Props {
   initialCallbacks: CallbackRow[]
   officers: OfficerRow[]
   users: UserRow[]
+  currentUserId: string
   canDelete: boolean
   canProcess: boolean
+  canProcessAssignedOnly: boolean
   canAssign: boolean
 }
 
@@ -112,7 +114,16 @@ function RatingStars({ value }: { value: number }) {
   )
 }
 
-export default function CallbackList({ initialCallbacks, officers, users, canDelete, canProcess, canAssign }: Props) {
+export default function CallbackList({
+  initialCallbacks,
+  officers,
+  users,
+  currentUserId,
+  canDelete,
+  canProcess,
+  canProcessAssignedOnly,
+  canAssign,
+}: Props) {
   const searchParams = useSearchParams()
   const [callbacks, setCallbacks] = useState(initialCallbacks)
   const [search, setSearch] = useState("")
@@ -262,6 +273,9 @@ export default function CallbackList({ initialCallbacks, officers, users, canDel
     })
   }, [callbacks, search, status, checkResult, executor, sortBy, periodFrom, periodTo])
 
+  const selectedCallbackAssignedToCurrentUser = !!selectedCallback && selectedCallback.assignedUserId === currentUserId
+  const canProcessSelected = !!selectedCallback && (canProcess || (canProcessAssignedOnly && selectedCallbackAssignedToCurrentUser))
+
   const resetFilters = () => {
     setSearch("")
     setStatus("ALL")
@@ -292,6 +306,17 @@ export default function CallbackList({ initialCallbacks, officers, users, canDel
 
   const handleSaveProcessing = async () => {
     if (!selectedCallback) return
+    if (!canProcessSelected) {
+      toast.error("У вас немає прав для опрацювання цього callback")
+      return
+    }
+
+    const selectedExecutorAfterSave = canAssign ? processingExecutorId : (selectedCallback.assignedUserId || "UNASSIGNED")
+    if (selectedExecutorAfterSave === "UNASSIGNED") {
+      toast.error("Спочатку призначте виконавця callback")
+      return
+    }
+
     setIsSavingProcessing(true)
     try {
       let nextCallback = selectedCallback
@@ -420,7 +445,7 @@ export default function CallbackList({ initialCallbacks, officers, users, canDel
         </Card>
         <Card className="rounded-3xl border-slate-200">
           <CardContent className="p-5">
-            <p className="ds-field-label">Очікують опитування</p>
+            <p className="ds-field-label">Очікують перевірки</p>
             <p className="mt-2 text-3xl font-black text-amber-600">{filtered.filter((cb) => cb.status === "PENDING").length}</p>
           </CardContent>
         </Card>
@@ -654,9 +679,14 @@ export default function CallbackList({ initialCallbacks, officers, users, canDel
                   </div>
                 </div>
 
-                {canProcess ? (
+                {canProcessSelected ? (
                   <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
                     <p className="mb-3 ds-field-label text-emerald-700">Опрацювання callback</p>
+                    {!selectedCallback.assignedUserId && (
+                      <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+                        Спочатку призначте виконавця callback, потім збережіть результат перевірки.
+                      </p>
+                    )}
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-end">
                       <div className="space-y-2">
                         <p className="text-xs font-semibold text-slate-700">Результат перевірки</p>
@@ -678,7 +708,7 @@ export default function CallbackList({ initialCallbacks, officers, users, canDel
                         type="button"
                         className="h-11 rounded-xl font-semibold"
                         onClick={handleSaveProcessing}
-                        disabled={isSavingProcessing}
+                        disabled={isSavingProcessing || (!canAssign && !selectedCallback.assignedUserId)}
                       >
                         {isSavingProcessing ? "Збереження..." : "Зберегти опрацювання"}
                       </Button>
