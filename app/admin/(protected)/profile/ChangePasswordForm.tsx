@@ -20,12 +20,16 @@ export default function ChangePasswordForm() {
         setLoading(true)
 
         try {
-            await changePassword(currentPassword, newPassword)
+            const result = await changePassword(currentPassword, newPassword)
+            if (result?.error) {
+                toast.error(result.error)
+                return
+            }
             toast.success("Пароль успішно змінено")
             setCurrentPassword('')
             setNewPassword('')
-        } catch (error: any) {
-            toast.error(error.message || "Помилка зміни паролю")
+        } catch (error) {
+            toast.error("Помилка зміни паролю")
         } finally {
             setLoading(false)
         }

@@ -14,116 +14,137 @@ import {
 } from "@/lib/two-factor"
 
 export async function changePassword(currentPassword: string, newPassword: string) {
-    const session = await auth()
-    if (!session?.user?.id) {
-        throw new Error("Unauthorized")
+    try {
+        const session = await auth()
+        if (!session?.user?.id) {
+            return { error: "Не авторизовано" }
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id }
+        })
+
+        if (!user) {
+            return { error: "Користувача не знайдено" }
+        }
+
+        // Verify current password
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash)
+        if (!isPasswordValid) {
+            return { error: "Невірний поточний пароль" }
+        }
+
+        // Hash and update new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10)
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash: hashedPassword }
+        })
+
+        revalidatePath('/')
+        return { success: true }
+    } catch (error: any) {
+        console.error("Failed to change password:", error)
+        return { error: error?.message || "Не вдалося змінити пароль" }
     }
-
-    const user = await prisma.user.findUnique({
-        where: { id: session.user.id }
-    })
-
-    if (!user) {
-        throw new Error("User not found")
-    }
-
-    // Verify current password
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash)
-    if (!isPasswordValid) {
-        throw new Error("Невірний поточний пароль")
-    }
-
-    // Hash and update new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10)
-    await prisma.user.update({
-        where: { id: user.id },
-        data: { passwordHash: hashedPassword }
-    })
-
-    revalidatePath('/')
 }
 
 export async function startTwoFactorSetup() {
-    if (!isTwoFactorEnabledGlobally()) {
-        return { error: "2FA вимкнено в конфігурації системи" }
-    }
+    try {
+        if (!isTwoFactorEnabledGlobally()) {
+            return { error: "2FA вимкнено в конфігурації системи" }
+        }
 
-    const session = await auth()
-    if (!session?.user?.id || !session.user.email) {
-        return { error: "Unauthorized" }
-    }
+        const session = await auth()
+        if (!session?.user?.id || !session.user.email) {
+            return { error: "Не авторизовано" }
+        }
 
-    const user = await prisma.user.findUnique({
-        where: { id: session.user.id }
-    })
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id }
+        })
 
-    if (!user) {
-        return { error: "Користувача не знайдено" }
-    }
+        if (!user) {
+            return { error: "Користувача не знайдено" }
+        }
 
-    const userAny = user as any
-    if (userAny.twoFactorEnabled) {
-        return { error: "2FA вже увімкнено для цього користувача" }
-    }
+        const userAny = user as any
+        if (userAny.twoFactorEnabled) {
+            return { error: "2FA вже увімкнено для цього користувача" }
+        }
 
-    const secret = generateTwoFactorSecret()
-    const encryptedSecret = encryptSecret(secret)
-    const otpauthUrl = buildOtpAuthUrl(userAny.username, secret)
+        const secret = generateTwoFactorSecret()
+        const encryptedSecret = encryptSecret(secret)
+        const otpauthUrl = buildOtpAuthUrl(userAny.username, secret)
 
-    await prisma.user.update({
-        where: { id: userAny.id },
-        data: { twoFactorTempSecret: encryptedSecret } as any
-    })
+        await prisma.user.update({
+            where: { id: userAny.id },
+            data: { twoFactorTempSecret: encryptedSecret } as any
+        })
 
-    return {
-        secret,
-        otpauthUrl,
+        return {
+            success: true,
+            secret,
+            otpauthUrl,
+        }
+    } catch (error: any) {
+        const message = String(error?.message || "")
+        if (message.includes("TWO_FACTOR_ENCRYPTION_KEY")) {
+            return { error: "Сервер 2FA не налаштований (відсутній ключ шифрування)." }
+        }
+        console.error("Failed to start 2FA setup:", error)
+        return { error: "Не вдалося згенерувати QR-код" }
     }
 }
 
 export async function confirmTwoFactorSetup(code: string) {
-    if (!isTwoFactorEnabledGlobally()) {
-        return { error: "2FA вимкнено в конфігурації системи" }
+    try {
+        if (!isTwoFactorEnabledGlobally()) {
+            return { error: "2FA вимкнено в конфігурації системи" }
+        }
+
+        const session = await auth()
+        if (!session?.user?.id) {
+            return { error: "Не авторизовано" }
+        }
+
+        const normalizedCode = code.trim()
+        if (!/^\d{6}$/.test(normalizedCode)) {
+            return { error: "Код має містити 6 цифр" }
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id }
+        })
+
+        const userAny = user as any
+        if (!userAny?.twoFactorTempSecret) {
+            return { error: "Спочатку згенеруйте QR-код" }
+        }
+
+        const secret = decryptSecret(userAny.twoFactorTempSecret)
+        const isValid = verifyTotpCode(secret, normalizedCode)
+
+        if (!isValid) {
+            return { error: "Невірний код підтвердження" }
+        }
+
+        await prisma.user.update({
+            where: { id: userAny.id },
+            data: {
+                twoFactorEnabled: true,
+                twoFactorSecretEncrypted: userAny.twoFactorTempSecret,
+                twoFactorTempSecret: null,
+                twoFactorEnabledAt: new Date(),
+            } as any
+        })
+
+        revalidatePath('/admin/profile')
+        return { success: true }
+    } catch (error: any) {
+        console.error("Failed to confirm 2FA setup:", error)
+        return { error: "Не вдалося підтвердити 2FA-код" }
     }
-
-    const session = await auth()
-    if (!session?.user?.id) {
-        return { error: "Unauthorized" }
-    }
-
-    const normalizedCode = code.trim()
-    if (!/^\d{6}$/.test(normalizedCode)) {
-        return { error: "Код має містити 6 цифр" }
-    }
-
-    const user = await prisma.user.findUnique({
-        where: { id: session.user.id }
-    })
-
-    const userAny = user as any
-    if (!userAny?.twoFactorTempSecret) {
-        return { error: "Спочатку згенеруйте QR-код" }
-    }
-
-    const secret = decryptSecret(userAny.twoFactorTempSecret)
-    const isValid = verifyTotpCode(secret, normalizedCode)
-
-    if (!isValid) {
-        return { error: "Невірний код підтвердження" }
-    }
-
-    await prisma.user.update({
-        where: { id: userAny.id },
-        data: {
-            twoFactorEnabled: true,
-            twoFactorSecretEncrypted: userAny.twoFactorTempSecret,
-            twoFactorTempSecret: null,
-            twoFactorEnabledAt: new Date(),
-        } as any
-    })
-
-    revalidatePath('/admin/profile')
-    return { success: true }
 }
 
 export async function disableTwoFactor(currentPassword: string) {

@@ -985,129 +985,148 @@ export async function saveUnifiedRecordsAction(records: any[]) {
     return { success: true, count: createdCount + updatedCount, createdCount, updatedCount }
 }
 
-export async function upsertUnifiedRecordAction(data: any) {
-    const session = await auth()
-    if (!session?.user?.email) throw new Error("Unauthorized")
+export async function upsertUnifiedRecordAction(data: any): Promise<{ success?: boolean; error?: string; record?: any }> {
+    try {
+        const session = await auth()
+        if (!session?.user?.email) return { error: "Не авторизовано" }
 
-    const user = await prisma.user.findUnique({
-        where: { username: session.user.email },
-        select: { id: true, role: true, permManageUnifiedRecords: true }
-    })
-    if (!user) throw new Error("User not found")
-
-    // Only admins or users with permManageUnifiedRecords can create or edit basic record details
-    if (user.role !== 'ADMIN' && !user.permManageUnifiedRecords) throw new Error("У вас немає прав для створення чи редагування записів ЄО")
-
-    const payload = { ...data }
-    const isApplication = payload.recordType === "APPLICATION"
-    const isServiceInvestigation = payload.recordType === "SERVICE_INVESTIGATION"
-    const isCreate = !payload.id
-
-    if (isApplication && isCreate) {
-        payload.eoNumber = await generateNextApplicationNumber()
-    }
-
-    if (isApplication && !isCreate && (!payload.eoNumber || !String(payload.eoNumber).trim()) && payload.id) {
-        const existingById = await prisma.unifiedRecord.findUnique({
-            where: { id: payload.id },
-            select: { eoNumber: true }
+        const user = await prisma.user.findUnique({
+            where: { username: session.user.email },
+            select: { id: true, role: true, permManageUnifiedRecords: true }
         })
-        payload.eoNumber = existingById?.eoNumber || await generateNextApplicationNumber()
-    }
+        if (!user) return { error: "Користувача не знайдено" }
 
-    payload.eoNumber = normalizeEoNumber(payload.eoNumber) || String(payload.eoNumber || "").trim()
-    payload.applicant = isServiceInvestigation
-        ? (typeof payload.applicant === "string" ? payload.applicant.trim() || null : null)
-        : (normalizePersonName(payload.applicant) || null)
-    payload.officerName = normalizePersonName(payload.officerName) || null
-
-    if (isServiceInvestigation) {
-        payload.category = payload.category || "Службові розслідування"
-        payload.investigationStage = payload.investigationStage || "REPORT_REVIEW"
-        payload.investigationViolation = payload.investigationViolation || payload.description || null
-    }
-
-    const validated = UnifiedRecordSchema.parse(payload)
-    const { officerIds, ...recordData } = validated
-
-    let oldRecord = null
-    if (validated.id) {
-        oldRecord = await prisma.unifiedRecord.findUnique({
-            where: { id: validated.id },
-            select: { assignedUserId: true }
-        })
-    }
-
-    // Calculate deadline (inclusive counting):
-    // day of record/order is day 1, so 15 days => +14 calendar days
-    // 1) for service investigation with order date
-    // 2) otherwise from record date
-    const deadline = validated.deadline ||
-        (validated.recordType === "SERVICE_INVESTIGATION" && validated.investigationOrderDate
-            ? calculateInclusiveDeadline(new Date(validated.investigationOrderDate), DEFAULT_TERM_DAYS)
-            : (validated.eoDate ? calculateInclusiveDeadline(new Date(validated.eoDate), DEFAULT_TERM_DAYS) : null))
-
-    let record
-    if (validated.id) {
-        record = await prisma.unifiedRecord.update({
-            where: { id: validated.id },
-            data: {
-                ...recordData,
-                deadline: deadline,
-                updatedAt: new Date(),
-                officers: {
-                    set: officerIds.map(id => ({ id }))
-                }
-            }
-        })
-    } else {
-        const duplicate = await prisma.unifiedRecord.findUnique({
-            where: { eoNumber: validated.eoNumber },
-            select: { id: true, recordType: true, eoNumber: true }
-        })
-        if (duplicate) {
-            throw new Error(`Запис з номером ${duplicate.eoNumber} вже існує. Створення дубля заблоковано.`)
+        // Only admins or users with permManageUnifiedRecords can create or edit basic record details
+        if (user.role !== 'ADMIN' && !user.permManageUnifiedRecords) {
+            return { error: "У вас немає прав для створення чи редагування записів ЄО" }
         }
 
-        record = await prisma.unifiedRecord.create({
-            data: {
-                ...recordData,
-                deadline: deadline,
-                officers: officerIds.length > 0
-                    ? {
-                        connect: officerIds.map(id => ({ id }))
-                    }
-                    : undefined
-            }
-        })
-    }
+        const payload = { ...data }
+        const isApplication = payload.recordType === "APPLICATION"
+        const isServiceInvestigation = payload.recordType === "SERVICE_INVESTIGATION"
+        const isCreate = !payload.id
 
-    // Create notification only if assignment changed or is new
-    if (validated.assignedUserId && (!oldRecord || oldRecord.assignedUserId !== validated.assignedUserId)) {
-        await createAdminNotification({
-            title: "Нове призначення ЄО",
-            message: `Вам призначено запис ЄО №${validated.eoNumber}`,
-            type: "ASSIGNMENT",
-            priority: "NORMAL",
-            userId: validated.assignedUserId,
-            link: `/admin/unified-record?search=${validated.eoNumber}`,
-        })
+        if (isApplication && isCreate) {
+            payload.eoNumber = await generateNextApplicationNumber()
+        }
 
-        // Send Email Notification (if enabled)
-        const settings = await prisma.settings.findUnique({ where: { id: "global" } })
-        if (settings?.sendAssignmentEmails !== false) {
-            const assignee = await prisma.user.findUnique({
-                where: { id: validated.assignedUserId },
-                select: { email: true, firstName: true, lastName: true }
+        if (isApplication && !isCreate && (!payload.eoNumber || !String(payload.eoNumber).trim()) && payload.id) {
+            const existingById = await prisma.unifiedRecord.findUnique({
+                where: { id: payload.id },
+                select: { eoNumber: true }
             })
-            if (assignee?.email) {
-                await sendUnifiedAssignmentEmail(assignee, record)
+            payload.eoNumber = existingById?.eoNumber || await generateNextApplicationNumber()
+        }
+
+        payload.eoNumber = normalizeEoNumber(payload.eoNumber) || String(payload.eoNumber || "").trim()
+        payload.applicant = isServiceInvestigation
+            ? (typeof payload.applicant === "string" ? payload.applicant.trim() || null : null)
+            : (normalizePersonName(payload.applicant) || null)
+        payload.officerName = normalizePersonName(payload.officerName) || null
+
+        if (isServiceInvestigation) {
+            payload.category = payload.category || "Службові розслідування"
+            payload.investigationStage = payload.investigationStage || "REPORT_REVIEW"
+            payload.investigationViolation = payload.investigationViolation || payload.description || null
+        }
+
+        const validated = UnifiedRecordSchema.parse(payload)
+        const { officerIds, ...recordData } = validated
+
+        let oldRecord = null
+        if (validated.id) {
+            oldRecord = await prisma.unifiedRecord.findUnique({
+                where: { id: validated.id },
+                select: { assignedUserId: true }
+            })
+        }
+
+        // Calculate deadline (inclusive counting):
+        // day of record/order is day 1, so 15 days => +14 calendar days
+        // 1) for service investigation with order date
+        // 2) otherwise from record date
+        const deadline = validated.deadline ||
+            (validated.recordType === "SERVICE_INVESTIGATION" && validated.investigationOrderDate
+                ? calculateInclusiveDeadline(new Date(validated.investigationOrderDate), DEFAULT_TERM_DAYS)
+                : (validated.eoDate ? calculateInclusiveDeadline(new Date(validated.eoDate), DEFAULT_TERM_DAYS) : null))
+
+        let record
+        if (validated.id) {
+            record = await prisma.unifiedRecord.update({
+                where: { id: validated.id },
+                data: {
+                    ...recordData,
+                    deadline: deadline,
+                    updatedAt: new Date(),
+                    officers: {
+                        set: officerIds.map(id => ({ id }))
+                    }
+                }
+            })
+        } else {
+            const duplicate = await prisma.unifiedRecord.findUnique({
+                where: { eoNumber: validated.eoNumber },
+                select: { id: true, recordType: true, eoNumber: true }
+            })
+            if (duplicate) {
+                return { error: `Запис з номером ${duplicate.eoNumber} вже існує. Створення дубля заблоковано.` }
+            }
+
+            record = await prisma.unifiedRecord.create({
+                data: {
+                    ...recordData,
+                    deadline: deadline,
+                    officers: officerIds.length > 0
+                        ? {
+                            connect: officerIds.map(id => ({ id }))
+                        }
+                        : undefined
+                }
+            })
+        }
+
+        // Create notification only if assignment changed or is new
+        if (validated.assignedUserId && (!oldRecord || oldRecord.assignedUserId !== validated.assignedUserId)) {
+            try {
+                await createAdminNotification({
+                    title: "Нове призначення ЄО",
+                    message: `Вам призначено запис ЄО №${validated.eoNumber}`,
+                    type: "ASSIGNMENT",
+                    priority: "NORMAL",
+                    userId: validated.assignedUserId,
+                    link: `/admin/unified-record?search=${validated.eoNumber}`,
+                })
+
+                // Send Email Notification (if enabled)
+                const settings = await prisma.settings.findUnique({ where: { id: "global" } })
+                if (settings?.sendAssignmentEmails !== false) {
+                    const assignee = await prisma.user.findUnique({
+                        where: { id: validated.assignedUserId },
+                        select: { email: true, firstName: true, lastName: true }
+                    })
+                    if (assignee?.email) {
+                        await sendUnifiedAssignmentEmail(assignee, record)
+                    }
+                }
+            } catch (notificationError) {
+                console.error("Failed to send assignment notification/email:", notificationError)
             }
         }
-    }
 
-    revalidatePath('/admin/unified-record')
-    return { success: true, record }
+        revalidatePath('/admin/unified-record')
+        return { success: true, record }
+    } catch (error: any) {
+        if (error instanceof z.ZodError) {
+            const firstIssue = error.issues?.[0]?.message
+            return { error: firstIssue || "Перевірте правильність заповнення полів" }
+        }
+        const message = String(error?.message || "")
+        if (message.includes("Server Components render")) {
+            return { error: "Не вдалося зберегти запис. Спробуйте ще раз." }
+        }
+        console.error("Error upserting unified record:", error)
+        return { error: message || "Не вдалося зберегти запис" }
+    }
 }
 
 export async function getUsersForAssignment() {

@@ -472,6 +472,10 @@ export default function CreateRecordDialog({ initialData, users = [], lockRecord
                 officerIds: payloadOfficerIds,
                 ...payloadInvestigation,
             })
+            if (result?.error) {
+                toast.error(result.error)
+                return
+            }
             if (result.success) {
                 toast.success(isEdit ? "Запис оновлено" : "Запис успішно збережено")
                 setIsOpen(false)
