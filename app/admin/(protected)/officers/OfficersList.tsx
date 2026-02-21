@@ -88,33 +88,54 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
     const canEvaluate = currentUser?.role === 'ADMIN' || currentUser?.permCreateEvaluations
     const router = useRouter()
 
+    const getScrollContainer = () => document.getElementById('admin-content-area')
+
+    const getCurrentScrollTop = () => {
+        const container = getScrollContainer()
+        if (container && container.scrollHeight > container.clientHeight) {
+            return container.scrollTop
+        }
+        return window.scrollY || document.documentElement.scrollTop || 0
+    }
+
+    const saveScrollPosition = () => {
+        setScrollPosition(getCurrentScrollTop())
+    }
+
     useEffect(() => {
         setIsHydrated(true)
         if (lastFetched) {
             setLoading(false)
             // Restore scroll position after rendering
             setTimeout(() => {
-                const container = document.getElementById('admin-content-area')
-                if (container) {
-                    container.scrollTo({ top: scrollPosition, behavior: 'instant' as any })
+                const container = getScrollContainer()
+                if (container && container.scrollHeight > container.clientHeight) {
+                    container.scrollTo({ top: scrollPosition, behavior: 'auto' })
+                } else {
+                    window.scrollTo({ top: scrollPosition, behavior: 'auto' })
                 }
             }, 100)
         } else {
             fetchOfficers()
         }
 
-        const handleScroll = (e: any) => {
-            setScrollPosition(e.target.scrollTop)
+        const handleScroll = () => {
+            setScrollPosition(getCurrentScrollTop())
         }
 
-        const container = document.getElementById('admin-content-area')
-        if (container) {
+        const container = getScrollContainer()
+        const shouldListenContainer = !!container && container.scrollHeight > container.clientHeight
+        if (shouldListenContainer && container) {
             container.addEventListener('scroll', handleScroll)
+        } else {
+            window.addEventListener('scroll', handleScroll, { passive: true })
         }
 
         return () => {
-            if (container) {
+            if (shouldListenContainer && container) {
                 container.removeEventListener('scroll', handleScroll)
+            } else {
+                window.removeEventListener('scroll', handleScroll)
             }
         }
     }, [])
@@ -438,10 +459,7 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                                 <tr
                                     key={officer.id}
                                     onClick={() => {
-                                        const container = document.getElementById('admin-content-area')
-                                        if (container) {
-                                            setScrollPosition(container.scrollTop)
-                                        }
+                                        saveScrollPosition()
                                         router.push(`/admin/officers/${officer.id}`)
                                     }}
                                     className={`transition-colors cursor-pointer ${selectedIds.includes(officer.id) ? 'bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30' : 'hover:bg-slate-100/80 dark:hover:bg-slate-800/50'}`}
@@ -565,10 +583,7 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
                 ) : (
                     filteredOfficers.map(officer => (
                         <div key={officer.id} onClick={() => {
-                            const container = document.getElementById('admin-content-area')
-                            if (container) {
-                                setScrollPosition(container.scrollTop)
-                            }
+                            saveScrollPosition()
                             router.push(`/admin/officers/${officer.id}`)
                         }} className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm active:scale-[0.98] transition-all">
                             <div className="flex items-start gap-4">
@@ -689,4 +704,3 @@ export default function OfficersList({ currentUser }: OfficersListProps) {
         </div >
     )
 }
-

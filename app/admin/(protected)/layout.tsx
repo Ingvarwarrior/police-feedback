@@ -83,7 +83,7 @@ export default async function AdminLayout({
         <Providers>
             <div className="min-h-screen flex bg-neutral-50 dark:bg-slate-950 print:block print:bg-white transition-colors duration-300">
                 {/* Sidebar */}
-                <aside className="w-64 bg-slate-900 border-r border-slate-800 hidden md:flex flex-col no-print shadow-2xl relative z-20">
+                <aside className="w-64 bg-slate-900 border-r border-slate-800 hidden md:flex md:sticky md:top-0 md:h-screen md:overflow-y-auto flex-col no-print shadow-2xl relative z-20">
                     <div className="p-6 border-b border-slate-800 flex items-center gap-3 font-bold text-sm text-white uppercase tracking-tighter">
                         <Image src="/emblem.jpg" alt="Logo" width={40} height={50} className="w-10 h-auto shrink-0 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
                         <span className="text-blue-100">Патрульна поліція <br /> <span className="text-yellow-400">Хмільницького району</span></span>
@@ -243,9 +243,9 @@ export default async function AdminLayout({
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 flex flex-col h-screen overflow-hidden overflow-x-hidden print:h-auto print:overflow-visible">
+                <main className="flex-1 flex flex-col min-h-screen overflow-x-hidden print:h-auto print:overflow-visible">
                     {/* Desktop Top Header */}
-                    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 hidden md:flex items-center justify-between px-8 no-print shadow-sm relative z-30 transition-colors duration-300">
+                    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 hidden md:flex items-center justify-between px-8 no-print shadow-sm sticky top-0 z-30 transition-colors duration-300">
                         <div className="flex items-center gap-5 min-w-0">
                             <h2 className="text-[11px] font-semibold tracking-[0.18em] text-slate-400 dark:text-slate-500 whitespace-nowrap">СИСТЕМА ОПЕРАТИВНОГО МОНІТОРИНГУ</h2>
                             <GlobalSearch />
@@ -267,7 +267,7 @@ export default async function AdminLayout({
                     </header>
 
                     {/* Mobile Header */}
-                    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 md:hidden no-print shadow-sm relative z-30 transition-colors duration-300">
+                    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 md:hidden no-print shadow-sm sticky top-0 z-30 transition-colors duration-300">
                         <div className="flex items-center gap-3">
                             <Image src="/emblem.jpg" alt="Logo" width={32} height={40} className="w-8 h-auto" />
                             <div>
@@ -284,7 +284,7 @@ export default async function AdminLayout({
                     </header>
 
                     {/* Content Area */}
-                    <div id="admin-content-area" className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-8 print:overflow-visible print:p-0">
+                    <div id="admin-content-area" className="flex-1 overflow-x-hidden p-3 md:p-8 print:overflow-visible print:p-0">
                         {children}
                     </div>
                 </main>
