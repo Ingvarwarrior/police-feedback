@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 
 type ResultRow = {
   id: string
-  type: "unified-record" | "callback" | "officer" | "report"
+  type: "unified-record" | "callback" | "officer" | "report" | "navigation"
   title: string
   subtitle: string
   href: string
@@ -21,6 +21,7 @@ const typeLabel: Record<ResultRow["type"], string> = {
   callback: "Callback",
   officer: "Поліцейський",
   report: "Опитування",
+  navigation: "Навігація",
 }
 
 function statusLabel(status?: string) {
@@ -41,7 +42,25 @@ function iconForType(type: ResultRow["type"]) {
   if (type === "callback") return PhoneCall
   if (type === "officer") return Shield
   if (type === "report") return UserIcon
+  if (type === "navigation") return Search
   return Search
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .toLocaleLowerCase("uk-UA")
+    .replace(/[’'`"]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function isSubsequenceMatch(needle: string, haystack: string) {
+  if (!needle) return true
+  let i = 0
+  for (let j = 0; j < haystack.length && i < needle.length; j++) {
+    if (needle[i] === haystack[j]) i++
+  }
+  return i === needle.length
 }
 
 interface Props {
@@ -160,6 +179,171 @@ export default function GlobalSearch({ mode = "desktop" }: Props) {
     },
   ]), [])
 
+  const navigationResults = useMemo<Array<ResultRow & { keywords: string[] }>>(() => ([
+    {
+      id: "nav-dashboard",
+      type: "navigation",
+      title: "Дашборд",
+      subtitle: "Головна панель моніторингу",
+      href: "/admin/dashboard",
+      keywords: ["дашборд", "головна", "моніторинг", "панель"],
+    },
+    {
+      id: "nav-analytics",
+      type: "navigation",
+      title: "Аналітика",
+      subtitle: "Статистика та звіти",
+      href: "/admin/analytics",
+      keywords: ["аналітика", "звіт", "статистика", "діаграма"],
+    },
+    {
+      id: "nav-reports",
+      type: "navigation",
+      title: "Відгуки громадян",
+      subtitle: "Опитування та звернення громадян",
+      href: "/admin/reports",
+      keywords: ["відгуки", "опитування", "громадян", "оцінка"],
+    },
+    {
+      id: "nav-unified-all",
+      type: "navigation",
+      title: "Виконавча дисципліна",
+      subtitle: "Всі документи в роботі",
+      href: "/admin/unified-record?activeTab=ALL&status=PENDING",
+      keywords: ["виконавча дисципліна", "єо", "звернення", "рапорт", "протокол", "скарга", "порушення"],
+    },
+    {
+      id: "nav-unified-eo",
+      type: "navigation",
+      title: "Єдиний облік",
+      subtitle: "Реєстр ЄО",
+      href: "/admin/unified-record?activeTab=EO",
+      keywords: ["єо", "єдиний облік", "облік", "номер єо"],
+    },
+    {
+      id: "nav-unified-zvern",
+      type: "navigation",
+      title: "Звернення",
+      subtitle: "Категорія звернень",
+      href: "/admin/unified-record?activeTab=ZVERN",
+      keywords: ["звернення", "скарга", "заявник"],
+    },
+    {
+      id: "nav-unified-application",
+      type: "navigation",
+      title: "Застосування сили/спецзасобів",
+      subtitle: "Рапорти застосування",
+      href: "/admin/unified-record?activeTab=APPLICATION",
+      keywords: ["застосування", "сили", "спецзасобів", "рапорт застосування"],
+    },
+    {
+      id: "nav-unified-detention",
+      type: "navigation",
+      title: "Протоколи затримання",
+      subtitle: "Протоколи затримання",
+      href: "/admin/unified-record?activeTab=DETENTION_PROTOCOL",
+      keywords: ["затримання", "протокол", "серія", "номер протоколу"],
+    },
+    {
+      id: "nav-unified-sr",
+      type: "navigation",
+      title: "Службові розслідування",
+      subtitle: "Облік службових розслідувань",
+      href: "/admin/unified-record?activeTab=SERVICE_INVESTIGATION",
+      keywords: ["службові розслідування", "ср", "дисципліна", "наказ"],
+    },
+    {
+      id: "nav-unified-approval",
+      type: "navigation",
+      title: "Керівнику на погодження",
+      subtitle: "Документи на етапі погодження",
+      href: "/admin/unified-record?activeTab=ALL&status=APPROVAL",
+      keywords: ["погодження", "керівнику", "на погодження", "перевірка керівником"],
+    },
+    {
+      id: "nav-callbacks",
+      type: "navigation",
+      title: "Callback",
+      subtitle: "Картки зворотного звʼязку",
+      href: "/admin/callbacks",
+      keywords: ["callback", "колбек", "зворотний звязок", "дзвінок", "опрацювання callback"],
+    },
+    {
+      id: "nav-map",
+      type: "navigation",
+      title: "Мапа",
+      subtitle: "Карта подій та локацій",
+      href: "/admin/map",
+      keywords: ["мапа", "карта", "локація", "координати"],
+    },
+    {
+      id: "nav-officers",
+      type: "navigation",
+      title: "Особовий склад",
+      subtitle: "Картки поліцейських",
+      href: "/admin/officers",
+      keywords: ["особовий склад", "поліцейські", "жетон", "інспектор", "патруль"],
+    },
+    {
+      id: "nav-citizens",
+      type: "navigation",
+      title: "Громадяни",
+      subtitle: "Досьє громадян",
+      href: "/admin/citizens",
+      keywords: ["громадяни", "досьє", "контакти"],
+    },
+    {
+      id: "nav-users",
+      type: "navigation",
+      title: "Користувачі",
+      subtitle: "Керування обліковими записами",
+      href: "/admin/users",
+      keywords: ["користувачі", "дозволи", "ролі", "права"],
+    },
+    {
+      id: "nav-audit",
+      type: "navigation",
+      title: "Аудит",
+      subtitle: "Журнал подій системи",
+      href: "/admin/audit",
+      keywords: ["аудит", "журнал", "історія дій"],
+    },
+    {
+      id: "nav-settings",
+      type: "navigation",
+      title: "Налаштування",
+      subtitle: "Параметри системи",
+      href: "/admin/settings",
+      keywords: ["налаштування", "конфігурація", "параметри"],
+    },
+    {
+      id: "nav-profile",
+      type: "navigation",
+      title: "Мій профіль",
+      subtitle: "Профіль користувача",
+      href: "/admin/profile",
+      keywords: ["профіль", "пароль", "2fa", "двофакторна"],
+    },
+  ]), [])
+
+  const mergedResults = useMemo(() => {
+    const q = normalizeSearchText(query)
+    const tokens = q.split(" ").filter((part) => part.length > 0)
+
+    const localMatches: ResultRow[] = q.length >= 2
+      ? navigationResults.filter((item) => {
+          const searchable = normalizeSearchText(`${item.title} ${item.subtitle} ${item.keywords.join(" ")}`)
+          return tokens.every((token) => searchable.includes(token) || isSubsequenceMatch(token, searchable))
+        }).map(({ keywords: _keywords, ...row }) => row)
+      : []
+
+    const dedup = new Map<string, ResultRow>()
+    for (const item of [...localMatches, ...results]) {
+      dedup.set(`${item.type}-${item.id}`, item)
+    }
+    return Array.from(dedup.values()).slice(0, 24)
+  }, [navigationResults, query, results])
+
   const showPanel = useMemo(() => {
     return effectiveOpen && isOpen
   }, [effectiveOpen, isOpen])
@@ -219,7 +403,7 @@ export default function GlobalSearch({ mode = "desktop" }: Props) {
                 <SearchResults
                   isLoading={isLoading}
                   query={query}
-                  results={results}
+                  results={mergedResults}
                   onSelect={onSelect}
                   className="mt-2 max-h-[45vh] overflow-y-auto"
                 />
@@ -262,7 +446,7 @@ export default function GlobalSearch({ mode = "desktop" }: Props) {
           <SearchResults
             isLoading={isLoading}
             query={query}
-            results={results}
+            results={mergedResults}
             onSelect={onSelect}
             className="absolute left-0 top-[44px] z-[60] max-h-[65vh] w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl"
           />

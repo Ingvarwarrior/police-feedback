@@ -37,6 +37,24 @@ function shortDate(value: Date | string | null | undefined) {
   return `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}.${date.getFullYear()}`
 }
 
+function buildQueryVariants(rawQuery: string) {
+  const trimmed = rawQuery.trim()
+  if (!trimmed) return []
+  return Array.from(
+    new Set([
+      trimmed,
+      trimmed.toLocaleLowerCase("uk-UA"),
+      trimmed.toLocaleUpperCase("uk-UA"),
+    ].filter(Boolean)),
+  )
+}
+
+function containsVariants(field: string, variants: string[]) {
+  return variants.map((value) => ({
+    [field]: { contains: value },
+  }))
+}
+
 export async function GET(req: Request) {
   const session = await auth()
   if (!session?.user?.email) {
@@ -62,6 +80,7 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url)
   const q = (searchParams.get("q") || "").trim()
+  const queryVariants = buildQueryVariants(q)
 
   if (q.length < 2) {
     return NextResponse.json({ results: [] })
@@ -80,10 +99,15 @@ export async function GET(req: Request) {
       ? prisma.unifiedRecord.findMany({
           where: {
             OR: [
-              { eoNumber: { contains: q } },
-              { applicant: { contains: q } },
-              { description: { contains: q } },
-              { officerName: { contains: q } },
+              ...containsVariants("eoNumber", queryVariants),
+              ...containsVariants("applicant", queryVariants),
+              ...containsVariants("description", queryVariants),
+              ...containsVariants("officerName", queryVariants),
+              ...containsVariants("category", queryVariants),
+              ...containsVariants("resolution", queryVariants),
+              ...containsVariants("investigationViolation", queryVariants),
+              ...containsVariants("investigationTargetText", queryVariants),
+              ...containsVariants("investigationOrderNumber", queryVariants),
             ],
           },
           orderBy: { eoDate: "desc" },
@@ -102,9 +126,14 @@ export async function GET(req: Request) {
       ? prisma.officer.findMany({
           where: {
             OR: [
-              { lastName: { contains: q } },
-              { firstName: { contains: q } },
-              { badgeNumber: { contains: q } },
+              ...containsVariants("lastName", queryVariants),
+              ...containsVariants("firstName", queryVariants),
+              ...containsVariants("middleName", queryVariants),
+              ...containsVariants("badgeNumber", queryVariants),
+              ...containsVariants("rank", queryVariants),
+              ...containsVariants("department", queryVariants),
+              ...containsVariants("phone", queryVariants),
+              ...containsVariants("email", queryVariants),
             ],
           },
           orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
@@ -123,11 +152,15 @@ export async function GET(req: Request) {
       ? prisma.response.findMany({
           where: {
             OR: [
-              { patrolRef: { contains: q } },
-              { districtOrCity: { contains: q } },
-              { officerName: { contains: q } },
-              { badgeNumber: { contains: q } },
-              { comment: { contains: q } },
+              ...containsVariants("patrolRef", queryVariants),
+              ...containsVariants("districtOrCity", queryVariants),
+              ...containsVariants("officerName", queryVariants),
+              ...containsVariants("badgeNumber", queryVariants),
+              ...containsVariants("comment", queryVariants),
+              ...containsVariants("incidentCategory", queryVariants),
+              ...containsVariants("incidentType", queryVariants),
+              ...containsVariants("internalNotes", queryVariants),
+              ...containsVariants("resolutionNotes", queryVariants),
             ],
           },
           orderBy: { createdAt: "desc" },
@@ -148,16 +181,17 @@ export async function GET(req: Request) {
       ? prisma.callback.findMany({
           where: {
             OR: [
-              { eoNumber: { contains: q } },
-              { applicantName: { contains: q } },
-              { applicantPhone: { contains: q } },
+              ...containsVariants("eoNumber", queryVariants),
+              ...containsVariants("applicantName", queryVariants),
+              ...containsVariants("applicantPhone", queryVariants),
+              ...containsVariants("surveyNotes", queryVariants),
               {
                 officers: {
                   some: {
                     OR: [
-                      { firstName: { contains: q } },
-                      { lastName: { contains: q } },
-                      { badgeNumber: { contains: q } },
+                      ...containsVariants("firstName", queryVariants),
+                      ...containsVariants("lastName", queryVariants),
+                      ...containsVariants("badgeNumber", queryVariants),
                     ],
                   },
                 },
