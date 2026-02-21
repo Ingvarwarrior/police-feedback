@@ -1,6 +1,12 @@
 import nodemailer from 'nodemailer';
 import { prisma } from './prisma';
 
+type ManagerAlertEmailPayload = {
+    subject: string
+    message: string
+    link?: string
+}
+
 export async function sendNewReportEmail(report: any) {
     // 1.Знайти всіх інспекторів (користувачів, які мають право переглядати звіти)
     const inspectors = await prisma.user.findMany({
@@ -202,6 +208,54 @@ ${process.env.NEXT_PUBLIC_APP_URL}/admin/unified-record?search=${record.eoNumber
         return true;
     } catch (error) {
         console.error('[MAIL] Error sending reminder email:', error);
+        return false;
+    }
+}
+
+export async function sendManagerAlertEmail(manager: any, payload: ManagerAlertEmailPayload) {
+    if (!manager?.email) return false;
+
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '465'),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        },
+    });
+
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/+$/, '');
+    const link = payload.link
+        ? payload.link.startsWith('http')
+            ? payload.link
+            : appUrl
+                ? `${appUrl}${payload.link}`
+                : payload.link
+        : appUrl
+            ? `${appUrl}/admin/unified-record`
+            : '';
+
+    const text = `
+Шановний(-а) ${manager.firstName || ''} ${manager.lastName || ''}!
+
+${payload.message}
+
+${link ? `Переглянути в системі:\n${link}\n` : ''}
+---
+Система оперативного моніторингу
+`.trim();
+
+    try {
+        await transporter.sendMail({
+            from: process.env.SMTP_FROM || `"Police Feedback" <${process.env.SMTP_USER}>`,
+            to: manager.email,
+            subject: payload.subject,
+            text,
+        });
+        return true;
+    } catch (error) {
+        console.error('[MAIL] Error sending manager alert email:', error);
         return false;
     }
 }

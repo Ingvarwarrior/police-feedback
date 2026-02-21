@@ -5,10 +5,10 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import * as XLSX from 'xlsx'
 import { z } from "zod"
-import { sendUnifiedAssignmentEmail, sendUnifiedRecordReminderEmail } from "@/lib/mail"
+import { sendManagerAlertEmail, sendUnifiedAssignmentEmail, sendUnifiedRecordReminderEmail } from "@/lib/mail"
 import { normalizeEoNumber, normalizePersonName } from "@/lib/normalization"
 import { createAdminNotification } from "@/lib/admin-notification-service"
-import { canActAsManager, getManagerUserIds } from "@/lib/manager-permissions"
+import { canActAsManager, getManagerNotificationRecipients } from "@/lib/manager-permissions"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "")
@@ -135,9 +135,10 @@ async function notifyManagers(params: {
     priority?: "LOW" | "NORMAL" | "HIGH" | "URGENT"
     type?: string
 }) {
-    const userIds = await getManagerUserIds({
+    const managerRecipients = await getManagerNotificationRecipients({
         excludeUserIds: params.excludeUserId ? [params.excludeUserId] : [],
     })
+    const userIds = managerRecipients.map((manager) => manager.id)
 
     if (!userIds.length) return
 
@@ -149,6 +150,25 @@ async function notifyManagers(params: {
         priority: params.priority || "NORMAL",
         type: params.type || "SYSTEM",
     })
+
+    const settings = await prisma.settings.findUnique({
+        where: { id: "global" },
+        select: { sendAssignmentEmails: true },
+    })
+    if (settings?.sendAssignmentEmails === false) return
+
+    const recipientsWithEmail = managerRecipients.filter((manager) => !!manager.email)
+    if (!recipientsWithEmail.length) return
+
+    await Promise.allSettled(
+        recipientsWithEmail.map((manager) =>
+            sendManagerAlertEmail(manager, {
+                subject: params.title,
+                message: params.message,
+                link: params.link || "/admin/unified-record",
+            }),
+        ),
+    )
 }
 
 export async function processUnifiedRecordAction(id: string, resolution: string, officerIds?: string[], concernsBpp: boolean = true): Promise<{ success?: boolean, error?: string, status?: string }> {

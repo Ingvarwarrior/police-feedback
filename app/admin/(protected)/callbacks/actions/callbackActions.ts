@@ -5,7 +5,8 @@ import { normalizeEoNumber, normalizePersonName, normalizePhoneNumber } from "@/
 import { prisma } from "@/lib/prisma"
 import { refreshOfficerStats } from "@/lib/officer-stats"
 import { createAdminNotification } from "@/lib/admin-notification-service"
-import { canActAsManager, getManagerUserIds } from "@/lib/manager-permissions"
+import { sendManagerAlertEmail } from "@/lib/mail"
+import { canActAsManager, getManagerNotificationRecipients } from "@/lib/manager-permissions"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
@@ -61,7 +62,10 @@ async function notifyManagersAboutCompletedCallback(params: {
   actorUserId: string
   checkResult: "UNSET" | "CONFIRMED" | "NOT_CONFIRMED"
 }) {
-  const managerUserIds = await getManagerUserIds({ excludeUserIds: [params.actorUserId] })
+  const managerRecipients = await getManagerNotificationRecipients({
+    excludeUserIds: [params.actorUserId],
+  })
+  const managerUserIds = managerRecipients.map((manager) => manager.id)
   if (!managerUserIds.length) return
 
   const checkResultText =
@@ -79,6 +83,25 @@ async function notifyManagersAboutCompletedCallback(params: {
     priority: "NORMAL",
     link: `/admin/callbacks?callbackId=${params.callbackId}`,
   })
+
+  const settings = await prisma.settings.findUnique({
+    where: { id: "global" },
+    select: { sendAssignmentEmails: true },
+  })
+  if (settings?.sendAssignmentEmails === false) return
+
+  const recipientsWithEmail = managerRecipients.filter((manager) => !!manager.email)
+  if (!recipientsWithEmail.length) return
+
+  await Promise.allSettled(
+    recipientsWithEmail.map((manager) =>
+      sendManagerAlertEmail(manager, {
+        subject: "Callback опрацьовано",
+        message: `Callback по ЄО №${params.eoNumber} завершено. Результат перевірки: ${checkResultText}.`,
+        link: `/admin/callbacks?callbackId=${params.callbackId}`,
+      }),
+    ),
+  )
 }
 
 async function getCurrentUser() {
