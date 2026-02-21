@@ -644,7 +644,10 @@ export default function ServiceInvestigationProcessPopover({
                     </Button>
                 )}
             </PopoverTrigger>
-            <PopoverContent className="w-[420px] rounded-[1.5rem] border-none p-4 shadow-2xl space-y-4" align="end">
+            <PopoverContent
+                className="w-[calc(100vw-1.5rem)] max-w-[420px] rounded-[1.5rem] border-none p-4 shadow-2xl space-y-4"
+                align="end"
+            >
                 <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-emerald-600" />
                     <p className="text-xs font-black uppercase tracking-widest text-slate-700">Службове розслідування</p>
