@@ -101,6 +101,30 @@ function checkResultChipClass(value: string | null | undefined) {
   return "status-chip-waiting"
 }
 
+function isCallbackInWork(cb: CallbackRow) {
+  return cb.status !== "COMPLETED" && !!(cb.assignedUserId || cb.assignedUser?.id)
+}
+
+function callbackStatusLabel(cb: CallbackRow) {
+  if (cb.status === "COMPLETED") return "Опрацьовано"
+  if (isCallbackInWork(cb)) return "В роботі"
+  return "Очікує"
+}
+
+function callbackStatusChipClass(cb: CallbackRow) {
+  if (cb.status === "COMPLETED") return "status-chip-processed"
+  if (isCallbackInWork(cb)) return "status-chip-progress"
+  return "status-chip-waiting"
+}
+
+function callbackResultLabel(cb: CallbackRow) {
+  if (cb.status === "COMPLETED") {
+    const result = checkResultLabel(cb.checkResult)
+    return result === "Не вказано" ? "Опрацьовано" : result
+  }
+  return isCallbackInWork(cb) ? "В процесі розгляду..." : "Очікує призначення"
+}
+
 function RatingStars({ value }: { value: number }) {
   return (
     <span className="inline-flex items-center gap-0.5">
@@ -387,7 +411,7 @@ export default function CallbackList({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Всі статуси</SelectItem>
-              <SelectItem value="PENDING">Очікує</SelectItem>
+              <SelectItem value="PENDING">В роботі / очікує</SelectItem>
               <SelectItem value="COMPLETED">Опрацьовано</SelectItem>
             </SelectContent>
           </Select>
@@ -445,8 +469,10 @@ export default function CallbackList({
         </Card>
         <Card className="rounded-3xl border-slate-200">
           <CardContent className="p-5">
-            <p className="ds-field-label">Очікують перевірки</p>
-            <p className="mt-2 text-3xl font-black text-amber-600">{filtered.filter((cb) => cb.status === "PENDING").length}</p>
+            <p className="ds-field-label">В роботі</p>
+            <p className="mt-2 text-3xl font-black text-blue-600">
+              {filtered.filter((cb) => cb.status === "PENDING" && !!(cb.assignedUserId || cb.assignedUser?.id)).length}
+            </p>
           </CardContent>
         </Card>
         <Card className="rounded-3xl border-slate-200">
@@ -481,14 +507,6 @@ export default function CallbackList({
                         <Calendar className="h-3.5 w-3.5" />
                         {format(new Date(cb.callDate), "dd MMMM yyyy", { locale: uk })}
                       </span>
-                      <span className="inline-flex items-center gap-1">
-                        <User className="h-3.5 w-3.5" />
-                        {cb.applicantName}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Phone className="h-3.5 w-3.5" />
-                        {cb.applicantPhone}
-                      </span>
                     </div>
                   </div>
 
@@ -499,11 +517,13 @@ export default function CallbackList({
                         {cb.qOverall}/5
                       </span>
                     ) : null}
-                    <span className={cn(checkResultChipClass(cb.checkResult))}>
-                      {checkResultLabel(cb.checkResult)}
-                    </span>
-                    <span className={cn(cb.status === "COMPLETED" ? "status-chip-processed" : "status-chip-waiting")}>
-                      {cb.status === "COMPLETED" ? "Опрацьовано" : "Очікує"}
+                    {cb.status === "COMPLETED" ? (
+                      <span className={cn(checkResultChipClass(cb.checkResult))}>
+                        {checkResultLabel(cb.checkResult)}
+                      </span>
+                    ) : null}
+                    <span className={cn(callbackStatusChipClass(cb))}>
+                      {callbackStatusLabel(cb)}
                     </span>
                   </div>
                 </div>
@@ -526,13 +546,31 @@ export default function CallbackList({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   <div className="rounded-xl border border-slate-100 p-3">
-                    <p className="ds-field-label">Створив</p>
-                    <p className="text-sm font-semibold text-slate-900">{userLabel(cb.createdBy)}</p>
+                    <p className="ds-field-label">Заявник</p>
+                    <p className="text-sm font-semibold text-slate-900">{cb.applicantName}</p>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">{cb.applicantPhone}</p>
                   </div>
                   <div className="rounded-xl border border-slate-100 p-3">
-                    <p className="ds-field-label">Виконавець callback</p>
+                    <p className="ds-field-label">Результат</p>
+                    <p
+                      className={cn(
+                        "text-sm font-semibold",
+                        cb.status === "COMPLETED"
+                          ? cb.checkResult === "NOT_CONFIRMED"
+                            ? "text-amber-700"
+                            : "text-emerald-700"
+                          : isCallbackInWork(cb)
+                            ? "text-blue-600"
+                            : "text-slate-500",
+                      )}
+                    >
+                      {callbackResultLabel(cb)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-slate-100 p-3">
+                    <p className="ds-field-label">Відповідальний</p>
                     <p className="text-sm font-semibold text-slate-900">{userLabel(cb.assignedUser)}</p>
                   </div>
                 </div>
@@ -573,9 +611,9 @@ export default function CallbackList({
                       {formatCallbackNumber(selectedCallback.callbackNumber)}
                     </span>
                     <span className={cn(
-                      selectedCallback.status === "COMPLETED" ? "status-chip-processed" : "status-chip-waiting"
+                      callbackStatusChipClass(selectedCallback)
                     )}>
-                      {selectedCallback.status === "COMPLETED" ? "Опрацьовано" : "Очікує"}
+                      {callbackStatusLabel(selectedCallback)}
                     </span>
                     {typeof selectedCallback.qOverall === "number" && selectedCallback.qOverall > 0 ? (
                       <span className="ds-chip-active">
