@@ -48,6 +48,7 @@ interface UserRow {
 interface CallbackRow {
   id: string
   callbackNumber?: number | null
+  createdAt: string | Date
   callDate: string | Date
   eoNumber: string
   applicantName: string
@@ -527,7 +528,11 @@ export default function CallbackList({
                     <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500">
                       <span className="inline-flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
-                        {format(new Date(cb.callDate), "dd MMMM yyyy", { locale: uk })}
+                        виклик: {format(new Date(cb.callDate), "dd MMMM yyyy", { locale: uk })}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5" />
+                        створено: {format(new Date(cb.createdAt), "dd MMMM yyyy", { locale: uk })}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <User className="h-3.5 w-3.5" />
@@ -680,6 +685,10 @@ export default function CallbackList({
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Дата виклику</p>
                     <p className="ds-detail-value">{format(new Date(selectedCallback.callDate), "dd MMMM yyyy", { locale: uk })}</p>
+                  </div>
+                  <div className="ds-detail-item">
+                    <p className="ds-detail-label">Дата створення callback</p>
+                    <p className="ds-detail-value">{format(new Date(selectedCallback.createdAt), "dd MMMM yyyy HH:mm", { locale: uk })}</p>
                   </div>
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">ПІБ заявника</p>
