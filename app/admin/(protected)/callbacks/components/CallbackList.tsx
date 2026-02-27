@@ -95,6 +95,12 @@ function formatCallbackNumber(value?: number | null) {
   return String(value).padStart(4, "0")
 }
 
+function formatCallbackMeta(value: number | null | undefined, createdAt: string | Date) {
+  const callbackNumber = formatCallbackNumber(value)
+  const created = format(new Date(createdAt), "dd.MM.yyyy")
+  return `№ ${callbackNumber} від ${created}`
+}
+
 function parseSortableNumber(value: string | number | null | undefined) {
   if (typeof value === "number") return value
   const raw = String(value || "").trim()
@@ -519,7 +525,7 @@ export default function CallbackList({
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="ds-chip-muted">
-                        <Hash className="h-3 w-3" /> {formatCallbackNumber(cb.callbackNumber)}
+                        <Hash className="h-3 w-3" /> {formatCallbackMeta(cb.callbackNumber, cb.createdAt)}
                       </span>
                       <h3 className="text-lg font-semibold tracking-tight text-slate-900">
                         Callback до ЄО №{cb.eoNumber}
@@ -529,10 +535,6 @@ export default function CallbackList({
                       <span className="inline-flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
                         виклик: {format(new Date(cb.callDate), "dd MMMM yyyy", { locale: uk })}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5" />
-                        створено: {format(new Date(cb.createdAt), "dd MMMM yyyy", { locale: uk })}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <User className="h-3.5 w-3.5" />
@@ -728,7 +730,7 @@ export default function CallbackList({
                   </div>
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Номер callback</p>
-                    <p className="ds-detail-value">№{formatCallbackNumber(selectedCallback.callbackNumber)}</p>
+                    <p className="ds-detail-value">{formatCallbackMeta(selectedCallback.callbackNumber, selectedCallback.createdAt)}</p>
                   </div>
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Результат перевірки</p>
