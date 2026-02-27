@@ -31,20 +31,46 @@ interface Props {
 }
 
 const questionItems = [
-  "Коротко опишіть, в чому полягало питання / ситуація, яка стала причиною звернення в поліцію.",
-  "Вкажіть ім'я чи будь-яку інформацію щодо співробітника поліції, з яким Ви контактували.",
-  "Через який період часу прибув до Вас / відреагував співробітник поліції після звернення?",
-  "Це, на Вашу думку, було швидко?",
-  "Чи було вирішене Ваше питання?",
-  "Який результат?",
-  "Що було, на Вашу думку, позитивним у роботі поліцейського?",
-  "Було щось, що Вам не сподобалося? Що саме?",
-  "Чи запропонував співробітник поліції альтернативні варіанти врегулювання проблеми / питання?",
-  "Якщо запропонував альтернативний варіант, то який саме?",
-  "Чи вів себе співробітник поліції ввічливо під час реагування на Ваш запит / звернення?",
-  "Чи була для Вас результативною робота співробітника поліції, з яким Ви контактували?",
-  "Що, з Вашої точки зору, можна поліпшити в роботі співробітника поліції? Додаткові коментарі.",
+  "Коротко: з яким питанням Ви звертались? (1 речення)",
+  "Коли звертались? (дата/час)",
+  "Знаєте, хто реагував? (ПІБ/жетон/екіпаж/не знаю)",
+  "Час очікування на реакцію/прибуття",
+  "Результат звернення",
+  "Оцініть роботу (1-5): ввічливість / ефективність",
+  "Один коментар: що було найкраще або що потрібно поліпшити? (1-2 речення)",
+  "Що саме не сподобалось? (час / спілкування / дії / пояснення / інше)",
+  "Чи пропонували альтернативний варіант вирішення? так/ні — якщо так, який?",
 ] as const
+
+const waitTimeOptions = [
+  { value: "UP_TO_10", label: "до 10 хв" },
+  { value: "MIN_10_30", label: "10–30 хв" },
+  { value: "MIN_30_60", label: "30–60 хв" },
+  { value: "OVER_60", label: "понад 60 хв" },
+  { value: "NO_RESPONSE", label: "не реагували" },
+] as const
+
+const resultOptions = [
+  { value: "RESOLVED", label: "вирішено" },
+  { value: "PARTIAL", label: "частково" },
+  { value: "NOT_RESOLVED", label: "не вирішено" },
+] as const
+
+const dislikedOptions = [
+  { value: "TIME", label: "час" },
+  { value: "COMMUNICATION", label: "спілкування" },
+  { value: "ACTIONS", label: "дії" },
+  { value: "EXPLANATION", label: "пояснення" },
+  { value: "OTHER", label: "інше" },
+] as const
+
+function mapWaitTimeLabel(value: string) {
+  return waitTimeOptions.find((item) => item.value === value)?.label || "не вказано"
+}
+
+function mapResultLabel(value: string) {
+  return resultOptions.find((item) => item.value === value)?.label || "не вказано"
+}
 
 export default function CreateCallbackDialog({ officers }: Props) {
   const [isOpen, setIsOpen] = useState(false)
@@ -56,21 +82,18 @@ export default function CreateCallbackDialog({ officers }: Props) {
   const [applicantName, setApplicantName] = useState("")
   const [applicantPhone, setApplicantPhone] = useState("")
   const [selectedOfficerIds, setSelectedOfficerIds] = useState<string[]>([])
-  const [callbackDate, setCallbackDate] = useState(new Date().toISOString().split("T")[0])
-  const [situationDescription, setSituationDescription] = useState("")
-  const [officerInfo, setOfficerInfo] = useState("")
-  const [responseTime, setResponseTime] = useState("")
-  const [wasFast, setWasFast] = useState<string>("UNSET")
-  const [wasResolved, setWasResolved] = useState<string>("UNSET")
-  const [resultText, setResultText] = useState("")
-  const [positivePoints, setPositivePoints] = useState("")
-  const [negativePoints, setNegativePoints] = useState("")
+  const [whenContacted, setWhenContacted] = useState("")
+  const [issueSummary, setIssueSummary] = useState("")
+  const [responderInfo, setResponderInfo] = useState("")
+  const [waitTimeBucket, setWaitTimeBucket] = useState<string>("UNSET")
+  const [caseResult, setCaseResult] = useState<string>("UNSET")
+  const [politenessRating, setPolitenessRating] = useState(0)
+  const [effectivenessRating, setEffectivenessRating] = useState(0)
+  const [singleComment, setSingleComment] = useState("")
+  const [dislikedReasons, setDislikedReasons] = useState<string[]>([])
+  const [dislikedOtherText, setDislikedOtherText] = useState("")
   const [offeredAlternative, setOfferedAlternative] = useState<string>("UNSET")
   const [alternativeDetails, setAlternativeDetails] = useState("")
-  const [wasPolite, setWasPolite] = useState<string>("UNSET")
-  const [wasEffective, setWasEffective] = useState<string>("UNSET")
-  const [improvements, setImprovements] = useState("")
-  const [teamRating, setTeamRating] = useState(0)
   const [isCheckingEo, setIsCheckingEo] = useState(false)
   const [eoDuplicateInfo, setEoDuplicateInfo] = useState<{
     exists: boolean
@@ -93,22 +116,19 @@ export default function CreateCallbackDialog({ officers }: Props) {
     setEoNumber("")
     setApplicantName("")
     setApplicantPhone("")
-    setCallbackDate(new Date().toISOString().split("T")[0])
+    setWhenContacted("")
+    setIssueSummary("")
+    setResponderInfo("")
+    setWaitTimeBucket("UNSET")
+    setCaseResult("UNSET")
+    setPolitenessRating(0)
+    setEffectivenessRating(0)
+    setSingleComment("")
+    setDislikedReasons([])
+    setDislikedOtherText("")
     setSelectedOfficerIds([])
-    setSituationDescription("")
-    setOfficerInfo("")
-    setResponseTime("")
-    setWasFast("UNSET")
-    setWasResolved("UNSET")
-    setResultText("")
-    setPositivePoints("")
-    setNegativePoints("")
     setOfferedAlternative("UNSET")
     setAlternativeDetails("")
-    setWasPolite("UNSET")
-    setWasEffective("UNSET")
-    setImprovements("")
-    setTeamRating(0)
     setEoDuplicateInfo({ exists: false, count: 0, year: null })
     setIsCheckingEo(false)
     setOfficerQuery("")
@@ -162,6 +182,9 @@ export default function CreateCallbackDialog({ officers }: Props) {
     [filteredOfficers, selectedOfficerIds]
   )
 
+  const lowRating = (politenessRating > 0 && politenessRating <= 2) || (effectivenessRating > 0 && effectivenessRating <= 2)
+  const needClarification = caseResult === "PARTIAL" || caseResult === "NOT_RESOLVED" || lowRating
+
   const handleSubmit = async () => {
     if (isCheckingEo) {
       toast.error("Триває перевірка № ЄО. Зачекайте декілька секунд.")
@@ -190,50 +213,60 @@ export default function CreateCallbackDialog({ officers }: Props) {
 
     setIsLoading(true)
     try {
+      const dislikedText = dislikedReasons.length
+        ? dislikedReasons
+            .map((reason) => dislikedOptions.find((item) => item.value === reason)?.label || reason)
+            .join(", ")
+        : "не вказано"
+
+      const averageRating =
+        politenessRating > 0 && effectivenessRating > 0
+          ? Math.round((politenessRating + effectivenessRating) / 2)
+          : politenessRating > 0
+            ? politenessRating
+            : effectivenessRating > 0
+              ? effectivenessRating
+              : 0
+
       const renderedSurvey = [
-        `Дата проведення Callback: ${callbackDate || "—"}`,
-        "",
         `1. ${questionItems[0]}`,
-        situationDescription || "—",
+        issueSummary || "—",
         "",
         `2. ${questionItems[1]}`,
-        officerInfo || "—",
+        whenContacted || "—",
         "",
         `3. ${questionItems[2]}`,
-        responseTime || "—",
+        responderInfo || "—",
         "",
         `4. ${questionItems[3]}`,
-        wasFast === "YES" ? "так" : wasFast === "NO" ? "ні" : "не вказано",
+        mapWaitTimeLabel(waitTimeBucket),
         "",
         `5. ${questionItems[4]}`,
-        wasResolved === "YES" ? "так" : wasResolved === "NO" ? "ні" : "не вказано",
+        mapResultLabel(caseResult),
         "",
         `6. ${questionItems[5]}`,
-        resultText || "—",
+        `ввічливість: ${politenessRating > 0 ? politenessRating : "не вказано"}, ефективність: ${effectivenessRating > 0 ? effectivenessRating : "не вказано"}`,
         "",
         `7. ${questionItems[6]}`,
-        positivePoints || "—",
+        singleComment || "—",
+      ]
+
+      if (needClarification) {
+        renderedSurvey.push(
+          "",
+          `8. ${questionItems[7]}`,
+          dislikedText + (dislikedReasons.includes("OTHER") && dislikedOtherText.trim() ? ` (інше: ${dislikedOtherText.trim()})` : ""),
+          "",
+          `9. ${questionItems[8]}`,
+          offeredAlternative === "YES" ? "так" : offeredAlternative === "NO" ? "ні" : "не вказано",
+          offeredAlternative === "YES" ? (alternativeDetails || "—") : "—",
+        )
+      }
+
+      renderedSurvey.push(
         "",
-        `8. ${questionItems[7]}`,
-        negativePoints || "—",
-        "",
-        `9. ${questionItems[8]}`,
-        offeredAlternative === "YES" ? "так" : offeredAlternative === "NO" ? "ні" : "не вказано",
-        "",
-        `10. ${questionItems[9]}`,
-        alternativeDetails || "—",
-        "",
-        `11. ${questionItems[10]}`,
-        wasPolite === "YES" ? "так" : wasPolite === "NO" ? "ні" : "не вказано",
-        "",
-        `12. ${questionItems[11]}`,
-        wasEffective === "YES" ? "так" : wasEffective === "NO" ? "ні" : "не вказано",
-        "",
-        `13. ${questionItems[12]}`,
-        improvements || "—",
-        "",
-        `Оцінка роботи наряду (1-5): ${teamRating > 0 ? teamRating : "не вказано"}`,
-      ].join("\n")
+        `Підсумкова оцінка (1-5): ${averageRating > 0 ? averageRating : "не вказано"}`,
+      )
 
       await createCallback({
         callDate,
@@ -241,8 +274,10 @@ export default function CreateCallbackDialog({ officers }: Props) {
         applicantName,
         applicantPhone,
         officerIds: selectedOfficerIds,
-        qOverall: teamRating > 0 ? teamRating : undefined,
-        surveyNotes: renderedSurvey,
+        qPoliteness: politenessRating > 0 ? politenessRating : undefined,
+        qProfessionalism: effectivenessRating > 0 ? effectivenessRating : undefined,
+        qOverall: averageRating > 0 ? averageRating : undefined,
+        surveyNotes: renderedSurvey.join("\n"),
       })
       toast.success("Callback-картку створено")
       setIsOpen(false)
@@ -398,121 +433,138 @@ export default function CreateCallbackDialog({ officers }: Props) {
               className="space-y-4 border-t border-blue-100 px-4 py-4"
             >
               <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">Дата проведення callback</Label>
-                <Input type="date" value={callbackDate} onChange={(e) => setCallbackDate(e.target.value)} />
-              </div>
-              <div className="space-y-2">
                 <Label className="font-semibold text-slate-700">1. {questionItems[0]}</Label>
-                <Textarea value={situationDescription} onChange={(e) => setSituationDescription(e.target.value)} />
+                <Input value={issueSummary} onChange={(e) => setIssueSummary(e.target.value)} placeholder="Коротко, одним реченням" />
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-slate-700">2. {questionItems[1]}</Label>
-                <Textarea value={officerInfo} onChange={(e) => setOfficerInfo(e.target.value)} />
+                <Input type="datetime-local" value={whenContacted} onChange={(e) => setWhenContacted(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-slate-700">3. {questionItems[2]}</Label>
-                <Input value={responseTime} onChange={(e) => setResponseTime(e.target.value)} placeholder="Напр. через 12 хвилин" />
+                <Input value={responderInfo} onChange={(e) => setResponderInfo(e.target.value)} placeholder="ПІБ / жетон / екіпаж / не знаю" />
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-slate-700">4. {questionItems[3]}</Label>
-                <Select value={wasFast} onValueChange={setWasFast}>
-                  <SelectTrigger><SelectValue placeholder="Оберіть відповідь" /></SelectTrigger>
+                <Select value={waitTimeBucket} onValueChange={setWaitTimeBucket}>
+                  <SelectTrigger><SelectValue placeholder="Оберіть варіант" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="UNSET">Не вказано</SelectItem>
-                    <SelectItem value="YES">Так</SelectItem>
-                    <SelectItem value="NO">Ні</SelectItem>
+                    {waitTimeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-slate-700">5. {questionItems[4]}</Label>
-                <Select value={wasResolved} onValueChange={setWasResolved}>
-                  <SelectTrigger><SelectValue placeholder="Оберіть відповідь" /></SelectTrigger>
+                <Select value={caseResult} onValueChange={setCaseResult}>
+                  <SelectTrigger><SelectValue placeholder="Оберіть варіант" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="UNSET">Не вказано</SelectItem>
-                    <SelectItem value="YES">Так</SelectItem>
-                    <SelectItem value="NO">Ні</SelectItem>
+                    {resultOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3 rounded-xl border border-amber-100 bg-amber-50/40 p-3">
                 <Label className="font-semibold text-slate-700">6. {questionItems[5]}</Label>
-                <Textarea value={resultText} onChange={(e) => setResultText(e.target.value)} />
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-slate-600">Ввічливість</p>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <button
+                        key={`polite-${rating}`}
+                        type="button"
+                        onClick={() => setPolitenessRating((prev) => (prev === rating ? 0 : rating))}
+                        className="rounded-lg p-1 hover:bg-amber-100"
+                        aria-label={`Ввічливість ${rating}`}
+                      >
+                        <Star className={`h-7 w-7 ${rating <= politenessRating ? "fill-amber-400 text-amber-500" : "text-slate-300"}`} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-slate-600">Ефективність</p>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <button
+                        key={`effective-${rating}`}
+                        type="button"
+                        onClick={() => setEffectivenessRating((prev) => (prev === rating ? 0 : rating))}
+                        className="rounded-lg p-1 hover:bg-amber-100"
+                        aria-label={`Ефективність ${rating}`}
+                      >
+                        <Star className={`h-7 w-7 ${rating <= effectivenessRating ? "fill-amber-400 text-amber-500" : "text-slate-300"}`} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-slate-700">7. {questionItems[6]}</Label>
-                <Textarea value={positivePoints} onChange={(e) => setPositivePoints(e.target.value)} />
+                <Textarea value={singleComment} onChange={(e) => setSingleComment(e.target.value)} />
               </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">8. {questionItems[7]}</Label>
-                <Textarea value={negativePoints} onChange={(e) => setNegativePoints(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">9. {questionItems[8]}</Label>
-                <Select value={offeredAlternative} onValueChange={setOfferedAlternative}>
-                  <SelectTrigger><SelectValue placeholder="Оберіть відповідь" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UNSET">Не вказано</SelectItem>
-                    <SelectItem value="YES">Так</SelectItem>
-                    <SelectItem value="NO">Ні</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">10. {questionItems[9]}</Label>
-                <Textarea value={alternativeDetails} onChange={(e) => setAlternativeDetails(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">11. {questionItems[10]}</Label>
-                <Select value={wasPolite} onValueChange={setWasPolite}>
-                  <SelectTrigger><SelectValue placeholder="Оберіть відповідь" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UNSET">Не вказано</SelectItem>
-                    <SelectItem value="YES">Так</SelectItem>
-                    <SelectItem value="NO">Ні</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">12. {questionItems[11]}</Label>
-                <Select value={wasEffective} onValueChange={setWasEffective}>
-                  <SelectTrigger><SelectValue placeholder="Оберіть відповідь" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UNSET">Не вказано</SelectItem>
-                    <SelectItem value="YES">Так</SelectItem>
-                    <SelectItem value="NO">Ні</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">13. {questionItems[12]}</Label>
-                <Textarea value={improvements} onChange={(e) => setImprovements(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">Оцініть, будь ласка, роботу наряду (від 1 до 5)</Label>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => setTeamRating((prev) => (prev === rating ? 0 : rating))}
-                      className="rounded-lg p-1 hover:bg-amber-50"
-                      aria-label={`Оцінка ${rating}`}
-                    >
-                      <Star
-                        className={`h-7 w-7 ${rating <= teamRating ? "fill-amber-400 text-amber-500" : "text-slate-300"}`}
+
+              {needClarification && (
+                <>
+                  <div className="space-y-2">
+                    <Label className="font-semibold text-slate-700">8. {questionItems[7]}</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {dislikedOptions.map((option) => {
+                        const selected = dislikedReasons.includes(option.value)
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setDislikedReasons((prev) =>
+                                prev.includes(option.value)
+                                  ? prev.filter((item) => item !== option.value)
+                                  : [...prev, option.value]
+                              )
+                            }}
+                            className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+                              selected
+                                ? "border-amber-300 bg-amber-100 text-amber-800"
+                                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {dislikedReasons.includes("OTHER") && (
+                      <Input
+                        value={dislikedOtherText}
+                        onChange={(e) => setDislikedOtherText(e.target.value)}
+                        placeholder="Уточніть: що саме не сподобалось"
                       />
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setTeamRating(0)}
-                    className="ml-2 rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50"
-                  >
-                    Очистити
-                  </button>
-                </div>
-              </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-semibold text-slate-700">9. {questionItems[8]}</Label>
+                    <Select value={offeredAlternative} onValueChange={setOfferedAlternative}>
+                      <SelectTrigger><SelectValue placeholder="Оберіть відповідь" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="UNSET">Не вказано</SelectItem>
+                        <SelectItem value="YES">Так</SelectItem>
+                        <SelectItem value="NO">Ні</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {offeredAlternative === "YES" && (
+                      <Textarea
+                        value={alternativeDetails}
+                        onChange={(e) => setAlternativeDetails(e.target.value)}
+                        placeholder="Який саме альтернативний варіант запропонували?"
+                      />
+                    )}
+                  </div>
+                </>
+              )}
             </fieldset>
           </details>
         </div>
