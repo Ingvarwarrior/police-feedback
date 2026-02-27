@@ -74,6 +74,15 @@ interface Props {
 }
 
 const FILTERS_STORAGE_KEY = "pf:filters:callbacks"
+type CallbackSort =
+  | "date_desc"
+  | "date_asc"
+  | "callback_number_asc"
+  | "callback_number_desc"
+  | "eo_number_asc"
+  | "eo_number_desc"
+  | "rating_desc"
+  | "rating_asc"
 
 function userLabel(user: UserRow | null) {
   if (!user) return "Не призначено"
@@ -83,6 +92,16 @@ function userLabel(user: UserRow | null) {
 function formatCallbackNumber(value?: number | null) {
   if (typeof value !== "number" || value <= 0) return "----"
   return String(value).padStart(4, "0")
+}
+
+function parseSortableNumber(value: string | number | null | undefined) {
+  if (typeof value === "number") return value
+  const raw = String(value || "").trim()
+  if (!raw) return Number.POSITIVE_INFINITY
+  const digits = raw.replace(/[^\d]/g, "")
+  if (!digits) return Number.POSITIVE_INFINITY
+  const parsed = Number.parseInt(digits, 10)
+  return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY
 }
 
 function officerLabel(officer: OfficerRow) {
@@ -130,7 +149,7 @@ export default function CallbackList({
   const [status, setStatus] = useState<"ALL" | "PENDING" | "COMPLETED">("ALL")
   const [checkResult, setCheckResult] = useState<"ALL" | "UNSET" | "CONFIRMED" | "NOT_CONFIRMED">("ALL")
   const [executor, setExecutor] = useState<string>("ALL")
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "rating_desc" | "rating_asc">("newest")
+  const [sortBy, setSortBy] = useState<CallbackSort>("date_desc")
   const [periodFrom, setPeriodFrom] = useState("")
   const [periodTo, setPeriodTo] = useState("")
   const [selectedCallback, setSelectedCallback] = useState<CallbackRow | null>(null)
@@ -156,7 +175,20 @@ export default function CallbackList({
         setCheckResult(parsed.checkResult)
       }
       if (typeof parsed.executor === "string") setExecutor(parsed.executor)
-      if (["newest", "oldest", "rating_desc", "rating_asc"].includes(parsed.sortBy)) setSortBy(parsed.sortBy)
+      if (
+        [
+          "date_desc",
+          "date_asc",
+          "callback_number_asc",
+          "callback_number_desc",
+          "eo_number_asc",
+          "eo_number_desc",
+          "rating_desc",
+          "rating_asc",
+        ].includes(parsed.sortBy)
+      ) {
+        setSortBy(parsed.sortBy as CallbackSort)
+      }
       if (typeof parsed.periodFrom === "string") setPeriodFrom(parsed.periodFrom)
       if (typeof parsed.periodTo === "string") setPeriodTo(parsed.periodTo)
     } catch {
@@ -260,16 +292,28 @@ export default function CallbackList({
     }
 
     return data.sort((a, b) => {
-      if (sortBy === "oldest") {
+      if (sortBy === "date_asc") {
         return new Date(a.callDate).getTime() - new Date(b.callDate).getTime()
+      }
+      if (sortBy === "date_desc") {
+        return new Date(b.callDate).getTime() - new Date(a.callDate).getTime()
+      }
+      if (sortBy === "callback_number_asc") {
+        return parseSortableNumber(a.callbackNumber) - parseSortableNumber(b.callbackNumber)
+      }
+      if (sortBy === "callback_number_desc") {
+        return parseSortableNumber(b.callbackNumber) - parseSortableNumber(a.callbackNumber)
+      }
+      if (sortBy === "eo_number_asc") {
+        return parseSortableNumber(a.eoNumber) - parseSortableNumber(b.eoNumber)
+      }
+      if (sortBy === "eo_number_desc") {
+        return parseSortableNumber(b.eoNumber) - parseSortableNumber(a.eoNumber)
       }
       if (sortBy === "rating_desc") {
         return (b.qOverall || 0) - (a.qOverall || 0)
       }
-      if (sortBy === "rating_asc") {
-        return (a.qOverall || 0) - (b.qOverall || 0)
-      }
-      return new Date(b.callDate).getTime() - new Date(a.callDate).getTime()
+      return (a.qOverall || 0) - (b.qOverall || 0)
     })
   }, [callbacks, search, status, checkResult, executor, sortBy, periodFrom, periodTo])
 
@@ -281,7 +325,7 @@ export default function CallbackList({
     setStatus("ALL")
     setCheckResult("ALL")
     setExecutor("ALL")
-    setSortBy("newest")
+    setSortBy("date_desc")
     setPeriodFrom("")
     setPeriodTo("")
   }
@@ -419,13 +463,17 @@ export default function CallbackList({
             </SelectContent>
           </Select>
 
-          <Select value={sortBy} onValueChange={(value) => setSortBy(value as "newest" | "oldest" | "rating_desc" | "rating_asc")}>
+          <Select value={sortBy} onValueChange={(value) => setSortBy(value as CallbackSort)}>
             <SelectTrigger className="h-11 rounded-xl">
               <SelectValue placeholder="Сортування" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="newest">Спочатку нові</SelectItem>
-              <SelectItem value="oldest">Спочатку старі</SelectItem>
+              <SelectItem value="date_desc">Дата (новіші)</SelectItem>
+              <SelectItem value="date_asc">Дата (старіші)</SelectItem>
+              <SelectItem value="callback_number_asc">№ callback (зростання)</SelectItem>
+              <SelectItem value="callback_number_desc">№ callback (спадання)</SelectItem>
+              <SelectItem value="eo_number_asc">№ ЄО (зростання)</SelectItem>
+              <SelectItem value="eo_number_desc">№ ЄО (спадання)</SelectItem>
               <SelectItem value="rating_desc">Рейтинг (вищий)</SelectItem>
               <SelectItem value="rating_asc">Рейтинг (нижчий)</SelectItem>
             </SelectContent>
