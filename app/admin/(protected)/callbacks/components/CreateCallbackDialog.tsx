@@ -32,8 +32,6 @@ interface Props {
 
 const questionItems = [
   "Коротко: з яким питанням Ви звертались? (1 речення)",
-  "Коли звертались? (дата/час)",
-  "Знаєте, хто реагував? (ПІБ/жетон/екіпаж/не знаю)",
   "Час очікування на реакцію/прибуття",
   "Результат звернення",
   "Оцініть роботу (1-5): ввічливість / ефективність",
@@ -82,9 +80,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
   const [applicantName, setApplicantName] = useState("")
   const [applicantPhone, setApplicantPhone] = useState("")
   const [selectedOfficerIds, setSelectedOfficerIds] = useState<string[]>([])
-  const [whenContacted, setWhenContacted] = useState("")
   const [issueSummary, setIssueSummary] = useState("")
-  const [responderInfo, setResponderInfo] = useState("")
   const [waitTimeBucket, setWaitTimeBucket] = useState<string>("UNSET")
   const [caseResult, setCaseResult] = useState<string>("UNSET")
   const [politenessRating, setPolitenessRating] = useState(0)
@@ -116,9 +112,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
     setEoNumber("")
     setApplicantName("")
     setApplicantPhone("")
-    setWhenContacted("")
     setIssueSummary("")
-    setResponderInfo("")
     setWaitTimeBucket("UNSET")
     setCaseResult("UNSET")
     setPolitenessRating(0)
@@ -233,31 +227,25 @@ export default function CreateCallbackDialog({ officers }: Props) {
         issueSummary || "—",
         "",
         `2. ${questionItems[1]}`,
-        whenContacted || "—",
-        "",
-        `3. ${questionItems[2]}`,
-        responderInfo || "—",
-        "",
-        `4. ${questionItems[3]}`,
         mapWaitTimeLabel(waitTimeBucket),
         "",
-        `5. ${questionItems[4]}`,
+        `3. ${questionItems[2]}`,
         mapResultLabel(caseResult),
         "",
-        `6. ${questionItems[5]}`,
+        `4. ${questionItems[3]}`,
         `ввічливість: ${politenessRating > 0 ? politenessRating : "не вказано"}, ефективність: ${effectivenessRating > 0 ? effectivenessRating : "не вказано"}`,
         "",
-        `7. ${questionItems[6]}`,
+        `5. ${questionItems[4]}`,
         singleComment || "—",
       ]
 
       if (needClarification) {
         renderedSurvey.push(
           "",
-          `8. ${questionItems[7]}`,
+          `6. ${questionItems[5]}`,
           dislikedText + (dislikedReasons.includes("OTHER") && dislikedOtherText.trim() ? ` (інше: ${dislikedOtherText.trim()})` : ""),
           "",
-          `9. ${questionItems[8]}`,
+          `7. ${questionItems[6]}`,
           offeredAlternative === "YES" ? "так" : offeredAlternative === "NO" ? "ні" : "не вказано",
           offeredAlternative === "YES" ? (alternativeDetails || "—") : "—",
         )
@@ -438,14 +426,6 @@ export default function CreateCallbackDialog({ officers }: Props) {
               </div>
               <div className="space-y-2">
                 <Label className="font-semibold text-slate-700">2. {questionItems[1]}</Label>
-                <Input type="datetime-local" value={whenContacted} onChange={(e) => setWhenContacted(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">3. {questionItems[2]}</Label>
-                <Input value={responderInfo} onChange={(e) => setResponderInfo(e.target.value)} placeholder="ПІБ / жетон / екіпаж / не знаю" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">4. {questionItems[3]}</Label>
                 <Select value={waitTimeBucket} onValueChange={setWaitTimeBucket}>
                   <SelectTrigger><SelectValue placeholder="Оберіть варіант" /></SelectTrigger>
                   <SelectContent>
@@ -457,7 +437,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">5. {questionItems[4]}</Label>
+                <Label className="font-semibold text-slate-700">3. {questionItems[2]}</Label>
                 <Select value={caseResult} onValueChange={setCaseResult}>
                   <SelectTrigger><SelectValue placeholder="Оберіть варіант" /></SelectTrigger>
                   <SelectContent>
@@ -469,7 +449,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
                 </Select>
               </div>
               <div className="space-y-3 rounded-xl border border-amber-100 bg-amber-50/40 p-3">
-                <Label className="font-semibold text-slate-700">6. {questionItems[5]}</Label>
+                <Label className="font-semibold text-slate-700">4. {questionItems[3]}</Label>
                 <div className="space-y-2">
                   <p className="text-xs font-semibold text-slate-600">Ввічливість</p>
                   <div className="flex items-center gap-1">
@@ -504,14 +484,14 @@ export default function CreateCallbackDialog({ officers }: Props) {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="font-semibold text-slate-700">7. {questionItems[6]}</Label>
+                <Label className="font-semibold text-slate-700">5. {questionItems[4]}</Label>
                 <Textarea value={singleComment} onChange={(e) => setSingleComment(e.target.value)} />
               </div>
 
               {needClarification && (
                 <>
                   <div className="space-y-2">
-                    <Label className="font-semibold text-slate-700">8. {questionItems[7]}</Label>
+                    <Label className="font-semibold text-slate-700">6. {questionItems[5]}</Label>
                     <div className="flex flex-wrap gap-2">
                       {dislikedOptions.map((option) => {
                         const selected = dislikedReasons.includes(option.value)
@@ -546,7 +526,7 @@ export default function CreateCallbackDialog({ officers }: Props) {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-semibold text-slate-700">9. {questionItems[8]}</Label>
+                    <Label className="font-semibold text-slate-700">7. {questionItems[6]}</Label>
                     <Select value={offeredAlternative} onValueChange={setOfferedAlternative}>
                       <SelectTrigger><SelectValue placeholder="Оберіть відповідь" /></SelectTrigger>
                       <SelectContent>
