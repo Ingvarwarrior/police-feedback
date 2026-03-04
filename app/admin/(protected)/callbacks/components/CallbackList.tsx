@@ -191,6 +191,7 @@ export default function CallbackList({
   const [periodFrom, setPeriodFrom] = useState("")
   const [periodTo, setPeriodTo] = useState("")
   const [selectedCallback, setSelectedCallback] = useState<CallbackRow | null>(null)
+  const [processingTargetId, setProcessingTargetId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CallbackRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [inlineProcessingResultById, setInlineProcessingResultById] = useState<Record<string, "UNSET" | "CONFIRMED" | "NOT_CONFIRMED">>({})
@@ -258,6 +259,11 @@ export default function CallbackList({
     assignableUsers.forEach((item) => map.set(item.id, item))
     return map
   }, [assignableUsers])
+
+  const processingTarget = useMemo(
+    () => (processingTargetId ? callbacks.find((item) => item.id === processingTargetId) || null : null),
+    [callbacks, processingTargetId]
+  )
 
   const executorOptions = useMemo(() => {
     return assignableUsers.map((item) => ({ id: item.id, label: userLabel(item) }))
@@ -349,6 +355,18 @@ export default function CallbackList({
 
   const canProcessCard = (cb: CallbackRow) => canProcess || (canProcessAssignedOnly && cb.assignedUserId === currentUserId)
   const getInlineProcessingValue = (cb: CallbackRow) => inlineProcessingResultById[cb.id] || normalizeCheckResult(cb.checkResult)
+
+  const openProcessingDialog = (cb: CallbackRow) => {
+    if (!canProcessCard(cb)) {
+      toast.error("У вас немає прав для виконання цього callback")
+      return
+    }
+    setInlineProcessingResultById((prev) => ({
+      ...prev,
+      [cb.id]: prev[cb.id] || normalizeCheckResult(cb.checkResult),
+    }))
+    setProcessingTargetId(cb.id)
+  }
 
   const resetFilters = () => {
     setSearch("")
@@ -465,6 +483,7 @@ export default function CallbackList({
       setSelectedCallback((prev) => (prev?.id === callbackId ? { ...prev, ...updated } : prev))
       setInlineProcessingResultById((prev) => ({ ...prev, [callbackId]: normalizeCheckResult(result.callback.checkResult) }))
       toast.success("Опрацювання callback збережено")
+      setProcessingTargetId(null)
     } catch (error: any) {
       toast.error(error?.message || "Не вдалося зберегти опрацювання")
     } finally {
@@ -591,8 +610,6 @@ export default function CallbackList({
         {filtered.map((cb) => {
           const callbackWorkStatus = getCallbackWorkStatus(cb)
           const canProcessThisCard = canProcessCard(cb)
-          const inlineProcessingValue = getInlineProcessingValue(cb)
-          const isInlineSaving = Boolean(inlineSavingById[cb.id])
 
           return (
           <Card key={cb.id} className="overflow-hidden rounded-[2rem] border-slate-200 transition-all hover:border-blue-200 hover:shadow-md">
@@ -706,50 +723,17 @@ export default function CallbackList({
                   </div>
                 </div>
 
-                {canProcessThisCard ? (
-                  <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
-                    <p className="mb-2 ds-field-label">Опрацювання callback</p>
-                    {!cb.assignedUserId && (
-                      <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
-                        Спочатку призначте виконавця callback.
-                      </p>
-                    )}
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-end">
-                      <div>
-                        <p className="mb-2 text-xs font-semibold text-slate-700">Результат перевірки</p>
-                        <Select
-                          value={inlineProcessingValue}
-                          onValueChange={(value) =>
-                            setInlineProcessingResultById((prev) => ({
-                              ...prev,
-                              [cb.id]: value as "UNSET" | "CONFIRMED" | "NOT_CONFIRMED",
-                            }))
-                          }
-                          disabled={isInlineSaving || !cb.assignedUserId}
-                        >
-                          <SelectTrigger className="h-10 rounded-xl bg-white">
-                            <SelectValue placeholder="Оберіть результат" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="UNSET">Не вказано</SelectItem>
-                            <SelectItem value="CONFIRMED">Підтверджується</SelectItem>
-                            <SelectItem value="NOT_CONFIRMED">Не підтверджується</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button
-                        type="button"
-                        className="h-10 rounded-xl font-semibold"
-                        onClick={() => handleInlineProcessingSave(cb.id)}
-                        disabled={isInlineSaving || !cb.assignedUserId}
-                      >
-                        {isInlineSaving ? "Збереження..." : "Зберегти опрацювання"}
-                      </Button>
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="flex items-center justify-end text-xs font-semibold tracking-wide text-blue-600">
+                <div className="flex items-center justify-end gap-3 text-xs font-semibold tracking-wide text-blue-600">
+                  {canProcessThisCard ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 rounded-xl px-4 text-xs font-semibold text-slate-700"
+                      onClick={() => openProcessingDialog(cb)}
+                    >
+                      Виконати
+                    </Button>
+                  ) : null}
                   <button
                     type="button"
                     className="inline-flex items-center"
@@ -901,6 +885,73 @@ export default function CallbackList({
                     {selectedCallback.surveyNotes || "Опитування ще не заповнено."}
                   </div>
                 </div>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(processingTarget)} onOpenChange={(open) => !open && setProcessingTargetId(null)}>
+        <DialogContent className="max-w-md rounded-2xl">
+          {processingTarget ? (
+            <div className="space-y-4">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-semibold tracking-tight">
+                  Виконати callback №{formatCallbackNumber(processingTarget.callbackNumber)}
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                <p className="font-semibold text-slate-900">Callback до ЄО №{processingTarget.eoNumber}</p>
+                <p className="mt-1">Виконавець: {userLabel(processingTarget.assignedUser)}</p>
+              </div>
+
+              {!processingTarget.assignedUserId ? (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+                  Спочатку призначте виконавця callback.
+                </p>
+              ) : null}
+
+              <div>
+                <p className="mb-2 text-xs font-semibold text-slate-700">Результат перевірки</p>
+                <Select
+                  value={getInlineProcessingValue(processingTarget)}
+                  onValueChange={(value) =>
+                    setInlineProcessingResultById((prev) => ({
+                      ...prev,
+                      [processingTarget.id]: value as "UNSET" | "CONFIRMED" | "NOT_CONFIRMED",
+                    }))
+                  }
+                  disabled={Boolean(inlineSavingById[processingTarget.id]) || !processingTarget.assignedUserId}
+                >
+                  <SelectTrigger className="h-10 rounded-xl bg-white">
+                    <SelectValue placeholder="Оберіть результат" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNSET">Не вказано</SelectItem>
+                    <SelectItem value="CONFIRMED">Підтверджується</SelectItem>
+                    <SelectItem value="NOT_CONFIRMED">Не підтверджується</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => setProcessingTargetId(null)}
+                >
+                  Скасувати
+                </Button>
+                <Button
+                  type="button"
+                  className="rounded-xl font-semibold"
+                  onClick={() => handleInlineProcessingSave(processingTarget.id)}
+                  disabled={Boolean(inlineSavingById[processingTarget.id]) || !processingTarget.assignedUserId}
+                >
+                  {inlineSavingById[processingTarget.id] ? "Збереження..." : "Зберегти виконання"}
+                </Button>
               </div>
             </div>
           ) : null}
