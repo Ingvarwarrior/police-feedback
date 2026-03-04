@@ -50,6 +50,7 @@ export async function refreshOfficerStats(officerId: string) {
         callbackRatings = await (prisma as any).callback.findMany({
             where: {
                 officers: { some: { id: officerId } },
+                checkResult: "CONFIRMED",
                 qOverall: { gt: 0 }
             },
             select: {

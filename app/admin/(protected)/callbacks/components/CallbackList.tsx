@@ -166,6 +166,7 @@ export default function CallbackList({
   const [processingExecutorId, setProcessingExecutorId] = useState<string>("UNASSIGNED")
   const [isAssigningExecutor, setIsAssigningExecutor] = useState(false)
   const [isSavingProcessing, setIsSavingProcessing] = useState(false)
+  const [assigningInlineById, setAssigningInlineById] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     setCallbacks(initialCallbacks)
@@ -355,6 +356,60 @@ export default function CallbackList({
     }
   }
 
+  const handleInlineAssign = async (callbackId: string, nextExecutorId: string) => {
+    if (!canAssign) return
+    const target = callbacks.find((item) => item.id === callbackId)
+    if (!target) return
+
+    const currentExecutorId = target.assignedUser?.id || "UNASSIGNED"
+    if (nextExecutorId === currentExecutorId) return
+
+    setAssigningInlineById((prev) => ({ ...prev, [callbackId]: true }))
+    try {
+      const assignResult = await assignCallbackExecutor({
+        callbackId,
+        assignedUserId: nextExecutorId === "UNASSIGNED" ? null : nextExecutorId,
+      })
+
+      const assignedUserId = assignResult.callback?.assignedUserId || null
+      const assignedUser =
+        assignResult.callback?.assignedUser ||
+        (assignedUserId ? usersById.get(assignedUserId) || null : null)
+
+      setCallbacks((prev) =>
+        prev.map((cb) =>
+          cb.id === callbackId
+            ? {
+                ...cb,
+                assignedUserId,
+                assignedUser,
+              }
+            : cb
+        )
+      )
+
+      setSelectedCallback((prev) =>
+        prev && prev.id === callbackId
+          ? {
+              ...prev,
+              assignedUserId,
+              assignedUser,
+            }
+          : prev
+      )
+
+      toast.success("Виконавця callback призначено")
+    } catch (error: any) {
+      toast.error(error?.message || "Не вдалося призначити виконавця callback")
+    } finally {
+      setAssigningInlineById((prev) => {
+        const next = { ...prev }
+        delete next[callbackId]
+        return next
+      })
+    }
+  }
+
   const handleSaveProcessing = async () => {
     if (!selectedCallback) return
     if (!canProcessSelected) {
@@ -515,12 +570,10 @@ export default function CallbackList({
       <div className="space-y-4">
         {filtered.map((cb) => (
           <Card key={cb.id} className="overflow-hidden rounded-[2rem] border-slate-200 transition-all hover:border-blue-200 hover:shadow-md">
-            <button
-              type="button"
-              onClick={() => setSelectedCallback(cb)}
-              className="w-full text-left"
-            >
-              <CardContent className="space-y-4 p-5">
+              <CardContent
+                className="space-y-4 p-5"
+                onClick={() => setSelectedCallback(cb)}
+              >
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -588,7 +641,29 @@ export default function CallbackList({
                   </div>
                   <div className="rounded-xl border border-slate-100 p-3">
                     <p className="ds-field-label">Виконавець callback</p>
-                    <p className="text-sm font-semibold text-slate-900">{userLabel(cb.assignedUser)}</p>
+                    {canAssign ? (
+                      <div onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
+                        <Select
+                          value={cb.assignedUser?.id || "UNASSIGNED"}
+                          onValueChange={(value) => handleInlineAssign(cb.id, value)}
+                          disabled={Boolean(assigningInlineById[cb.id])}
+                        >
+                          <SelectTrigger className="h-10 rounded-xl bg-white font-semibold text-slate-900">
+                            <SelectValue placeholder="Оберіть виконавця" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="UNASSIGNED">Без виконавця</SelectItem>
+                            {executorOptions.map((item) => (
+                              <SelectItem key={item.id} value={item.id}>
+                                {item.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-semibold text-slate-900">{userLabel(cb.assignedUser)}</p>
+                    )}
                   </div>
                 </div>
 
@@ -596,7 +671,6 @@ export default function CallbackList({
                   Детальніше <ChevronRight className="ml-1 h-4 w-4" />
                 </div>
               </CardContent>
-            </button>
           </Card>
         ))}
 

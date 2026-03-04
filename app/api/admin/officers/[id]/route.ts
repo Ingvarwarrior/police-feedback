@@ -79,6 +79,7 @@ export async function GET(
                         applicantName: true,
                         applicantPhone: true,
                         status: true,
+                        checkResult: true,
                         qOverall: true,
                         surveyNotes: true
                     },
@@ -135,7 +136,9 @@ export async function GET(
         // Calculate aggregate scores
         const evaluations = officer.evaluations
         const callbacks = (officer as any).callbacks || []
-        const ratedCallbacks = callbacks.filter((cb: any) => typeof cb.qOverall === "number" && cb.qOverall > 0)
+        const ratedCallbacks = callbacks.filter(
+            (cb: any) => cb.checkResult === "CONFIRMED" && typeof cb.qOverall === "number" && cb.qOverall > 0
+        )
         const callbackAvgRating =
             ratedCallbacks.length > 0
                 ? Number((ratedCallbacks.reduce((sum: number, cb: any) => sum + cb.qOverall, 0) / ratedCallbacks.length).toFixed(2))

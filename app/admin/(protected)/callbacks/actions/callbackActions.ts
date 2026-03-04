@@ -365,22 +365,6 @@ export async function createCallback(input: z.input<typeof callbackSchema>) {
     },
   })
 
-  for (const officerId of uniqueOfficerIds) {
-    try {
-      await refreshOfficerStats(officerId)
-    } catch (error) {
-      // Callback is already saved; stats recalculation should not break user flow.
-      console.error("Failed to refresh officer stats from callback", { officerId, error })
-    }
-  }
-
-  await applyLowRatingRiskSignal({
-    eoNumber: normalizedEoNumber,
-    qOverall: parsed.qOverall,
-    callbackId: created.id,
-    actorUserId: user.id,
-  })
-
   revalidatePath("/admin/callbacks")
   revalidatePath("/admin/unified-record")
   revalidatePath("/admin/analytics")
@@ -436,6 +420,8 @@ export async function updateCallbackProcessing(input: z.input<typeof callbackPro
       assignedUserId: true,
       checkResult: true,
       status: true,
+      qOverall: true,
+      officers: { select: { id: true } },
     },
   })
 
@@ -467,6 +453,31 @@ export async function updateCallbackProcessing(input: z.input<typeof callbackPro
     },
   })
 
+  const checkResultChanged = (callback.checkResult || "UNSET") !== (updated.checkResult || "UNSET")
+  if (checkResultChanged) {
+    for (const officer of callback.officers || []) {
+      try {
+        await refreshOfficerStats(officer.id)
+      } catch (error) {
+        console.error("Failed to refresh officer stats after callback processing update", {
+          callbackId: callback.id,
+          officerId: officer.id,
+          error,
+        })
+      }
+    }
+  }
+
+  const becameConfirmed = callback.checkResult !== "CONFIRMED" && updated.checkResult === "CONFIRMED"
+  if (becameConfirmed) {
+    await applyLowRatingRiskSignal({
+      eoNumber: callback.eoNumber,
+      qOverall: callback.qOverall,
+      callbackId: callback.id,
+      actorUserId: user.id,
+    })
+  }
+
   const becameCompleted = callback.status !== "COMPLETED" && updated.status === "COMPLETED"
   if (becameCompleted) {
     await notifyManagersAboutCompletedCallback({
@@ -493,6 +504,8 @@ export async function updateCallbackProcessing(input: z.input<typeof callbackPro
 
   revalidatePath("/admin/callbacks")
   revalidatePath("/admin/dashboard")
+  revalidatePath("/admin/officers")
+  revalidatePath("/admin/analytics")
 
   return { success: true, callback: updated }
 }
