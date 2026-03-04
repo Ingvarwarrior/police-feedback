@@ -84,6 +84,7 @@ type CallbackSort =
   | "eo_number_desc"
   | "rating_desc"
   | "rating_asc"
+type CallbackWorkStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED"
 
 function userLabel(user: UserRow | null) {
   if (!user) return "Не призначено"
@@ -121,6 +122,28 @@ function checkResultLabel(value: string | null | undefined) {
   return "Не вказано"
 }
 
+function normalizeCheckResult(value: string | null | undefined): "UNSET" | "CONFIRMED" | "NOT_CONFIRMED" {
+  if (value === "CONFIRMED" || value === "NOT_CONFIRMED") return value
+  return "UNSET"
+}
+
+function getCallbackWorkStatus(cb: Pick<CallbackRow, "status" | "assignedUserId" | "assignedUser">): CallbackWorkStatus {
+  if (cb.status === "COMPLETED") return "COMPLETED"
+  return cb.assignedUserId || cb.assignedUser?.id ? "IN_PROGRESS" : "PENDING"
+}
+
+function callbackWorkStatusLabel(status: CallbackWorkStatus) {
+  if (status === "COMPLETED") return "Опрацьовано"
+  if (status === "IN_PROGRESS") return "В роботі"
+  return "Очікує"
+}
+
+function callbackWorkStatusChipClass(status: CallbackWorkStatus) {
+  if (status === "COMPLETED") return "status-chip-processed"
+  if (status === "IN_PROGRESS") return "status-chip-progress"
+  return "status-chip-waiting"
+}
+
 function checkResultChipClass(value: string | null | undefined) {
   if (value === "CONFIRMED") return "status-chip-processed"
   if (value === "NOT_CONFIRMED") return "status-chip-waiting"
@@ -153,7 +176,7 @@ export default function CallbackList({
   const searchParams = useSearchParams()
   const [callbacks, setCallbacks] = useState(initialCallbacks)
   const [search, setSearch] = useState("")
-  const [status, setStatus] = useState<"ALL" | "PENDING" | "COMPLETED">("ALL")
+  const [status, setStatus] = useState<"ALL" | "PENDING" | "IN_PROGRESS" | "COMPLETED">("ALL")
   const [checkResult, setCheckResult] = useState<"ALL" | "UNSET" | "CONFIRMED" | "NOT_CONFIRMED">("ALL")
   const [executor, setExecutor] = useState<string>("ALL")
   const [sortBy, setSortBy] = useState<CallbackSort>("date_desc")
@@ -162,10 +185,8 @@ export default function CallbackList({
   const [selectedCallback, setSelectedCallback] = useState<CallbackRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CallbackRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [processingResult, setProcessingResult] = useState<"UNSET" | "CONFIRMED" | "NOT_CONFIRMED">("UNSET")
-  const [processingExecutorId, setProcessingExecutorId] = useState<string>("UNASSIGNED")
-  const [isAssigningExecutor, setIsAssigningExecutor] = useState(false)
-  const [isSavingProcessing, setIsSavingProcessing] = useState(false)
+  const [inlineProcessingResultById, setInlineProcessingResultById] = useState<Record<string, "UNSET" | "CONFIRMED" | "NOT_CONFIRMED">>({})
+  const [inlineSavingById, setInlineSavingById] = useState<Record<string, boolean>>({})
   const [assigningInlineById, setAssigningInlineById] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
@@ -178,7 +199,7 @@ export default function CallbackList({
       if (!raw) return
       const parsed = JSON.parse(raw)
       if (typeof parsed.search === "string") setSearch(parsed.search)
-      if (["ALL", "PENDING", "COMPLETED"].includes(parsed.status)) setStatus(parsed.status)
+      if (["ALL", "PENDING", "IN_PROGRESS", "COMPLETED"].includes(parsed.status)) setStatus(parsed.status)
       if (["ALL", "UNSET", "CONFIRMED", "NOT_CONFIRMED"].includes(parsed.checkResult)) {
         setCheckResult(parsed.checkResult)
       }
@@ -220,21 +241,6 @@ export default function CallbackList({
     }
   }, [searchParams, callbacks])
 
-  useEffect(() => {
-    if (!selectedCallback) {
-      setProcessingResult("UNSET")
-      setProcessingExecutorId("UNASSIGNED")
-      return
-    }
-    setProcessingExecutorId(selectedCallback.assignedUser?.id || "UNASSIGNED")
-    const value = selectedCallback.checkResult
-    if (value === "CONFIRMED" || value === "NOT_CONFIRMED") {
-      setProcessingResult(value)
-      return
-    }
-    setProcessingResult("UNSET")
-  }, [selectedCallback])
-
   const assignableUsers = useMemo(() => {
     return [...users].sort((a, b) => userLabel(a).localeCompare(userLabel(b), "uk"))
   }, [users])
@@ -253,7 +259,7 @@ export default function CallbackList({
     let data = [...callbacks]
 
     if (status !== "ALL") {
-      data = data.filter((cb) => cb.status === status)
+      data = data.filter((cb) => getCallbackWorkStatus(cb) === status)
     }
 
     if (checkResult !== "ALL") {
@@ -325,8 +331,16 @@ export default function CallbackList({
     })
   }, [callbacks, search, status, checkResult, executor, sortBy, periodFrom, periodTo])
 
-  const selectedCallbackAssignedToCurrentUser = !!selectedCallback && selectedCallback.assignedUserId === currentUserId
-  const canProcessSelected = !!selectedCallback && (canProcess || (canProcessAssignedOnly && selectedCallbackAssignedToCurrentUser))
+  const callbackStats = useMemo(() => {
+    const total = filtered.length
+    const pending = filtered.filter((cb) => getCallbackWorkStatus(cb) === "PENDING").length
+    const inProgress = filtered.filter((cb) => getCallbackWorkStatus(cb) === "IN_PROGRESS").length
+    const completed = filtered.filter((cb) => getCallbackWorkStatus(cb) === "COMPLETED").length
+    return { total, pending, inProgress, completed }
+  }, [filtered])
+
+  const canProcessCard = (cb: CallbackRow) => canProcess || (canProcessAssignedOnly && cb.assignedUserId === currentUserId)
+  const getInlineProcessingValue = (cb: CallbackRow) => inlineProcessingResultById[cb.id] || normalizeCheckResult(cb.checkResult)
 
   const resetFilters = () => {
     setSearch("")
@@ -410,56 +424,47 @@ export default function CallbackList({
     }
   }
 
-  const handleSaveProcessing = async () => {
-    if (!selectedCallback) return
-    if (!canProcessSelected) {
+  const handleInlineProcessingSave = async (callbackId: string) => {
+    const target = callbacks.find((item) => item.id === callbackId)
+    if (!target) return
+
+    if (!canProcessCard(target)) {
       toast.error("У вас немає прав для опрацювання цього callback")
       return
     }
 
-    const selectedExecutorAfterSave = canAssign ? processingExecutorId : (selectedCallback.assignedUserId || "UNASSIGNED")
-    if (selectedExecutorAfterSave === "UNASSIGNED") {
+    if (!target.assignedUserId) {
       toast.error("Спочатку призначте виконавця callback")
       return
     }
 
-    setIsSavingProcessing(true)
+    const nextProcessingValue = getInlineProcessingValue(target)
+    setInlineSavingById((prev) => ({ ...prev, [callbackId]: true }))
     try {
-      let nextCallback = selectedCallback
-      const currentAssigned = selectedCallback.assignedUser?.id || "UNASSIGNED"
-      if (canAssign && processingExecutorId !== currentAssigned) {
-        setIsAssigningExecutor(true)
-        const assignResult = await assignCallbackExecutor({
-          callbackId: selectedCallback.id,
-          assignedUserId: processingExecutorId === "UNASSIGNED" ? null : processingExecutorId,
-        })
-        nextCallback = {
-          ...nextCallback,
-          assignedUserId: assignResult.callback?.assignedUserId || null,
-          assignedUser:
-            assignResult.callback?.assignedUser ||
-            (processingExecutorId !== "UNASSIGNED" ? usersById.get(processingExecutorId) || null : null),
-        }
-        setIsAssigningExecutor(false)
-      }
-
-      const result = await updateCallbackProcessing({ callbackId: selectedCallback.id, checkResult: processingResult })
+      const result = await updateCallbackProcessing({
+        callbackId,
+        checkResult: nextProcessingValue,
+      })
       const updated = {
-        ...nextCallback,
+        ...target,
         checkResult: result.callback.checkResult,
         status: result.callback.status,
       }
 
       setCallbacks((prev) =>
-        prev.map((cb) => (cb.id === selectedCallback.id ? { ...cb, ...updated } : cb))
+        prev.map((cb) => (cb.id === callbackId ? { ...cb, ...updated } : cb))
       )
-      setSelectedCallback((prev) => (prev ? { ...prev, ...updated } : prev))
+      setSelectedCallback((prev) => (prev?.id === callbackId ? { ...prev, ...updated } : prev))
+      setInlineProcessingResultById((prev) => ({ ...prev, [callbackId]: normalizeCheckResult(result.callback.checkResult) }))
       toast.success("Опрацювання callback збережено")
     } catch (error: any) {
       toast.error(error?.message || "Не вдалося зберегти опрацювання")
     } finally {
-      setIsAssigningExecutor(false)
-      setIsSavingProcessing(false)
+      setInlineSavingById((prev) => {
+        const next = { ...prev }
+        delete next[callbackId]
+        return next
+      })
     }
   }
 
@@ -487,13 +492,14 @@ export default function CallbackList({
         </div>
 
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
-          <Select value={status} onValueChange={(value) => setStatus(value as "ALL" | "PENDING" | "COMPLETED")}>
+          <Select value={status} onValueChange={(value) => setStatus(value as "ALL" | "PENDING" | "IN_PROGRESS" | "COMPLETED")}>
             <SelectTrigger className="h-11 rounded-xl">
               <SelectValue placeholder="Статус" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Всі статуси</SelectItem>
               <SelectItem value="PENDING">Очікує</SelectItem>
+              <SelectItem value="IN_PROGRESS">В роботі</SelectItem>
               <SelectItem value="COMPLETED">Опрацьовано</SelectItem>
             </SelectContent>
           </Select>
@@ -546,29 +552,41 @@ export default function CallbackList({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card className="rounded-3xl border-slate-200">
           <CardContent className="p-5">
             <p className="ds-field-label">Всього callback</p>
-            <p className="mt-2 text-3xl font-black text-slate-900">{filtered.length}</p>
+            <p className="mt-2 text-3xl font-black text-slate-900">{callbackStats.total}</p>
           </CardContent>
         </Card>
         <Card className="rounded-3xl border-slate-200">
           <CardContent className="p-5">
-            <p className="ds-field-label">Очікують перевірки</p>
-            <p className="mt-2 text-3xl font-black text-amber-600">{filtered.filter((cb) => cb.status === "PENDING").length}</p>
+            <p className="ds-field-label">Очікують</p>
+            <p className="mt-2 text-3xl font-black text-amber-600">{callbackStats.pending}</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-3xl border-slate-200">
+          <CardContent className="p-5">
+            <p className="ds-field-label">В роботі</p>
+            <p className="mt-2 text-3xl font-black text-blue-600">{callbackStats.inProgress}</p>
           </CardContent>
         </Card>
         <Card className="rounded-3xl border-slate-200">
           <CardContent className="p-5">
             <p className="ds-field-label">Опрацьовані</p>
-            <p className="mt-2 text-3xl font-black text-emerald-600">{filtered.filter((cb) => cb.status === "COMPLETED").length}</p>
+            <p className="mt-2 text-3xl font-black text-emerald-600">{callbackStats.completed}</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="space-y-4">
-        {filtered.map((cb) => (
+        {filtered.map((cb) => {
+          const callbackWorkStatus = getCallbackWorkStatus(cb)
+          const canProcessThisCard = canProcessCard(cb)
+          const inlineProcessingValue = getInlineProcessingValue(cb)
+          const isInlineSaving = Boolean(inlineSavingById[cb.id])
+
+          return (
           <Card key={cb.id} className="overflow-hidden rounded-[2rem] border-slate-200 transition-all hover:border-blue-200 hover:shadow-md">
               <CardContent className="space-y-4 p-5">
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -607,8 +625,8 @@ export default function CallbackList({
                     <span className={cn(checkResultChipClass(cb.checkResult))}>
                       {checkResultLabel(cb.checkResult)}
                     </span>
-                    <span className={cn(cb.status === "COMPLETED" ? "status-chip-processed" : "status-chip-waiting")}>
-                      {cb.status === "COMPLETED" ? "Опрацьовано" : "Очікує"}
+                    <span className={cn(callbackWorkStatusChipClass(callbackWorkStatus))}>
+                      {callbackWorkStatusLabel(callbackWorkStatus)}
                     </span>
                   </div>
                 </div>
@@ -631,7 +649,7 @@ export default function CallbackList({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   <div className="rounded-xl border border-slate-100 p-3">
                     <p className="ds-field-label">Створив</p>
                     <p className="text-sm font-semibold text-slate-900">{userLabel(cb.createdBy)}</p>
@@ -666,7 +684,60 @@ export default function CallbackList({
                       <p className="text-sm font-semibold text-slate-900">{userLabel(cb.assignedUser)}</p>
                     )}
                   </div>
+                  <div className="rounded-xl border border-slate-100 p-3">
+                    <p className="ds-field-label">Результат</p>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {callbackWorkStatus === "COMPLETED"
+                        ? checkResultLabel(cb.checkResult)
+                        : callbackWorkStatus === "IN_PROGRESS"
+                          ? "В процесі перевірки..."
+                          : "Очікує призначення виконавця"}
+                    </p>
+                  </div>
                 </div>
+
+                {canProcessThisCard ? (
+                  <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+                    <p className="mb-2 ds-field-label">Опрацювання callback</p>
+                    {!cb.assignedUserId && (
+                      <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+                        Спочатку призначте виконавця callback.
+                      </p>
+                    )}
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-end">
+                      <div>
+                        <p className="mb-2 text-xs font-semibold text-slate-700">Результат перевірки</p>
+                        <Select
+                          value={inlineProcessingValue}
+                          onValueChange={(value) =>
+                            setInlineProcessingResultById((prev) => ({
+                              ...prev,
+                              [cb.id]: value as "UNSET" | "CONFIRMED" | "NOT_CONFIRMED",
+                            }))
+                          }
+                          disabled={isInlineSaving || !cb.assignedUserId}
+                        >
+                          <SelectTrigger className="h-10 rounded-xl bg-white">
+                            <SelectValue placeholder="Оберіть результат" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="UNSET">Не вказано</SelectItem>
+                            <SelectItem value="CONFIRMED">Підтверджується</SelectItem>
+                            <SelectItem value="NOT_CONFIRMED">Не підтверджується</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        className="h-10 rounded-xl font-semibold"
+                        onClick={() => handleInlineProcessingSave(cb.id)}
+                        disabled={isInlineSaving || !cb.assignedUserId}
+                      >
+                        {isInlineSaving ? "Збереження..." : "Зберегти опрацювання"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="flex items-center justify-end text-xs font-semibold tracking-wide text-blue-600">
                   <button
@@ -679,7 +750,8 @@ export default function CallbackList({
                 </div>
               </CardContent>
           </Card>
-        ))}
+          )
+        })}
 
         {filtered.length === 0 && (
           <div className="ds-empty-state">
@@ -708,10 +780,8 @@ export default function CallbackList({
                       <Hash className="h-3.5 w-3.5" />
                       {formatCallbackNumber(selectedCallback.callbackNumber)}
                     </span>
-                    <span className={cn(
-                      selectedCallback.status === "COMPLETED" ? "status-chip-processed" : "status-chip-waiting"
-                    )}>
-                      {selectedCallback.status === "COMPLETED" ? "Опрацьовано" : "Очікує"}
+                    <span className={cn(callbackWorkStatusChipClass(getCallbackWorkStatus(selectedCallback)))}>
+                      {callbackWorkStatusLabel(getCallbackWorkStatus(selectedCallback))}
                     </span>
                     {typeof selectedCallback.qOverall === "number" && selectedCallback.qOverall > 0 ? (
                       <span className="ds-chip-active">
@@ -787,27 +857,7 @@ export default function CallbackList({
                   </div>
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Виконавець callback</p>
-                    {canAssign ? (
-                      <Select
-                        value={processingExecutorId}
-                        onValueChange={(value) => setProcessingExecutorId(value)}
-                        disabled={isAssigningExecutor || isSavingProcessing}
-                      >
-                        <SelectTrigger className="h-10 rounded-xl bg-white font-semibold text-slate-900">
-                          <SelectValue placeholder="Оберіть виконавця" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="UNASSIGNED">Без виконавця</SelectItem>
-                          {executorOptions.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <p className="ds-detail-value">{userLabel(selectedCallback.assignedUser)}</p>
-                    )}
+                    <p className="ds-detail-value">{userLabel(selectedCallback.assignedUser)}</p>
                   </div>
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Номер callback</p>
@@ -818,43 +868,6 @@ export default function CallbackList({
                     <p className="ds-detail-value">{checkResultLabel(selectedCallback.checkResult)}</p>
                   </div>
                 </div>
-
-                {canProcessSelected ? (
-                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
-                    <p className="mb-3 ds-field-label text-emerald-700">Опрацювання callback</p>
-                    {!selectedCallback.assignedUserId && (
-                      <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
-                        Спочатку призначте виконавця callback, потім збережіть результат перевірки.
-                      </p>
-                    )}
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-end">
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold text-slate-700">Результат перевірки</p>
-                        <Select
-                          value={processingResult}
-                          onValueChange={(value) => setProcessingResult(value as "UNSET" | "CONFIRMED" | "NOT_CONFIRMED")}
-                        >
-                          <SelectTrigger className="h-11 rounded-xl bg-white">
-                            <SelectValue placeholder="Оберіть результат" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="UNSET">Не вказано</SelectItem>
-                            <SelectItem value="CONFIRMED">Підтверджується</SelectItem>
-                            <SelectItem value="NOT_CONFIRMED">Не підтверджується</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button
-                        type="button"
-                        className="h-11 rounded-xl font-semibold"
-                        onClick={handleSaveProcessing}
-                        disabled={isSavingProcessing || (!canAssign && !selectedCallback.assignedUserId)}
-                      >
-                        {isSavingProcessing ? "Збереження..." : "Зберегти опрацювання"}
-                      </Button>
-                    </div>
-                  </div>
-                ) : null}
 
                 <div className="ds-detail-panel">
                   <p className="mb-3 ds-field-label">Поліцейські, яких стосується</p>
