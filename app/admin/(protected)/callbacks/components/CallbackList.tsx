@@ -116,6 +116,10 @@ function officerLabel(officer: OfficerRow) {
   return `${officer.lastName || ""} ${officer.firstName || ""}`.trim() || officer.badgeNumber
 }
 
+function safeText(value: unknown) {
+  return typeof value === "string" ? value : value == null ? "" : String(value)
+}
+
 function checkResultLabel(value: string | null | undefined) {
   if (value === "CONFIRMED") return "Підтверджується"
   if (value === "NOT_CONFIRMED") return "Не підтверджується"
@@ -305,15 +309,15 @@ export default function CallbackList({
     if (search.trim()) {
       const q = search.toLowerCase().trim()
       data = data.filter((cb) => {
-        const officersString = cb.officers
+        const officersString = (Array.isArray(cb.officers) ? cb.officers : [])
           .map((o) => `${o.lastName || ""} ${o.firstName || ""} ${o.badgeNumber}`.toLowerCase())
           .join(" ")
 
         return (
           String(cb.callbackNumber ?? "").includes(q) ||
-          cb.eoNumber.toLowerCase().includes(q) ||
-          cb.applicantName.toLowerCase().includes(q) ||
-          cb.applicantPhone.toLowerCase().includes(q) ||
+          safeText(cb.eoNumber).toLowerCase().includes(q) ||
+          safeText(cb.applicantName).toLowerCase().includes(q) ||
+          safeText(cb.applicantPhone).toLowerCase().includes(q) ||
           officersString.includes(q)
         )
       })
@@ -610,6 +614,7 @@ export default function CallbackList({
         {filtered.map((cb) => {
           const callbackWorkStatus = getCallbackWorkStatus(cb)
           const canProcessThisCard = canProcessCard(cb)
+          const callbackOfficers = Array.isArray(cb.officers) ? cb.officers : []
 
           return (
           <Card key={cb.id} className="overflow-hidden rounded-[2rem] border-slate-200 transition-all hover:border-blue-200 hover:shadow-md">
@@ -631,11 +636,11 @@ export default function CallbackList({
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <User className="h-3.5 w-3.5" />
-                        {cb.applicantName}
+                        {safeText(cb.applicantName)}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Phone className="h-3.5 w-3.5" />
-                        {cb.applicantPhone}
+                        {safeText(cb.applicantPhone)}
                       </span>
                     </div>
                   </div>
@@ -661,18 +666,18 @@ export default function CallbackList({
                 <div>
                   <p className="mb-2 ds-field-label">Поліцейські, яких стосується</p>
                   <div className="flex flex-wrap gap-2">
-                    {cb.officers.slice(0, 2).map((o) => (
+                    {callbackOfficers.slice(0, 2).map((o) => (
                       <span key={o.id} className="inline-flex rounded-xl border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
                         <Users className="mr-1 h-3 w-3" />
                         {officerLabel(o)} ({o.badgeNumber})
                       </span>
                     ))}
-                    {cb.officers.length > 2 ? (
+                    {callbackOfficers.length > 2 ? (
                       <span className="inline-flex rounded-xl border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500">
-                        +{cb.officers.length - 2} ще
+                        +{callbackOfficers.length - 2} ще
                       </span>
                     ) : null}
-                    {cb.officers.length === 0 ? <span className="text-sm text-slate-400">Не вказано</span> : null}
+                    {callbackOfficers.length === 0 ? <span className="text-sm text-slate-400">Не вказано</span> : null}
                   </div>
                 </div>
 
@@ -830,6 +835,10 @@ export default function CallbackList({
               </div>
 
               <div className="space-y-4 overflow-y-auto p-6">
+                {(() => {
+                  const selectedOfficers = Array.isArray(selectedCallback.officers) ? selectedCallback.officers : []
+                  return (
+                    <>
                 <div className="ds-detail-grid">
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Дата виклику</p>
@@ -841,11 +850,11 @@ export default function CallbackList({
                   </div>
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">ПІБ заявника</p>
-                    <p className="ds-detail-value">{selectedCallback.applicantName}</p>
+                    <p className="ds-detail-value">{safeText(selectedCallback.applicantName)}</p>
                   </div>
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Телефон заявника</p>
-                    <p className="ds-detail-value">{selectedCallback.applicantPhone}</p>
+                    <p className="ds-detail-value">{safeText(selectedCallback.applicantPhone)}</p>
                   </div>
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Створив</p>
@@ -868,14 +877,14 @@ export default function CallbackList({
                 <div className="ds-detail-panel">
                   <p className="mb-3 ds-field-label">Поліцейські, яких стосується</p>
                   <div className="flex flex-wrap gap-2">
-                    {selectedCallback.officers.map((o) => (
+                    {selectedOfficers.map((o) => (
                       <span key={o.id} className="inline-flex rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
                         {officerLabel(o)} ({o.badgeNumber})
                         {o.rank ? ` • ${o.rank}` : ""}
                         {o.department ? ` • ${o.department}` : ""}
                       </span>
                     ))}
-                    {selectedCallback.officers.length === 0 ? <span className="text-sm text-slate-400">Не вказано</span> : null}
+                    {selectedOfficers.length === 0 ? <span className="text-sm text-slate-400">Не вказано</span> : null}
                   </div>
                 </div>
 
@@ -885,6 +894,9 @@ export default function CallbackList({
                     {selectedCallback.surveyNotes || "Опитування ще не заповнено."}
                   </div>
                 </div>
+                    </>
+                  )
+                })()}
               </div>
             </div>
           ) : null}
