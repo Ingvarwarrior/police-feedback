@@ -639,7 +639,11 @@ export default function CallbackList({
                     <p className="ds-field-label">Створив</p>
                     <p className="text-sm font-semibold text-slate-900">{userLabel(cb.createdBy)}</p>
                   </div>
-                  <div className="rounded-xl border border-slate-100 p-3">
+                  <div
+                    className="rounded-xl border border-slate-100 p-3"
+                    onClick={(event) => event.stopPropagation()}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
                     <p className="ds-field-label">Виконавець callback</p>
                     {canAssign ? (
                       <div onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
