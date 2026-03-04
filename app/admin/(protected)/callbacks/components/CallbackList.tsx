@@ -98,8 +98,28 @@ function formatCallbackNumber(value?: number | null) {
 
 function formatCallbackMeta(value: number | null | undefined, createdAt: string | Date) {
   const callbackNumber = formatCallbackNumber(value)
-  const created = format(new Date(createdAt), "dd.MM.yyyy")
+  const created = formatDateSafe(createdAt, "dd.MM.yyyy", "дата невідома")
   return `№ ${callbackNumber} від ${created}`
+}
+
+function toSafeDate(value: unknown): Date | null {
+  const date = value instanceof Date ? value : new Date(value as any)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function toSafeTimestamp(value: unknown) {
+  const date = toSafeDate(value)
+  return date ? date.getTime() : Number.NaN
+}
+
+function formatDateSafe(value: unknown, pattern: string, fallback = "—") {
+  const date = toSafeDate(value)
+  if (!date) return fallback
+  try {
+    return format(date, pattern, { locale: uk })
+  } catch {
+    return fallback
+  }
 }
 
 function parseSortableNumber(value: string | number | null | undefined) {
@@ -297,13 +317,19 @@ export default function CallbackList({
     if (periodFrom) {
       const from = new Date(periodFrom)
       from.setHours(0, 0, 0, 0)
-      data = data.filter((cb) => new Date(cb.callDate) >= from)
+      data = data.filter((cb) => {
+        const ts = toSafeTimestamp(cb.callDate)
+        return Number.isFinite(ts) ? ts >= from.getTime() : false
+      })
     }
 
     if (periodTo) {
       const to = new Date(periodTo)
       to.setHours(23, 59, 59, 999)
-      data = data.filter((cb) => new Date(cb.callDate) <= to)
+      data = data.filter((cb) => {
+        const ts = toSafeTimestamp(cb.callDate)
+        return Number.isFinite(ts) ? ts <= to.getTime() : false
+      })
     }
 
     if (search.trim()) {
@@ -325,10 +351,14 @@ export default function CallbackList({
 
     return data.sort((a, b) => {
       if (sortBy === "date_asc") {
-        return new Date(a.callDate).getTime() - new Date(b.callDate).getTime()
+        const aTs = toSafeTimestamp(a.callDate)
+        const bTs = toSafeTimestamp(b.callDate)
+        return (Number.isFinite(aTs) ? aTs : Number.MAX_SAFE_INTEGER) - (Number.isFinite(bTs) ? bTs : Number.MAX_SAFE_INTEGER)
       }
       if (sortBy === "date_desc") {
-        return new Date(b.callDate).getTime() - new Date(a.callDate).getTime()
+        const aTs = toSafeTimestamp(a.callDate)
+        const bTs = toSafeTimestamp(b.callDate)
+        return (Number.isFinite(bTs) ? bTs : Number.MIN_SAFE_INTEGER) - (Number.isFinite(aTs) ? aTs : Number.MIN_SAFE_INTEGER)
       }
       if (sortBy === "callback_number_asc") {
         return parseSortableNumber(a.callbackNumber) - parseSortableNumber(b.callbackNumber)
@@ -632,7 +662,7 @@ export default function CallbackList({
                     <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500">
                       <span className="inline-flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
-                        виклик: {format(new Date(cb.callDate), "dd MMMM yyyy", { locale: uk })}
+                        виклик: {formatDateSafe(cb.callDate, "dd MMMM yyyy", "дата невідома")}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <User className="h-3.5 w-3.5" />
@@ -842,11 +872,11 @@ export default function CallbackList({
                 <div className="ds-detail-grid">
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Дата виклику</p>
-                    <p className="ds-detail-value">{format(new Date(selectedCallback.callDate), "dd MMMM yyyy", { locale: uk })}</p>
+                    <p className="ds-detail-value">{formatDateSafe(selectedCallback.callDate, "dd MMMM yyyy", "дата невідома")}</p>
                   </div>
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">Дата створення callback</p>
-                    <p className="ds-detail-value">{format(new Date(selectedCallback.createdAt), "dd MMMM yyyy HH:mm", { locale: uk })}</p>
+                    <p className="ds-detail-value">{formatDateSafe(selectedCallback.createdAt, "dd MMMM yyyy HH:mm", "дата невідома")}</p>
                   </div>
                   <div className="ds-detail-item">
                     <p className="ds-detail-label">ПІБ заявника</p>
