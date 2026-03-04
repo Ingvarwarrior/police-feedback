@@ -570,10 +570,7 @@ export default function CallbackList({
       <div className="space-y-4">
         {filtered.map((cb) => (
           <Card key={cb.id} className="overflow-hidden rounded-[2rem] border-slate-200 transition-all hover:border-blue-200 hover:shadow-md">
-              <CardContent
-                className="space-y-4 p-5"
-                onClick={() => setSelectedCallback(cb)}
-              >
+              <CardContent className="space-y-4 p-5">
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -672,7 +669,13 @@ export default function CallbackList({
                 </div>
 
                 <div className="flex items-center justify-end text-xs font-semibold tracking-wide text-blue-600">
-                  Детальніше <ChevronRight className="ml-1 h-4 w-4" />
+                  <button
+                    type="button"
+                    className="inline-flex items-center"
+                    onClick={() => setSelectedCallback(cb)}
+                  >
+                    Детальніше <ChevronRight className="ml-1 h-4 w-4" />
+                  </button>
                 </div>
               </CardContent>
           </Card>
