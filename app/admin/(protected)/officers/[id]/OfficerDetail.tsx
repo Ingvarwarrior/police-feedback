@@ -609,10 +609,14 @@ export default function OfficerDetail({ officerId, userRole, canViewStats, canEx
                                                     {new Date(cb.callDate).toLocaleDateString()} • {cb.applicantName}
                                                 </p>
                                             </div>
-                                            {cb.qOverall ? (
+                                            {cb.checkResult === "CONFIRMED" && cb.qOverall ? (
                                                 <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-black text-amber-500 border border-amber-100">
                                                     {cb.qOverall}
                                                     <Star className="w-3 h-3 fill-current" />
+                                                </span>
+                                            ) : cb.qOverall ? (
+                                                <span className="inline-flex rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase text-slate-500 border border-slate-200">
+                                                    Не зараховано
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase text-slate-400 border border-slate-100">

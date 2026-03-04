@@ -150,6 +150,14 @@ function checkResultChipClass(value: string | null | undefined) {
   return "status-chip-waiting"
 }
 
+function isConfirmedRating(callback: Pick<CallbackRow, "checkResult" | "qOverall">) {
+  return callback.checkResult === "CONFIRMED" && typeof callback.qOverall === "number" && callback.qOverall > 0
+}
+
+function hasUnconfirmedRating(callback: Pick<CallbackRow, "checkResult" | "qOverall">) {
+  return callback.checkResult !== "CONFIRMED" && typeof callback.qOverall === "number" && callback.qOverall > 0
+}
+
 function RatingStars({ value }: { value: number }) {
   return (
     <span className="inline-flex items-center gap-0.5">
@@ -325,9 +333,9 @@ export default function CallbackList({
         return parseSortableNumber(b.eoNumber) - parseSortableNumber(a.eoNumber)
       }
       if (sortBy === "rating_desc") {
-        return (b.qOverall || 0) - (a.qOverall || 0)
+        return (isConfirmedRating(b) ? b.qOverall || 0 : 0) - (isConfirmedRating(a) ? a.qOverall || 0 : 0)
       }
-      return (a.qOverall || 0) - (b.qOverall || 0)
+      return (isConfirmedRating(a) ? a.qOverall || 0 : 0) - (isConfirmedRating(b) ? b.qOverall || 0 : 0)
     })
   }, [callbacks, search, status, checkResult, executor, sortBy, periodFrom, periodTo])
 
@@ -616,11 +624,13 @@ export default function CallbackList({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {typeof cb.qOverall === "number" && cb.qOverall > 0 ? (
+                    {isConfirmedRating(cb) ? (
                       <span className="ds-chip-active">
-                        <RatingStars value={cb.qOverall} />
+                        <RatingStars value={cb.qOverall as number} />
                         {cb.qOverall}/5
                       </span>
+                    ) : hasUnconfirmedRating(cb) ? (
+                      <span className="ds-chip-muted">Оцінка не зарахована</span>
                     ) : null}
                     <span className={cn(checkResultChipClass(cb.checkResult))}>
                       {checkResultLabel(cb.checkResult)}
@@ -783,11 +793,13 @@ export default function CallbackList({
                     <span className={cn(callbackWorkStatusChipClass(getCallbackWorkStatus(selectedCallback)))}>
                       {callbackWorkStatusLabel(getCallbackWorkStatus(selectedCallback))}
                     </span>
-                    {typeof selectedCallback.qOverall === "number" && selectedCallback.qOverall > 0 ? (
+                    {isConfirmedRating(selectedCallback) ? (
                       <span className="ds-chip-active">
-                        <RatingStars value={selectedCallback.qOverall} />
+                        <RatingStars value={selectedCallback.qOverall as number} />
                         {selectedCallback.qOverall}/5
                       </span>
+                    ) : hasUnconfirmedRating(selectedCallback) ? (
+                      <span className="ds-chip-muted">Оцінка не зарахована</span>
                     ) : null}
                     <span className={cn(checkResultChipClass(selectedCallback.checkResult))}>
                       {checkResultLabel(selectedCallback.checkResult)}
