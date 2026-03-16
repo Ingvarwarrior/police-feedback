@@ -6,6 +6,7 @@ import { Menu, X, LayoutDashboard, FileText, Users, Settings, LogOut, ShieldChec
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { signOut } from "next-auth/react"
+import { clearAdminSessionMarkers } from "@/lib/client/admin-session"
 import { ThemeToggle } from "@/components/ThemeToggle"
 
 interface MobileNavProps {
@@ -239,7 +240,10 @@ export default function MobileNav({ user }: MobileNavProps) {
                         <Button
                             variant="destructive"
                             className="w-full h-14 rounded-2xl font-black uppercase tracking-widest gap-3 shadow-lg shadow-red-200"
-                            onClick={() => signOut({ callbackUrl: "/admin/login" })}
+                            onClick={() => {
+                                clearAdminSessionMarkers()
+                                void signOut({ callbackUrl: "/admin/login" })
+                            }}
                         >
                             <LogOut className="w-5 h-5" />
                             Вийти з системи
