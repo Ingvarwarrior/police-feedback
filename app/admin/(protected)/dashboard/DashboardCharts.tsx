@@ -1,12 +1,13 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, BarChart2, Map as MapIcon, Sun, Moon, Clock } from "lucide-react"
+import { TrendingUp, BarChart2, Map as MapIcon, Sun, Clock } from "lucide-react"
 import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
     BarChart, Bar, Cell, PieChart as RePieChart, Pie, Legend
 } from 'recharts'
 import DashboardMapWrapper from "./DashboardMapWrapper"
+import { SafeResponsiveChart } from "@/components/charts/SafeResponsiveChart"
 
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
@@ -53,7 +54,7 @@ export default function DashboardCharts({
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 sm:px-6 py-6 sm:py-8 h-[250px] sm:h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <SafeResponsiveChart className="h-full w-full min-w-0" minHeight={250}>
                             <AreaChart
                                 data={trendData}
                                 onClick={(data: any) => {
@@ -100,7 +101,7 @@ export default function DashboardCharts({
                                     activeDot={{ r: 6, strokeWidth: 0, className: "animate-ping" }}
                                 />
                             </AreaChart>
-                        </ResponsiveContainer>
+                        </SafeResponsiveChart>
                     </CardContent>
                 </Card>
 
@@ -112,7 +113,7 @@ export default function DashboardCharts({
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 sm:px-6 py-6 sm:py-8 h-[250px] sm:h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <SafeResponsiveChart className="h-full w-full min-w-0" minHeight={250}>
                             <BarChart
                                 data={districtData}
                                 layout="vertical"
@@ -145,7 +146,7 @@ export default function DashboardCharts({
                                     ))}
                                 </Bar>
                             </BarChart>
-                        </ResponsiveContainer>
+                        </SafeResponsiveChart>
                     </CardContent>
                 </Card>
             </div>
@@ -166,13 +167,13 @@ export default function DashboardCharts({
                 <div className="space-y-6">
                     <Card className="border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300">
                         <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 px-5 sm:px-8 py-4 sm:py-6 transition-colors duration-300">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-900 dark:text-slate-200">
-                                <Clock className="w-4 h-4 text-indigo-500" />
-                                Час інцидентів
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="px-4 sm:px-6 py-4 sm:py-6 h-[200px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-900 dark:text-slate-200">
+                            <Clock className="w-4 h-4 text-indigo-500" />
+                            Час інцидентів
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-4 sm:px-6 py-4 sm:py-6 h-[200px]">
+                            <SafeResponsiveChart className="h-full w-full min-w-0" minHeight={200}>
                                 <BarChart data={timeDistributionData}>
                                     <XAxis
                                         dataKey="name"
@@ -185,19 +186,19 @@ export default function DashboardCharts({
                                     />
                                     <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
                                 </BarChart>
-                            </ResponsiveContainer>
+                            </SafeResponsiveChart>
                         </CardContent>
                     </Card>
 
                     <Card className="border-0 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300">
                         <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 px-5 sm:px-8 py-4 sm:py-6 transition-colors duration-300">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-900 dark:text-slate-200">
-                                <Sun className="w-4 h-4 text-amber-500" />
-                                Аналіз змін
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="px-5 sm:px-8 py-4 sm:py-6 h-[200px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-slate-900 dark:text-slate-200">
+                            <Sun className="w-4 h-4 text-amber-500" />
+                            Аналіз змін
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-5 sm:px-8 py-4 sm:py-6 h-[200px]">
+                            <SafeResponsiveChart className="h-full w-full min-w-0" minHeight={200}>
                                 <RePieChart>
                                     <Pie
                                         data={shiftData}
@@ -217,7 +218,7 @@ export default function DashboardCharts({
                                     />
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                                 </RePieChart>
-                            </ResponsiveContainer>
+                            </SafeResponsiveChart>
                         </CardContent>
                     </Card>
                 </div>

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner'
 import { Loader2, ShieldCheck, Eye, EyeOff } from 'lucide-react'
 import { loginAction } from './actions/login'
+import { markAdminJustLoggedIn } from '@/lib/client/admin-session'
 
 export default function LoginPage() {
     const [username, setUsername] = useState('')
@@ -28,6 +29,7 @@ export default function LoginPage() {
         }
 
         try {
+            markAdminJustLoggedIn()
             const result = await loginAction(formData)
             if (result?.error) {
                 toast.error(result.error)

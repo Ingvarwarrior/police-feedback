@@ -1,5 +1,4 @@
-import { auth, signOut } from "@/auth"
-import { hasAdminSessionGuardCookie } from "@/lib/admin-session-guard"
+import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -21,15 +20,9 @@ export default async function AdminLayout({
     children: React.ReactNode
 }) {
     const session = await auth()
-    const hasGuardCookie = await hasAdminSessionGuardCookie()
 
     if (!session?.user?.email) { // NextAuth.js stores the identifier in the email field
         redirect("/admin/login")
-    }
-
-    if (!hasGuardCookie) {
-        await signOut({ redirect: false })
-        redirect(`/admin/login?closed=${Date.now()}`)
     }
 
     // Fetch full user data from database  
