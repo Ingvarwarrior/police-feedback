@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Menu, X, LayoutDashboard, FileText, Users, Settings, LogOut, ShieldCheck, Map as MapIcon, Activity, ClipboardList, PhoneCall, type LucideIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { signOut } from "next-auth/react"
-import { clearAdminSessionMarkers } from "@/lib/client/admin-session"
 import { ThemeToggle } from "@/components/ThemeToggle"
 
 interface MobileNavProps {
@@ -240,9 +238,15 @@ export default function MobileNav({ user }: MobileNavProps) {
                         <Button
                             variant="destructive"
                             className="w-full h-14 rounded-2xl font-black uppercase tracking-widest gap-3 shadow-lg shadow-red-200"
-                            onClick={() => {
-                                clearAdminSessionMarkers()
-                                void signOut({ callbackUrl: "/admin/login" })
+                            onClick={async () => {
+                                try {
+                                    await fetch("/api/auth/client-logout", {
+                                        method: "POST",
+                                        credentials: "same-origin",
+                                    })
+                                } finally {
+                                    window.location.replace("/admin/login?logout=" + Date.now())
+                                }
                             }}
                         >
                             <LogOut className="w-5 h-5" />

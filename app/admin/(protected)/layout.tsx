@@ -1,4 +1,5 @@
-import { auth } from "@/auth"
+import { auth, signOut } from "@/auth"
+import { hasAdminSessionGuardCookie } from "@/lib/admin-session-guard"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -20,9 +21,15 @@ export default async function AdminLayout({
     children: React.ReactNode
 }) {
     const session = await auth()
+    const hasGuardCookie = await hasAdminSessionGuardCookie()
 
     if (!session?.user?.email) { // NextAuth.js stores the identifier in the email field
         redirect("/admin/login")
+    }
+
+    if (!hasGuardCookie) {
+        await signOut({ redirect: false })
+        redirect(`/admin/login?closed=${Date.now()}`)
     }
 
     // Fetch full user data from database  
@@ -89,11 +96,6 @@ export default async function AdminLayout({
                             var path = window.location.pathname || "";
                             if (!path.startsWith("/admin") || path === "/admin/login") return;
 
-                            var AUTH_MARKER_KEY = "admin:auth-present";
-                            var IDLE_MARKER_KEY = "admin:last-activity-at";
-                            var CLOSE_MARKER_KEY = "admin:last-close-at";
-                            var TAB_MARKER_KEY = "admin:tab-active";
-
                             function readMessage(value) {
                                 if (!value) return "";
                                 if (typeof value === "string") return value;
@@ -112,16 +114,8 @@ export default async function AdminLayout({
                                 );
                             }
 
-                            function clearAdminMarkers() {
-                                window.localStorage.removeItem(AUTH_MARKER_KEY);
-                                window.localStorage.removeItem(IDLE_MARKER_KEY);
-                                window.localStorage.removeItem(CLOSE_MARKER_KEY);
-                                window.sessionStorage.removeItem(TAB_MARKER_KEY);
-                            }
-
                             function redirectToLogin(reason) {
                                 var stamp = Date.now();
-                                clearAdminMarkers();
                                 window.location.replace("/admin/login?" + reason + "=" + stamp);
                             }
 
@@ -159,25 +153,6 @@ export default async function AdminLayout({
                                     // ignore
                                 }
                             });
-
-                            var authMarker = window.localStorage.getItem(AUTH_MARKER_KEY) === "1";
-                            var navigationEntries =
-                                window.performance && typeof window.performance.getEntriesByType === "function"
-                                    ? window.performance.getEntriesByType("navigation")
-                                    : [];
-                            var navigationType =
-                                navigationEntries && navigationEntries[0] && navigationEntries[0].type
-                                    ? navigationEntries[0].type
-                                    : "";
-                            var closeAtRaw = window.localStorage.getItem(CLOSE_MARKER_KEY);
-                            var closeAt = closeAtRaw ? Number.parseInt(closeAtRaw, 10) : NaN;
-
-                            if (authMarker && Number.isFinite(closeAt) && navigationType !== "reload") {
-                                redirectToLogin("restored");
-                                return;
-                            }
-
-                            window.localStorage.removeItem(CLOSE_MARKER_KEY);
                         } catch (error) {
                             console.warn("admin-restore-guard failed", error);
                         }

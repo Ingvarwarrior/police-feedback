@@ -2,10 +2,12 @@
 
 import { signIn } from "@/auth"
 import { AuthError } from "next-auth"
+import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { isTwoFactorEnabledGlobally } from "@/lib/two-factor"
 import { normalizeUsername } from "@/lib/normalization"
+import { setAdminSessionGuardCookie } from "@/lib/admin-session-guard"
 
 export async function loginAction(formData: FormData) {
     try {
@@ -31,12 +33,16 @@ export async function loginAction(formData: FormData) {
             }
         }
 
-        await signIn('credentials', {
+        const redirectUrl = await signIn('credentials', {
             username,
             password,
             otp,
+            redirect: false,
             redirectTo: '/admin/dashboard',
         })
+
+        await setAdminSessionGuardCookie()
+        redirect(typeof redirectUrl === 'string' ? redirectUrl : '/admin/dashboard')
     } catch (error) {
         if (error instanceof AuthError) {
             switch (error.type) {

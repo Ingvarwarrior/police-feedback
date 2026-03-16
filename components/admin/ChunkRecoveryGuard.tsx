@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import { clearAdminSessionMarkers } from '@/lib/client/admin-session'
 
 const CHUNK_RECOVERY_KEY = 'admin:chunk-recovery-at'
 
@@ -22,12 +21,6 @@ function isChunkFailure(message: string) {
 }
 
 function recoverFromChunkFailure() {
-  try {
-    clearAdminSessionMarkers()
-  } catch {
-    // ignore
-  }
-
   const stamp = Date.now()
   try {
     window.sessionStorage.setItem(CHUNK_RECOVERY_KEY, String(stamp))
