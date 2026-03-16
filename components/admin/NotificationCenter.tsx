@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, type MutableRefObject } from "react"
+import { useState, useEffect, useRef, useCallback, type MutableRefObject } from "react"
 import { Bell, Check, ExternalLink, AlertTriangle, Clock, Info, FileText, Volume2, VolumeX, Smartphone, Loader2 } from "lucide-react"
 import { getNotifications, markAsRead, markAllAsRead, checkStaleReports } from "@/app/admin/(protected)/actions/notificationActions"
 import Link from "next/link"
@@ -71,7 +71,7 @@ export default function NotificationCenter() {
     const soundEnabledRef = useRef(false)
     const pushEnabledRef = useRef(false)
 
-    const fetchNotifications = async () => {
+    const fetchNotifications = useCallback(async () => {
         try {
             const data = await getNotifications()
             setNotifications(data)
@@ -109,7 +109,7 @@ export default function NotificationCenter() {
         } catch (error) {
             console.error("Failed to fetch notifications", error)
         }
-    }
+    }, [])
 
     useEffect(() => {
         const fromStorage = localStorage.getItem(SOUND_PREF_KEY)
@@ -131,17 +131,35 @@ export default function NotificationCenter() {
     }, [pushEnabled])
 
     useEffect(() => {
-        fetchNotifications()
+        void fetchNotifications()
         // Check for stale reports once on mount
-        checkStaleReports()
+        void checkStaleReports()
 
         // Refresh every 30 seconds
         const interval = setInterval(() => {
-            fetchNotifications()
+            void fetchNotifications()
         }, 30000)
 
         return () => clearInterval(interval)
-    }, [])
+    }, [fetchNotifications])
+
+    useEffect(() => {
+        const handleResume = () => {
+            if (document.visibilityState === "hidden") return
+            void fetchNotifications()
+            void checkStaleReports()
+        }
+
+        window.addEventListener("focus", handleResume)
+        window.addEventListener("pageshow", handleResume)
+        document.addEventListener("visibilitychange", handleResume)
+
+        return () => {
+            window.removeEventListener("focus", handleResume)
+            window.removeEventListener("pageshow", handleResume)
+            document.removeEventListener("visibilitychange", handleResume)
+        }
+    }, [fetchNotifications])
 
     useEffect(() => {
         if (!soundEnabled) return

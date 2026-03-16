@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Cake, Loader2 } from 'lucide-react'
@@ -23,20 +23,37 @@ export default function BirthdayNotifications() {
     const [data, setData] = useState<{ today: BirthdayOfficer[], tomorrow: BirthdayOfficer[] }>({ today: [], tomorrow: [] })
     const [loading, setLoading] = useState(true)
 
+    const fetchBirthdays = useCallback(async () => {
+        try {
+            const result = await getOfficersWithBirthdays()
+            setData(result)
+        } catch (error) {
+            console.error("Failed to fetch birthdays", error)
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
     useEffect(() => {
-        const fetchBirthdays = async () => {
-            try {
-                const result = await getOfficersWithBirthdays()
-                setData(result)
-            } catch (error) {
-                console.error("Failed to fetch birthdays", error)
-            } finally {
-                setLoading(false)
-            }
+        void fetchBirthdays()
+    }, [fetchBirthdays])
+
+    useEffect(() => {
+        const handleResume = () => {
+            if (document.visibilityState === 'hidden') return
+            void fetchBirthdays()
         }
 
-        fetchBirthdays()
-    }, [])
+        window.addEventListener('focus', handleResume)
+        window.addEventListener('pageshow', handleResume)
+        document.addEventListener('visibilitychange', handleResume)
+
+        return () => {
+            window.removeEventListener('focus', handleResume)
+            window.removeEventListener('pageshow', handleResume)
+            document.removeEventListener('visibilitychange', handleResume)
+        }
+    }, [fetchBirthdays])
 
     const hasToday = data.today.length > 0
     const hasTomorrow = data.tomorrow.length > 0

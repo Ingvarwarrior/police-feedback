@@ -56,6 +56,14 @@ export function clearAdminTabClosedMarker() {
     window.localStorage.removeItem(CLOSE_MARKER_KEY)
 }
 
+export function getAdminTabClosedAt() {
+    if (!isBrowser()) return null
+
+    const raw = window.localStorage.getItem(CLOSE_MARKER_KEY)
+    const parsed = raw ? Number.parseInt(raw, 10) : NaN
+    return Number.isFinite(parsed) ? parsed : null
+}
+
 export function broadcastAdminLogout(timestamp: number) {
     if (!isBrowser()) return
     window.localStorage.setItem(LOGOUT_BROADCAST_KEY, String(timestamp))
