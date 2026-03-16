@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ShieldCheck, LayoutDashboard, FileText, Settings, Users, Map as MapIcon, Activity, ClipboardList, PhoneCall, ChevronDown } from "lucide-react"
 import Image from "next/image"
+import Script from "next/script"
 import { Toaster } from "sonner"
 import SignOutButton from "@/components/admin/SignOutButton"
 import MobileNav from "@/components/admin/MobileNav"
@@ -80,8 +81,111 @@ export default async function AdminLayout({
         !!user.permManageOfficerStatus
 
     return (
-        <Providers>
-            <div className="min-h-screen flex bg-neutral-50 dark:bg-slate-950 print:block print:bg-white transition-colors duration-300">
+        <>
+            <Script id="admin-restore-guard" strategy="beforeInteractive">
+                {`
+                    (function () {
+                        try {
+                            var path = window.location.pathname || "";
+                            if (!path.startsWith("/admin") || path === "/admin/login") return;
+
+                            var AUTH_MARKER_KEY = "admin:auth-present";
+                            var IDLE_MARKER_KEY = "admin:last-activity-at";
+                            var CLOSE_MARKER_KEY = "admin:last-close-at";
+                            var TAB_MARKER_KEY = "admin:tab-active";
+
+                            function readMessage(value) {
+                                if (!value) return "";
+                                if (typeof value === "string") return value;
+                                if (value && typeof value.message === "string") return value.message;
+                                return String(value);
+                            }
+
+                            function isChunkFailure(message) {
+                                var normalized = String(message || "").toLowerCase();
+                                return (
+                                    normalized.indexOf("chunkloaderror") !== -1 ||
+                                    normalized.indexOf("loading chunk") !== -1 ||
+                                    normalized.indexOf("failed to fetch dynamically imported module") !== -1 ||
+                                    normalized.indexOf("/_next/static/chunks/") !== -1 ||
+                                    normalized.indexOf("loading css chunk") !== -1
+                                );
+                            }
+
+                            function clearAdminMarkers() {
+                                window.localStorage.removeItem(AUTH_MARKER_KEY);
+                                window.localStorage.removeItem(IDLE_MARKER_KEY);
+                                window.localStorage.removeItem(CLOSE_MARKER_KEY);
+                                window.sessionStorage.removeItem(TAB_MARKER_KEY);
+                            }
+
+                            function redirectToLogin(reason) {
+                                var stamp = Date.now();
+                                clearAdminMarkers();
+                                window.location.replace("/admin/login?" + reason + "=" + stamp);
+                            }
+
+                            window.addEventListener("error", function (event) {
+                                try {
+                                    var target = event && event.target ? event.target : null;
+                                    if (
+                                        target &&
+                                        (
+                                            (target.tagName === "SCRIPT" && target.src && target.src.indexOf("/_next/static/chunks/") !== -1) ||
+                                            (target.tagName === "LINK" && target.href && target.href.indexOf("/_next/static/") !== -1)
+                                        )
+                                    ) {
+                                        redirectToLogin("recovered");
+                                        return;
+                                    }
+
+                                    if (isChunkFailure(readMessage(event && (event.error || event.message)))) {
+                                        redirectToLogin("recovered");
+                                    }
+                                } catch (_) {
+                                    // ignore
+                                }
+                            }, true);
+
+                            window.addEventListener("unhandledrejection", function (event) {
+                                try {
+                                    if (isChunkFailure(readMessage(event && event.reason))) {
+                                        if (event && typeof event.preventDefault === "function") {
+                                            event.preventDefault();
+                                        }
+                                        redirectToLogin("recovered");
+                                    }
+                                } catch (_) {
+                                    // ignore
+                                }
+                            });
+
+                            var authMarker = window.localStorage.getItem(AUTH_MARKER_KEY) === "1";
+                            var navigationEntries =
+                                window.performance && typeof window.performance.getEntriesByType === "function"
+                                    ? window.performance.getEntriesByType("navigation")
+                                    : [];
+                            var navigationType =
+                                navigationEntries && navigationEntries[0] && navigationEntries[0].type
+                                    ? navigationEntries[0].type
+                                    : "";
+                            var closeAtRaw = window.localStorage.getItem(CLOSE_MARKER_KEY);
+                            var closeAt = closeAtRaw ? Number.parseInt(closeAtRaw, 10) : NaN;
+
+                            if (authMarker && Number.isFinite(closeAt) && navigationType !== "reload") {
+                                redirectToLogin("restored");
+                                return;
+                            }
+
+                            window.localStorage.removeItem(CLOSE_MARKER_KEY);
+                        } catch (error) {
+                            console.warn("admin-restore-guard failed", error);
+                        }
+                    })();
+                `}
+            </Script>
+            <Providers>
+                <div className="min-h-screen flex bg-neutral-50 dark:bg-slate-950 print:block print:bg-white transition-colors duration-300">
                 {/* Sidebar */}
                 <aside className="w-64 bg-slate-900 border-r border-slate-800 hidden md:flex md:sticky md:top-0 md:h-screen md:overflow-y-auto flex-col no-print shadow-2xl relative z-20">
                     <div className="p-6 border-b border-slate-800 flex items-center gap-3 font-bold text-sm text-white uppercase tracking-tighter">
@@ -290,7 +394,8 @@ export default async function AdminLayout({
                 </main>
 
                 <Toaster position="top-right" richColors />
-            </div>
-        </Providers>
+                </div>
+            </Providers>
+        </>
     )
 }

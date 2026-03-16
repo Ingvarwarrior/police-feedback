@@ -4,11 +4,12 @@ import { useEffect, useRef } from 'react'
 import { signOut, useSession } from 'next-auth/react'
 import {
     broadcastAdminLogout,
+    clearAdminTabClosedMarker,
     clearAdminSessionMarkers,
     getLastAdminActivity,
     markAdminSessionActive,
+    recordAdminTabClosed,
     setLastAdminActivity,
-    shouldLogoutRestoredSession,
     subscribeToAdminLogout,
 } from '@/lib/client/admin-session'
 
@@ -36,18 +37,18 @@ export function IdleTimer() {
 
         logoutTriggered.current = false
 
-        if (shouldLogoutRestoredSession()) {
-            void performLogout()
-            return
-        }
-
         markAdminSessionActive()
+        clearAdminTabClosedMarker()
 
         const writeActivity = () => {
             const now = Date.now()
             if (now - lastPersistedAt.current < ACTIVITY_WRITE_THROTTLE) return
             lastPersistedAt.current = now
             setLastAdminActivity(now)
+        }
+
+        const handleTabClose = () => {
+            recordAdminTabClosed()
         }
 
         const handleActivity = () => {
@@ -60,6 +61,8 @@ export function IdleTimer() {
         events.forEach(event => {
             window.addEventListener(event, handleActivity)
         })
+        window.addEventListener('beforeunload', handleTabClose)
+        window.addEventListener('pagehide', handleTabClose)
         const unsubscribeLogout = subscribeToAdminLogout(() => {
             void performLogout()
         })
@@ -74,6 +77,8 @@ export function IdleTimer() {
             events.forEach(event => {
                 window.removeEventListener(event, handleActivity)
             })
+            window.removeEventListener('beforeunload', handleTabClose)
+            window.removeEventListener('pagehide', handleTabClose)
             unsubscribeLogout()
             clearInterval(interval)
         }
